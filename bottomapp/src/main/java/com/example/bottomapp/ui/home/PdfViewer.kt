@@ -1,11 +1,13 @@
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.annotation.IntRange
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -13,12 +15,15 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.max
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.PageCurl
 import eu.wewox.pagecurl.page.PageCurlState
+import eu.wewox.pagecurl.page.rememberPageCurlState
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -73,6 +78,18 @@ fun PdfReaderUI(
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
+fun rememberCurlState(
+    @IntRange(from = 0) initialPage: Int = 0,
+    max: Int = 0
+): PageCurlState = rememberSaveable() {
+    PageCurlState(
+        initialCurrent = initialPage,
+        initialMax = max
+    )
+}
+
+@OptIn(ExperimentalPageCurlApi::class)
+@Composable
 fun PdfContent(
     currentPage: Int,
     totalPages: Int,
@@ -81,6 +98,11 @@ fun PdfContent(
     onPageChange: (Int) -> Unit,
     onToggleCarousel: () -> Unit
 ) {
+    val pagerState = rememberPageCurlState(initialCurrent = currentPage)
+    val context = LocalContext.current
+    LaunchedEffect(pagerState.current) {
+       onPageChange(pagerState.current)
+    }
     if (showCarousel) {
         // Show Carousel mode
         PdfCarousel(
@@ -92,7 +114,7 @@ fun PdfContent(
         )
     } else {
         // Show PageCurl mode
-        PageCurl(count = totalPages) { index ->
+        PageCurl(count = totalPages, state = pagerState) { index ->
             PdfPage(
                 page = index,
                 showCarousel = false,
@@ -129,7 +151,7 @@ fun PdfCarousel(
             PdfPage(
                 page = page,
                 pdfRendererHelper = pdfRendererHelper,
-                onPageChange = onPageChange,
+                onPageChange = {},
                 onToggleCarousel = onToggleCarousel,
                 showCarousel = false
             )
@@ -156,9 +178,6 @@ fun PdfPage(
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    LaunchedEffect(page) {
-        onPageChange(page)  // Sync the current page
-    }
 
     Box(
         modifier = Modifier
