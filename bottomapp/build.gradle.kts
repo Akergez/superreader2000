@@ -87,4 +87,5 @@ dependencies {
     implementation(project(":pdfreader"))
     implementation(libs.navigation.compose)
     implementation("io.github.oleksandrbalan:pagecurl:1.5.1")
+    implementation("com.google.accompanist:accompanist-pager:0.29.1-alpha")
 }

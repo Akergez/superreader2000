@@ -13,8 +13,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.rememberPagerState
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.PageCurl
+import eu.wewox.pagecurl.page.PageCurlState
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -22,19 +26,24 @@ import java.io.InputStream
 
 @Composable
 fun PdfReaderScreen() {
-    var currentPage by remember { mutableStateOf(1) }
-    var showCarousel by remember { mutableStateOf(false) }
-    val totalPages = 646  // Replace with actual total pages from your PDF document
+    var currentPage by remember { mutableIntStateOf(1) }  // Store the current page
+    var showCarousel by remember { mutableStateOf(false) }  // Store the current mode (carousel or curl)
+
+    val context = LocalContext.current
+    val pdfFile = getFileFromAssets(context, "gold.pdf")
+    val pdfRendererHelper = PdfRendererHelper(context, pdfFile)
+    val totalPages = pdfRendererHelper.getPageCount()
 
     PdfReaderUI(
         currentPage = currentPage,
         totalPages = totalPages,
         showCarousel = showCarousel,
-        onPageChange = { newPage -> currentPage = newPage },
+        onPageChange = { newPage -> currentPage = newPage },  // Update the shared page
         onBackClick = { /* Handle back */ },
         onSearchClick = { /* Handle search */ },
         onTextSettingsClick = { /* Handle text settings */ },
-        onToggleCarousel = { showCarousel = !showCarousel }
+        onToggleCarousel = { showCarousel = !showCarousel },  // Toggle between modes
+        pdfRendererHelper = pdfRendererHelper
     )
 }
 
@@ -48,10 +57,18 @@ fun PdfReaderUI(
     onBackClick: () -> Unit,
     onSearchClick: () -> Unit,
     onTextSettingsClick: () -> Unit,
-    onToggleCarousel: () -> Unit
+    onToggleCarousel: () -> Unit,
+    pdfRendererHelper: PdfRendererHelper
 ) {
-    // Main content
-    PdfContent(currentPage, totalPages, showCarousel, onPageChange, onToggleCarousel)
+    // Pass the current page to PdfContent, and update the page if needed
+    PdfContent(
+        currentPage = currentPage,
+        totalPages = totalPages,
+        showCarousel = showCarousel,
+        pdfRendererHelper = pdfRendererHelper,
+        onPageChange = onPageChange,  // Synchronize the page change
+        onToggleCarousel = onToggleCarousel
+    )
 }
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -60,48 +77,88 @@ fun PdfContent(
     currentPage: Int,
     totalPages: Int,
     showCarousel: Boolean,
+    pdfRendererHelper: PdfRendererHelper,
     onPageChange: (Int) -> Unit,
     onToggleCarousel: () -> Unit
 ) {
     if (showCarousel) {
-        Column {
-            LazyRow(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(totalPages) { page ->
-                    PdfPage(page = page, showCarousel = showCarousel, onToggleCarousel = onToggleCarousel)
-                }
-            }
-            Text(
-                text = "Page $currentPage of $totalPages",
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 8.dp)
-            )
-        }
+        // Show Carousel mode
+        PdfCarousel(
+            totalPages = totalPages,
+            initialPage = currentPage,  // Pass current page
+            onPageChange = onPageChange,  // Update page on scroll
+            onToggleCarousel = onToggleCarousel,
+            pdfRendererHelper = pdfRendererHelper
+        )
     } else {
+        // Show PageCurl mode
         PageCurl(count = totalPages) { index ->
-            PdfPage(page = currentPage, showCarousel = showCarousel, onToggleCarousel = onToggleCarousel)
+            PdfPage(
+                page = index,
+                showCarousel = false,
+                onToggleCarousel = onToggleCarousel,
+                pdfRendererHelper = pdfRendererHelper,
+                onPageChange = onPageChange  // Update page on swipe
+            )
         }
     }
 }
 
-fun getFileFromAssets(context: Context, fileName: String): File {
-    val file = File(context.cacheDir, fileName)
-    if (!file.exists()) {
-        val inputStream: InputStream = context.assets.open(fileName)
-        val outputStream = FileOutputStream(file)
-        inputStream.copyTo(outputStream)
-        inputStream.close()
-        outputStream.close()
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun PdfCarousel(
+    totalPages: Int,
+    initialPage: Int = 0,
+    onPageChange: (Int) -> Unit,
+    onToggleCarousel: () -> Unit,
+    pdfRendererHelper: PdfRendererHelper
+) {
+    val pagerState = rememberPagerState(initialPage = initialPage)
+
+    // Emit page change when the page is scrolled
+    LaunchedEffect(pagerState.currentPage) {
+        onPageChange(pagerState.currentPage)
     }
-    return file
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        HorizontalPager(
+            count = totalPages,
+            state = pagerState,
+            modifier = Modifier.weight(1f) // Full screen carousel
+        ) { page ->
+            PdfPage(
+                page = page,
+                pdfRendererHelper = pdfRendererHelper,
+                onPageChange = onPageChange,
+                onToggleCarousel = onToggleCarousel,
+                showCarousel = false
+            )
+        }
+
+        // Page indicator for the carousel
+        Text(
+            text = "Page ${pagerState.currentPage + 1} of $totalPages",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(16.dp)
+        )
+    }
 }
 
 @Composable
-fun PdfPage(page: Int, showCarousel: Boolean, modifier: Modifier = Modifier, onToggleCarousel: () -> Unit) {
+fun PdfPage(
+    page: Int,
+    showCarousel: Boolean,
+    pdfRendererHelper: PdfRendererHelper,
+    modifier: Modifier = Modifier,
+    onToggleCarousel: () -> Unit,
+    onPageChange: (Int) -> Unit
+) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
+    LaunchedEffect(page) {
+        onPageChange(page)  // Sync the current page
+    }
 
     Box(
         modifier = Modifier
@@ -111,12 +168,8 @@ fun PdfPage(page: Int, showCarousel: Boolean, modifier: Modifier = Modifier, onT
             .clickable { onToggleCarousel() }
             .then(if (showCarousel) Modifier.shadow(8.dp) else Modifier) // Add shadow only in carousel mode
     ) {
-        val context = LocalContext.current
-        val pdfFile = getFileFromAssets(context, "gold.pdf")
-        val pdfRendererHelper = PdfRendererHelper(context, pdfFile)
         PdfViewer(
-            pdfRendererHelper = pdfRendererHelper,
-            pageIndex = page
+            pdfRendererHelper = pdfRendererHelper, pageIndex = page
         )
     }
 }
@@ -134,4 +187,16 @@ fun PdfViewer(
             .fillMaxWidth()
             .height(400.dp) // Adjust height as needed
     )
+}
+
+fun getFileFromAssets(context: Context, fileName: String): File {
+    val file = File(context.cacheDir, fileName)
+    if (!file.exists()) {
+        val inputStream: InputStream = context.assets.open(fileName)
+        val outputStream = FileOutputStream(file)
+        inputStream.copyTo(outputStream)
+        inputStream.close()
+        outputStream.close()
+    }
+    return file
 }
