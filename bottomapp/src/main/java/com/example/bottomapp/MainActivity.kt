@@ -1,13 +1,10 @@
 package com.example.bottomapp
 
+import PdfReaderScreen
 import android.os.Bundle
-import android.view.View
 import androidx.activity.compose.setContent
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.BottomNavigation
-import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -24,13 +21,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
 import com.example.bottomapp.databinding.ActivityMainBinding
-import com.example.bottomapp.ui.home.PDFViewerScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -87,9 +80,9 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun HomeScreen() {
-        PDFViewerScreen(navigateUp = {
-            // navController.popBackStack()
-        })
+        val pdfFile = File(filesDir, "gold.pdf")
+        //val pdfRendererHelper = PdfRendererHelper(this, pdfFile)
+        PdfReaderScreen()
     }
 
     @Composable

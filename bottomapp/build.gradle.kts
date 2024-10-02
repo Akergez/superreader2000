@@ -86,4 +86,5 @@ dependencies {
     debugImplementation(libs.ui.test.manifest)
     implementation(project(":pdfreader"))
     implementation(libs.navigation.compose)
+    implementation("io.github.oleksandrbalan:pagecurl:1.5.1")
 }
