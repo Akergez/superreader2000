@@ -4,7 +4,7 @@ import androidx.annotation.IntRange
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -146,15 +146,19 @@ fun PdfCarousel(
         HorizontalPager(
             count = totalPages,
             state = pagerState,
-            modifier = Modifier.weight(1f) // Full screen carousel
+            modifier = Modifier.weight(0.9f) // Full screen carousel
         ) { page ->
-            PdfPage(
-                page = page,
-                pdfRendererHelper = pdfRendererHelper,
-                onPageChange = {},
-                onToggleCarousel = onToggleCarousel,
-                showCarousel = false
-            )
+            Box(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
+                Card(Modifier.fillMaxWidth(0.9f).align(Alignment.Center)) {
+                    PdfPage(
+                        page = page,
+                        pdfRendererHelper = pdfRendererHelper,
+                        onPageChange = {},
+                        onToggleCarousel = onToggleCarousel,
+                        showCarousel = false
+                    )
+                }
+            }
         }
 
         // Page indicator for the carousel
