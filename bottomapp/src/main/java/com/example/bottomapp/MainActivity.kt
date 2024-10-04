@@ -2,14 +2,18 @@ package com.example.bottomapp
 
 import PdfReaderScreen
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
@@ -38,7 +43,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -46,9 +54,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.databinding.ActivityMainBinding
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -57,14 +68,42 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val pdfFiles = mutableStateListOf<PdfFile>()
     private val PICK_PDF_FILE = 2
+    private val PREFS_NAME = "pdf_reader_prefs"
+    private val PDF_FILES_KEY = "pdf_files"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
+        loadPdfFiles() // Load the list of books
         setContent {
             PDFReaderJetpackComposeTheme {
                 MainScreen()
             }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        savePdfFiles() // Save the list of books
+    }
+
+    private fun savePdfFiles() {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        val gson = Gson()
+        val json = gson.toJson(pdfFiles)
+        editor.putString(PDF_FILES_KEY, json)
+        editor.apply()
+    }
+
+    private fun loadPdfFiles() {
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val gson = Gson()
+        val json = sharedPreferences.getString(PDF_FILES_KEY, null)
+        if (json != null) {
+            val type = object : TypeToken<MutableList<PdfFile>>() {}.type
+            val loadedPdfFiles: MutableList<PdfFile> = gson.fromJson(json, type)
+            pdfFiles.addAll(loadedPdfFiles.filter { File(it.filePath).exists() })
         }
     }
 
@@ -87,7 +126,7 @@ class MainActivity : AppCompatActivity() {
                         inputStream.copyTo(outputStream)
                     }
                 }
-                pdfFiles.add(PdfFile(fileName, file))
+                pdfFiles.add(PdfFile(fileName, file.path))
             }
         }
     }
@@ -129,7 +168,14 @@ class MainActivity : AppCompatActivity() {
                         pdfFiles = pdfFiles,
                         onAddPdf = { openFilePicker() },
                         onItemClick = { pdfFile ->
-                            navController.navigate("pdfReader/${URLEncoder.encode(pdfFile.file.path, StandardCharsets.UTF_8.toString())}")
+                            navController.navigate(
+                                "pdfReader/${
+                                    URLEncoder.encode(
+                                        pdfFile.filePath,
+                                        StandardCharsets.UTF_8.toString()
+                                    )
+                                }"
+                            )
                         }
                     )
                 }
@@ -168,7 +214,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    data class PdfFile(val name: String, val file: File)
+    data class PdfFile(val name: String, val filePath: String)
 
     @Composable
     fun HomeScreen(pdfFiles: List<PdfFile>, onAddPdf: () -> Unit, onItemClick: (PdfFile) -> Unit) {
@@ -188,21 +234,37 @@ class MainActivity : AppCompatActivity() {
                             .padding(8.dp)
                             .clickable { onItemClick(pdfFile) }
                     ) {
-                        Row(modifier = Modifier.padding(8.dp)) {
-                            val previewBitmap = pdfFile.file.getPreviewBitmap()
-                            if (previewBitmap != null) {
-                                Image(
-                                    bitmap = previewBitmap.asImageBitmap(),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .padding(end = 8.dp)
-                                )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
+                        ) {
+                            Row(modifier = Modifier.padding(8.dp)) {
+                                val previewBitmap = File(pdfFile.filePath).getPreviewBitmap()
+                                if (previewBitmap != null) {
+                                    Image(
+                                        bitmap = previewBitmap.asImageBitmap(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .background(Color.White)
+                                            .size(100.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                    )
+
+                                }
+                                Column {
+                                    Text(
+                                        text = pdfFile.name,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(end = 8.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                }
                             }
-                            Text(
-                                text = pdfFile.name,
-                                modifier = Modifier.align(Alignment.CenterVertically)
-                            )
                         }
                     }
                 }
@@ -219,9 +281,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Extension function to get a preview bitmap from a PDF file
-    fun File.getPreviewBitmap(): Bitmap? {
-        // Implement logic to generate a preview bitmap from the PDF file
-        // This is a placeholder implementation
+    private fun File.getPreviewBitmap(): Bitmap? {
+        var pdfRenderer: PdfRenderer? = null
+        var parcelFileDescriptor: ParcelFileDescriptor? = null
+        try {
+            parcelFileDescriptor =
+                ParcelFileDescriptor.open(this, ParcelFileDescriptor.MODE_READ_ONLY)
+            pdfRenderer = PdfRenderer(parcelFileDescriptor)
+            if (pdfRenderer.pageCount > 0) {
+                val page = pdfRenderer.openPage(0)
+                val width = page.width
+                val height = page.height
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                return bitmap
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            try {
+                pdfRenderer?.close()
+                parcelFileDescriptor?.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
         return null
     }
 

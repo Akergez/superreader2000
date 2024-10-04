@@ -19,7 +19,7 @@
       </SelectionState>
       <SelectionState runConfigName="bottomapp">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-10-02T17:59:17.534332288Z">
+        <DropdownSelection timestamp="2024-10-03T11:33:18.752399127Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/var/home/akerg3z/.android/avd/Pixel_7_Pro_API_35.avd" />

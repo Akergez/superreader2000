@@ -5,11 +5,14 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
+import android.util.Log
 import androidx.annotation.IntRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Card
@@ -24,10 +27,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.max
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
@@ -47,7 +53,7 @@ import java.io.InputStream
 @Composable
 fun PdfReaderScreen(pdfFile: File) {
     var currentPage by remember { mutableIntStateOf(1) }
-    var showCarousel by remember { mutableStateOf(false) }
+    var mode by remember { mutableStateOf(Mode.Curl) }
 
     val context = LocalContext.current
     val pdfRendererHelper = PdfRendererHelper(context, pdfFile)
@@ -56,12 +62,12 @@ fun PdfReaderScreen(pdfFile: File) {
     PdfReaderUI(
         currentPage = currentPage,
         totalPages = totalPages,
-        showCarousel = showCarousel,
+        mode = mode,
         onPageChange = { newPage -> currentPage = newPage },
         onBackClick = { /* Handle back */ },
         onSearchClick = { /* Handle search */ },
         onTextSettingsClick = { /* Handle text settings */ },
-        onToggleCarousel = { showCarousel = !showCarousel },
+        onToggleMode = {newMode -> mode = newMode},
         pdfRendererHelper = pdfRendererHelper
     )
 }
@@ -71,22 +77,22 @@ fun PdfReaderScreen(pdfFile: File) {
 fun PdfReaderUI(
     currentPage: Int,
     totalPages: Int,
-    showCarousel: Boolean,
+    mode: Mode,
     onPageChange: (Int) -> Unit,
     onBackClick: () -> Unit,
     onSearchClick: () -> Unit,
     onTextSettingsClick: () -> Unit,
-    onToggleCarousel: () -> Unit,
+    onToggleMode: (Mode) -> Unit,
     pdfRendererHelper: PdfRendererHelper
 ) {
     // Pass the current page to PdfContent, and update the page if needed
     PdfContent(
         currentPage = currentPage,
         totalPages = totalPages,
-        showCarousel = showCarousel,
+        mode = mode,
         pdfRendererHelper = pdfRendererHelper,
         onPageChange = onPageChange,  // Synchronize the page change
-        onToggleCarousel = onToggleCarousel
+        onToggleMode = onToggleMode
     )
 }
 
@@ -100,34 +106,42 @@ fun rememberCurlState(
     )
 }
 
+enum class Mode {
+    Carousel,
+    Zoom,
+    Curl
+}
+
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
 fun PdfContent(
     currentPage: Int,
     totalPages: Int,
-    showCarousel: Boolean,
+    mode: Mode,
     pdfRendererHelper: PdfRendererHelper,
     onPageChange: (Int) -> Unit,
-    onToggleCarousel: () -> Unit
+    onToggleMode: (Mode) -> Unit
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
     val context = LocalContext.current
     var applyInversion by remember { mutableStateOf(true) } // State to control inversion
+    var zoomMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(pagerState.current) {
         onPageChange(pagerState.current)
     }
-    if (showCarousel) {
+    if (mode == Mode.Carousel) {
         // Show Carousel mode
-        PdfCarousel(totalPages = totalPages,
+        PdfCarousel(
+            totalPages = totalPages,
             initialPage = currentPage,  // Pass current page
             onPageChange = onPageChange,  // Update page on scroll
-            onToggleCarousel = onToggleCarousel,
+            onToggleMode = onToggleMode,
             pdfRendererHelper = pdfRendererHelper,
             applyInversion = applyInversion,
             onApplyInversionToggle = { b -> applyInversion = b } // Update inversion setting
         )
-    } else {
+    } else if (mode == Mode.Curl) {
         // Show PageCurl mode
         PageCurl(
             count = totalPages,
@@ -139,13 +153,22 @@ fun PdfContent(
         ) { index ->
             PdfPage(
                 page = index,
-                showCarousel = false,
-                onToggleCarousel = onToggleCarousel,
                 pdfRendererHelper = pdfRendererHelper,
                 onPageChange = onPageChange,
-                applyInversion = applyInversion// Update page on swipe
+                applyInversion = applyInversion, // Update page on swipe
+                mode = Mode.Curl,
+                onToggleMode = onToggleMode
             )
         }
+    } else if (mode == Mode.Zoom) {
+        PdfPage(
+            page = pagerState.current,
+            mode = mode,
+            onToggleMode = onToggleMode,
+            pdfRendererHelper = pdfRendererHelper,
+            onPageChange = onPageChange,
+            applyInversion = applyInversion
+        )
     }
 }
 
@@ -155,7 +178,7 @@ fun PdfCarousel(
     totalPages: Int,
     initialPage: Int = 0,
     onPageChange: (Int) -> Unit,
-    onToggleCarousel: () -> Unit,
+    onToggleMode: (Mode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
     applyInversion: Boolean,
     onApplyInversionToggle: (Boolean) -> Unit
@@ -187,9 +210,9 @@ fun PdfCarousel(
                         page = page,
                         pdfRendererHelper = pdfRendererHelper,
                         onPageChange = {},
-                        onToggleCarousel = onToggleCarousel,
-                        showCarousel = false,
-                        applyInversion = applyInversion // Pass the inversion setting
+                        onToggleMode = onToggleMode,
+                        mode = Mode.Carousel,
+                        applyInversion = applyInversion
                     )
                 }
             }
@@ -219,27 +242,99 @@ fun PdfCarousel(
 @Composable
 fun PdfPage(
     page: Int,
-    showCarousel: Boolean,
     pdfRendererHelper: PdfRendererHelper,
     modifier: Modifier = Modifier,
-    onToggleCarousel: () -> Unit,
+    onToggleMode: (Mode) -> Unit,
     onPageChange: (Int) -> Unit,
-    applyInversion: Boolean // Add this parameter
+    applyInversion: Boolean, // Add this parameter
+    mode: Mode,
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
+    val haptic = LocalHapticFeedback.current
+    var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
+    var isTransforming by remember { mutableStateOf(false) }
+    val onZoomModeToggleWrapper = {
+        onToggleMode(if(mode == Mode.Zoom) Mode.Curl else Mode.Zoom)
+        scale = 1f
+        offsetX = 0f
+        offsetY = 0f
+    }
+    if (mode == Mode.Zoom) {
+        Box(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        isTransforming = true
+                        scale = (scale * zoom)
+                        offsetX += pan.x
+                        offsetY += pan.y
+                    }
 
-    Box(modifier = Modifier
-        .padding(8.dp)
-        .fillMaxSize()
-        .clickable { onToggleCarousel() }
-        .background(color = MaterialTheme.colorScheme.background) // Add shadow only in carousel mode
-    ) {
-        PdfViewer(
-            pdfRendererHelper = pdfRendererHelper,
-            pageIndex = page,
-            applyInversion = applyInversion // Pass the inversion setting
-        )
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            if (!isTransforming) {
+                                onZoomModeToggleWrapper() // Toggle zoom mode on double-click
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                        },
+                        onPress = {
+                            tryAwaitRelease() // Wait for gestures to finish
+                            isTransforming = false // Reset flag after any gesture is done
+                        }
+                    )
+                }
+                .background(color = MaterialTheme.colorScheme.background)
+        ) {
+
+            Log.e("TAG", "PdfPage: $scale")
+            // Enable pinch-to-zoom
+            PdfViewer(
+                pdfRendererHelper = pdfRendererHelper,
+                pageIndex = page,
+                applyInversion = applyInversion, // Pass the inversion setting
+                scale = scale, // Pass the zoom scale,
+                offsetX = offsetX,
+                offsetY = offsetY
+            )
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            onZoomModeToggleWrapper() // Toggle zoom mode on double-click
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        },
+                        onLongPress = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onToggleMode(if(mode == Mode.Curl) Mode.Carousel else Mode.Curl)
+                        }
+                    )
+                }
+                .background(color = MaterialTheme.colorScheme.background)
+        ) {
+
+            Log.e("TAG", "PdfPage: $scale")
+            // Enable pinch-to-zoom
+            PdfViewer(
+                pdfRendererHelper = pdfRendererHelper,
+                pageIndex = page,
+                applyInversion = applyInversion, // Pass the inversion setting
+                scale = scale, // Pass the zoom scale,
+                offsetX = offsetX,
+                offsetY = offsetY
+            )
+        }
     }
 }
 
@@ -248,13 +343,16 @@ fun PdfViewer(
     pdfRendererHelper: PdfRendererHelper,
     pageIndex: Int,
     modifier: Modifier = Modifier,
-    applyInversion: Boolean // Add this parameter
+    applyInversion: Boolean,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float
 ) {
     val bitmap = pdfRendererHelper.openPage(pageIndex)
     val isDarkTheme = isSystemInDarkTheme()
-    var backgroundColor = MaterialTheme.colorScheme.background;
+    var backgroundColor = MaterialTheme.colorScheme.background
     if (!applyInversion) {
-        backgroundColor = Color.White;
+        backgroundColor = Color.White
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
@@ -264,61 +362,39 @@ fun PdfViewer(
         val bitmapWidth = bitmap.width
         val bitmapHeight = bitmap.height
 
-        // Calculate the scaling factor to maintain aspect ratio
-        val scale =
-            minOf(canvasWidth.toFloat() / bitmapWidth, canvasHeight.toFloat() / bitmapHeight)
-        val scaledWidth = (bitmapWidth * scale).toInt()
-        val scaledHeight = (bitmapHeight * scale).toInt()
-        val left = (canvasWidth - scaledWidth) / 2
-        val top = (canvasHeight - scaledHeight) / 2
+        val scaleFactor = scale * minOf(
+            canvasWidth.toFloat() / bitmapWidth,
+            canvasHeight.toFloat() / bitmapHeight
+        )
+        val scaledWidth = (bitmapWidth * scaleFactor).toInt()
+        val scaledHeight = (bitmapHeight * scaleFactor).toInt()
+        val left = (canvasWidth - scaledWidth) / 2 + offsetX.toInt()
+        val top = (canvasHeight - scaledHeight) / 2 + offsetY.toInt()
 
         val destRect = Rect(left, top, left + scaledWidth, top + scaledHeight)
 
-        // Set the background color from the Material theme
         canvas.drawColor(backgroundColor.toArgb())
 
         if (isDarkTheme && applyInversion) {
-            // Create a ColorMatrix to invert colors
             val colorMatrix = ColorMatrix().apply {
                 set(
                     floatArrayOf(
-                        -1f,
-                        0f,
-                        0f,
-                        0f,
-                        255f,
-                        0f,
-                        -1f,
-                        0f,
-                        0f,
-                        255f,
-                        0f,
-                        0f,
-                        -1f,
-                        0f,
-                        255f,
-                        0f,
-                        0f,
-                        0f,
-                        1f,
-                        0f
+                        -1f, 0f, 0f, 0f, 255f,
+                        0f, -1f, 0f, 0f, 255f,
+                        0f, 0f, -1f, 0f, 255f,
+                        0f, 0f, 0f, 1f, 0f
                     )
                 )
             }
 
-            // Apply the ColorMatrix to the canvas
             val paint = android.graphics.Paint().apply {
                 colorFilter = ColorMatrixColorFilter(colorMatrix)
             }
 
-            // Draw the bitmap with the color matrix applied
             canvas.drawBitmap(bitmap, null, destRect, paint)
-
-            // Apply a PorterDuffColorFilter to invert colors only for non-transparent pixels
             paint.colorFilter = PorterDuffColorFilter(backgroundColor.toArgb(), PorterDuff.Mode.XOR)
             canvas.drawBitmap(bitmap, null, destRect, paint)
         } else {
-            // Draw the bitmap without any color filter
             canvas.drawBitmap(bitmap, null, destRect, null)
         }
     }
