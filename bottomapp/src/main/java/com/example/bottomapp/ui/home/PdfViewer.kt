@@ -15,9 +15,9 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Card
-import androidx.compose.material.Text
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -35,6 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.max
+import com.example.bottomapp.backend.PdfBookDomainModel
+import com.example.bottomapp.backend.PdfProgress
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
@@ -49,21 +51,26 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
-
 @Composable
-fun PdfReaderScreen(pdfFile: File) {
-    var currentPage by remember { mutableIntStateOf(1) }
+fun PdfReaderScreen(book: PdfBookDomainModel) {
+    var currentPage by remember { mutableIntStateOf(book.getProgress().pageIndex) }
     var mode by remember { mutableStateOf(Mode.Curl) }
 
     val context = LocalContext.current
+    val pdfFile = book.getFile();
     val pdfRendererHelper = PdfRendererHelper(context, pdfFile)
     val totalPages = pdfRendererHelper.getPageCount()
+
+    val onPageChange = { newPage: Int ->
+        currentPage = newPage
+        book.saveProgress(PdfProgress(newPage))
+    }
 
     PdfReaderUI(
         currentPage = currentPage,
         totalPages = totalPages,
         mode = mode,
-        onPageChange = { newPage -> currentPage = newPage },
+        onPageChange = onPageChange,
         onBackClick = { /* Handle back */ },
         onSearchClick = { /* Handle search */ },
         onTextSettingsClick = { /* Handle text settings */ },

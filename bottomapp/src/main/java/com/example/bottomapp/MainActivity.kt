@@ -1,9 +1,6 @@
 package com.example.bottomapp
 
 import PdfReaderScreen
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
@@ -30,7 +27,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -40,7 +36,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,30 +44,35 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.example.bottomapp.backend.BookLink
+import com.example.bottomapp.backend.BooksLinksStorage
+import com.example.bottomapp.backend.PdfBookDomainModel
+import com.example.bottomapp.databinding.ActivityMainBinding
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
+import io.github.vinceglb.filekit.core.FileKit
+import io.github.vinceglb.filekit.core.pickFile
+import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
 
-    private val pdfFiles = mutableStateListOf<PdfFile>()
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var booksLinksStorage: BooksLinksStorage
     private val PICK_PDF_FILE = 2
-    private val PREFS_NAME = "pdf_reader_prefs"
-    private val PDF_FILES_KEY = "pdf_files"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-        loadPdfFiles() // Load the list of books
+        booksLinksStorage = BooksLinksStorage(this)
+        FileKit.init(this)
         setContent {
             PDFReaderJetpackComposeTheme {
                 MainScreen()
@@ -80,52 +80,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        savePdfFiles() // Save the list of books
-    }
-
-    private fun savePdfFiles() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        val gson = Gson()
-        val json = gson.toJson(pdfFiles)
-        editor.putString(PDF_FILES_KEY, json)
-        editor.apply()
-    }
-
-    private fun loadPdfFiles() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val gson = Gson()
-        val json = sharedPreferences.getString(PDF_FILES_KEY, null)
-        if (json != null) {
-            val type = object : TypeToken<MutableList<PdfFile>>() {}.type
-            val loadedPdfFiles: MutableList<PdfFile> = gson.fromJson(json, type)
-            pdfFiles.addAll(loadedPdfFiles.filter { File(it.filePath).exists() })
-        }
-    }
-
-    private fun openFilePicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/pdf"
-        }
-        startActivityForResult(intent, PICK_PDF_FILE)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
-            data?.data?.also { uri ->
-                val fileName = getFileName(uri)
-                val file = File(cacheDir, fileName)
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    FileOutputStream(file).use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                pdfFiles.add(PdfFile(fileName, file.path))
-            }
+    private suspend fun openFilePicker() {
+        val file = FileKit.pickFile()
+        file?.let {
+            val fileName = file.name
+            booksLinksStorage.upsertBook(BookLink(fileName, file.uri, null, file.path!!))
         }
     }
 
@@ -163,13 +122,17 @@ class MainActivity : AppCompatActivity() {
             ) {
                 composable("home") {
                     HomeScreen(
-                        pdfFiles = pdfFiles,
-                        onAddPdf = { openFilePicker() },
-                        onItemClick = { pdfFile ->
+                        booksLinks = booksLinksStorage.booksLinks,
+                        onAddPdf = {
+                            lifecycleScope.launch {
+                                openFilePicker()
+                            }
+                        },
+                        onItemClick = { bookLink ->
                             navController.navigate(
                                 "pdfReader/${
                                     URLEncoder.encode(
-                                        pdfFile.filePath,
+                                        bookLink.filePath,
                                         StandardCharsets.UTF_8.toString()
                                     )
                                 }"
@@ -182,7 +145,13 @@ class MainActivity : AppCompatActivity() {
                 composable("pdfReader/{filePath}") { backStackEntry ->
                     val filePath = backStackEntry.arguments?.getString("filePath")
                     filePath?.let {
-                        PdfReaderScreen(File(it))
+                        val bookLink = booksLinksStorage.booksLinks.find { it.filePath == filePath }
+                        bookLink?.let {
+                            val pdfBookDomainModel = PdfBookDomainModel(it, this@MainActivity) { updatedBookLink ->
+                                booksLinksStorage.upsertBook(updatedBookLink)
+                            }
+                            PdfReaderScreen(pdfBookDomainModel)
+                        }
                     }
                 }
             }
@@ -212,10 +181,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    data class PdfFile(val name: String, val filePath: String)
-
     @Composable
-    fun HomeScreen(pdfFiles: List<PdfFile>, onAddPdf: () -> Unit, onItemClick: (PdfFile) -> Unit) {
+    fun HomeScreen(
+        booksLinks: List<BookLink>,
+        onAddPdf: () -> Unit,
+        onItemClick: (BookLink) -> Unit
+    ) {
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
@@ -225,12 +196,12 @@ class MainActivity : AppCompatActivity() {
                         style = MaterialTheme.typography.headlineMedium
                     )
                 }
-                items(pdfFiles) { pdfFile ->
+                items(booksLinks) { bookLink ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp)
-                            .clickable { onItemClick(pdfFile) }
+                            .clickable { onItemClick(bookLink) }
                     ) {
                         Box(
                             modifier = Modifier
@@ -238,7 +209,7 @@ class MainActivity : AppCompatActivity() {
                                 .background(MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Row(modifier = Modifier.padding(8.dp)) {
-                                val previewBitmap = File(pdfFile.filePath).getPreviewBitmap()
+                                val previewBitmap = File(bookLink.filePath).getPreviewBitmap()
                                 if (previewBitmap != null) {
                                     Image(
                                         bitmap = previewBitmap.asImageBitmap(),
@@ -253,7 +224,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 Column {
                                     Text(
-                                        text = pdfFile.name,
+                                        text = bookLink.title,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(end = 8.dp),
