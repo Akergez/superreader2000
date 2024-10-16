@@ -53,7 +53,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.bottomapp.databinding.ActivityMainBinding
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
@@ -65,7 +64,6 @@ import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private val pdfFiles = mutableStateListOf<PdfFile>()
     private val PICK_PDF_FILE = 2
     private val PREFS_NAME = "pdf_reader_prefs"
