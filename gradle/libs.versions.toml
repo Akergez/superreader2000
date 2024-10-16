@@ -1,11 +1,14 @@
 [versions]
+accompanist-pager = "0.29.1-alpha"
 agp = "8.6.1"
 easyflipview = "2.0.0"
+gson = "2.8.8"
 kotlin = "1.9.0"
 core-ktx = "1.13.1"
 junit = "4.13.2"
 navigation-compose-version = "2.8.2"
 pagecurl = "1.0.0"
+pagecurl-version = "1.5.1"
 pdfium-android = "1.9.0"
 androidx-test-ext-junit = "1.2.1"
 espresso-core = "3.6.1"
@@ -28,11 +31,13 @@ ui-tooling-preview = "1.7.3"
 
 
 [libraries]
+accompanist-pager = { module = "com.google.accompanist:accompanist-pager", version.ref = "accompanist-pager" }
 androidx-navigation-compose-v240alpha10 = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose-version" }
 androidx-ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "ui-tooling-preview" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 easyflipview = { module = "com.wajahatkarim3.easyflipview:easyflipview", version.ref = "easyflipview" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
@@ -40,6 +45,7 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
+oleksandrbalan-pagecurl = { module = "io.github.oleksandrbalan:pagecurl", version.ref = "pagecurl-version" }
 pagecurl = { module = "com.github.harjot-oberai:PageCurl", version.ref = "pagecurl" }
 ui = { group = "androidx.compose.ui", name = "ui" }
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }

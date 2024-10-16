@@ -84,9 +84,9 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-    implementation(project(":pdfreader"))
     implementation(libs.navigation.compose)
-    implementation("io.github.oleksandrbalan:pagecurl:1.5.1")
-    implementation("com.google.accompanist:accompanist-pager:0.29.1-alpha")
-    implementation("com.google.code.gson:gson:2.8.8")
+    implementation(libs.oleksandrbalan.pagecurl)
+    implementation(libs.accompanist.pager)
+    implementation(libs.gson)
+    implementation("com.github.DImuthuUpe:AndroidPdfViewer:2.8.1")
 }
