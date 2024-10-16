@@ -84,9 +84,10 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-    implementation(project(":pdfreader"))
     implementation(libs.navigation.compose)
     implementation("io.github.oleksandrbalan:pagecurl:1.5.1")
     implementation("com.google.accompanist:accompanist-pager:0.29.1-alpha")
     implementation("com.google.code.gson:gson:2.8.8")
+    // Enables FileKit with Composable utilities
+    implementation("io.github.vinceglb:filekit-compose:0.8.7")
 }

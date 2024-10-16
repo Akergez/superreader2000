@@ -15,6 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "PDFReaderJetpackCompose"
-include(":pdfreader")
-
 include(":bottomapp")
