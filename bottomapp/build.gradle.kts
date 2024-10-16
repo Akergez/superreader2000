@@ -88,5 +88,6 @@ dependencies {
     implementation(libs.oleksandrbalan.pagecurl)
     implementation(libs.accompanist.pager)
     implementation(libs.gson)
-    implementation("com.github.DImuthuUpe:AndroidPdfViewer:2.8.1")
+    // Enables FileKit with Composable utilities
+    implementation("io.github.vinceglb:filekit-compose:0.8.7")
 }
