@@ -6,7 +6,9 @@ buildscript {
         classpath(libs.kotlin.gradle.plugin)
     }
     repositories {
+        google()
         mavenCentral()
+        maven("https://jitpack.io") // Add this line
     }
 }
 
@@ -18,5 +20,4 @@ plugins {
 
 }
 true // Needed to make the Suppress annotation work for the plugins block
-
 

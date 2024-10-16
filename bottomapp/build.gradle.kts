@@ -40,7 +40,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.3"
+        kotlinCompilerExtensionVersion = "1.5.2"
     }
 }
 
@@ -86,4 +86,7 @@ dependencies {
     debugImplementation(libs.ui.test.manifest)
     implementation(project(":pdfreader"))
     implementation(libs.navigation.compose)
+    implementation("io.github.oleksandrbalan:pagecurl:1.5.1")
+    implementation("com.google.accompanist:accompanist-pager:0.29.1-alpha")
+    implementation("com.google.code.gson:gson:2.8.8")
 }

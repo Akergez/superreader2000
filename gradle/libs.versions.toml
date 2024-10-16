@@ -1,28 +1,30 @@
 [versions]
-agp = "8.2.2"
-kotlin = "1.8.10"
-core-ktx = "1.9.0"
+agp = "8.6.1"
+easyflipview = "2.0.0"
+kotlin = "1.9.0"
+core-ktx = "1.13.1"
 junit = "4.13.2"
-navigation-compose-version = "2.4.0-alpha10"
+navigation-compose-version = "2.8.2"
+pagecurl = "1.0.0"
 pdfium-android = "1.9.0"
-androidx-test-ext-junit = "1.1.5"
-espresso-core = "3.5.1"
+androidx-test-ext-junit = "1.2.1"
+espresso-core = "3.6.1"
 kotlin-gradle-plugin = "1.8.10"
-lifecycle-runtime-ktx = "2.6.1"
-activity-compose = "1.7.2"
-compose-bom = "2023.06.00"
-library = "8.0.1"
+lifecycle-runtime-ktx = "2.8.6"
+activity-compose = "1.9.2"
+compose-bom = "2024.09.03"
+library = "8.0.2"
 material = "1.9.0"
-navigation-compose = "2.5.3"
-androidx-appcompat = "1.6.1"
+navigation-compose = "2.8.2"
+androidx-appcompat = "1.7.0"
 material-version = "1.12.0"
 constraintlayout = "2.1.4"
 lifecycle-livedata-ktx = "2.8.6"
 lifecycle-viewmodel-ktx = "2.8.6"
-navigation-fragment-ktx = "2.8.1"
-navigation-ui-ktx = "2.8.1"
-ui = "1.7.2"
-ui-tooling-preview = "1.7.2"
+navigation-fragment-ktx = "2.8.2"
+navigation-ui-ktx = "2.8.2"
+ui = "1.7.3"
+ui-tooling-preview = "1.7.3"
 
 
 [libraries]
@@ -30,6 +32,7 @@ androidx-navigation-compose-v240alpha10 = { module = "androidx.navigation:naviga
 androidx-ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "ui-tooling-preview" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+easyflipview = { module = "com.wajahatkarim3.easyflipview:easyflipview", version.ref = "easyflipview" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
@@ -37,6 +40,7 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
+pagecurl = { module = "com.github.harjot-oberai:PageCurl", version.ref = "pagecurl" }
 ui = { group = "androidx.compose.ui", name = "ui" }
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
