@@ -53,7 +53,7 @@ import java.io.InputStream
 
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel) {
-    var currentPage by remember { mutableIntStateOf(book.getProgress().pageIndex) }
+    var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
     var mode by remember { mutableStateOf(Mode.Curl) }
 
     val context = LocalContext.current

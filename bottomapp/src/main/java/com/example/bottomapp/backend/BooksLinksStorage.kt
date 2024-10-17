@@ -6,15 +6,23 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 
-data class BookLink(val title: String, val fileUri: Uri, var progressUri: Uri? = null, val filePath: String)
+data class BookLink(val title: String, val filePath: String, val progress: Progress)
 
 class BooksLinksStorage(context: Context) {
 
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("BooksLinksStorage", Context.MODE_PRIVATE)
-    private val gson = Gson()
+
+    private val progressAdapterFactory = RuntimeTypeAdapterFactory
+        .of(Progress::class.java, "type")
+        .registerSubtype(PdfProgress::class.java, "pdf")
+
+    private val gson: Gson = GsonBuilder()
+        .registerTypeAdapterFactory(progressAdapterFactory)
+        .create()
     val booksLinks: SnapshotStateList<BookLink> = mutableStateListOf()
 
     init {

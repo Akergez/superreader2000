@@ -1,6 +1,8 @@
 package com.example.bottomapp
 
 import PdfReaderScreen
+import android.app.Activity
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
@@ -9,6 +11,8 @@ import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,19 +56,21 @@ import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.backend.BookLink
 import com.example.bottomapp.backend.BooksLinksStorage
 import com.example.bottomapp.backend.PdfBookDomainModel
-import com.example.bottomapp.databinding.ActivityMainBinding
+import com.example.bottomapp.backend.PdfProgress
+import com.example.bottomapp.backend.Progress
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import io.github.vinceglb.filekit.core.FileKit
+import io.github.vinceglb.filekit.core.PickerType
 import io.github.vinceglb.filekit.core.pickFile
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private lateinit var booksLinksStorage: BooksLinksStorage
     private val PICK_PDF_FILE = 2
 
@@ -80,11 +86,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun openFilePicker() {
-        val file = FileKit.pickFile()
-        file?.let {
-            val fileName = file.name
-            booksLinksStorage.upsertBook(BookLink(fileName, file.uri, null, file.path!!))
+    override fun onStop() {
+        super.onStop()
+    }
+
+    private fun openFilePicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/pdf"
+        }
+        startActivityForResult(intent, PICK_PDF_FILE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
+            data?.data?.also { uri ->
+                val fileName = getFileName(uri)
+                val file = File(cacheDir, fileName)
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    FileOutputStream(file).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                booksLinksStorage.upsertBook(BookLink(fileName, file.path, PdfProgress(0)))
+            }
         }
     }
 
@@ -118,7 +144,11 @@ class MainActivity : AppCompatActivity() {
             BottomNavigationBar(navController)
         }) { innerPadding ->
             NavHost(
-                navController, startDestination = "home", modifier = Modifier.padding(innerPadding)
+                navController,
+                startDestination = "home",
+                modifier = Modifier.padding(innerPadding),
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None }
             ) {
                 composable("home") {
                     HomeScreen(
