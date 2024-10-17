@@ -53,6 +53,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.home.SettingsScreen
 import com.example.bottomapp.backend.BookLink
 import com.example.bottomapp.backend.BooksLinksStorage
 import com.example.bottomapp.backend.PdfBookDomainModel
@@ -79,9 +81,19 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         booksLinksStorage = BooksLinksStorage(this)
         FileKit.init(this)
-        setContent {
-            PDFReaderJetpackComposeTheme {
-                MainScreen()
+        val currentTheme = SettingsManager(this)
+            .getAppTheme("System")
+        if (currentTheme != "System") {
+            setContent {
+                PDFReaderJetpackComposeTheme(darkTheme = (currentTheme == "Dark")) {
+                    MainScreen()
+                }
+            }
+        } else {
+            setContent {
+                PDFReaderJetpackComposeTheme {
+                    MainScreen()
+                }
             }
         }
     }
@@ -172,6 +184,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 composable("dashboard") { DashboardScreen() }
                 composable("notifications") { NotificationsScreen() }
+                composable("settings") {
+                    SettingsScreen()
+                }
                 composable("pdfReader/{filePath}") { backStackEntry ->
                     val filePath = backStackEntry.arguments?.getString("filePath")
                     filePath?.let {
@@ -205,9 +220,9 @@ class MainActivity : AppCompatActivity() {
                     contentDescription = null
                 )
             },
-                label = { Text("Notifications") },
+                label = { Text("Settings") }, // TODO еще картинку поменять
                 selected = false,
-                onClick = { navController.navigate("notifications") })
+                onClick = { navController.navigate("settings") })
         }
     }
 
