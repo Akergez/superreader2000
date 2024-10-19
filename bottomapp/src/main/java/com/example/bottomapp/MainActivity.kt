@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -201,8 +202,6 @@ class MainActivity : AppCompatActivity() {
                             )
                         })
                     }
-                    composable("dashboard") { DashboardScreen() }
-                    composable("notifications") { NotificationsScreen() }
                     composable(settingsKey) {
                         SettingsScreen(
                             { theme ->
@@ -241,13 +240,9 @@ class MainActivity : AppCompatActivity() {
                 label = { Text("Home") },
                 selected = false,
                 onClick = { navController.navigate("home") })
-            NavigationBarItem(icon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                label = { Text("Dashboard") },
-                selected = false,
-                onClick = { navController.navigate("dashboard") })
             NavigationBarItem(icon = {
                 Icon(
-                    Icons.Filled.Notifications, contentDescription = null
+                    Icons.Filled.Settings, contentDescription = null
                 )
             },
                 label = { Text("Settings") }, // TODO еще картинку поменять
