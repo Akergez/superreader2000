@@ -34,6 +34,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val settingsManager = SettingsManager(context)
+    var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme("AsIs")) } // State to control inversion
 
     Column(
         modifier = Modifier
@@ -48,6 +49,18 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable { updateAppTheme(theme) }
+                        .padding(start = 8.dp))
+            }
+        }
+
+        Text("Documents Theme", style = MaterialTheme.typography.headlineMedium)
+        Row(Modifier.padding(vertical = 8.dp)) {
+            listOf("AsIs", "Invert").forEach { theme ->
+                RadioButton(selected = docTheme == theme, onClick = { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) })
+                Text(text = theme,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .clickable { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) }
                         .padding(start = 8.dp))
             }
         }

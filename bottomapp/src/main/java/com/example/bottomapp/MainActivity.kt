@@ -16,6 +16,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -150,7 +151,7 @@ class MainActivity : AppCompatActivity() {
                     .getAppTheme("System")
             )
         }
-        PDFReaderJetpackComposeTheme(darkTheme = (currentTheme.value != "System" && currentTheme.value == "Dark")) {
+        PDFReaderJetpackComposeTheme(darkTheme = ((currentTheme.value == "System" && isSystemInDarkTheme()) || currentTheme.value == "Dark")) {
             Scaffold(bottomBar = {
                 BottomNavigationBar(navController)
             }) { innerPadding ->

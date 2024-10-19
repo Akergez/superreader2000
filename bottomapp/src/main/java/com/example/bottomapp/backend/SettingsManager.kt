@@ -28,4 +28,12 @@ class SettingsManager(context: Context) {
     fun setDocumentsTheme(theme: String) {
         saveSetting("doc_theme", theme)
     }
+
+    fun getStorage(defaultTheme: String): String {
+        return getSetting("storage", defaultTheme)
+    }
+
+    fun setStorage(theme: String) {
+        saveSetting("storage", theme)
+    }
 }
