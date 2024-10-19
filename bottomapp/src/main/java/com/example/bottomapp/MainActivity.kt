@@ -57,6 +57,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.home.SettingsScreen
 import com.example.bottomapp.backend.BookLink
@@ -76,6 +77,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
+    private val settingsKey = "Settings"
 
     private lateinit var booksLinksStorage: BooksLinksStorage
     private val PICK_PDF_FILE = 2
@@ -148,10 +150,10 @@ class MainActivity : AppCompatActivity() {
         val currentTheme = remember {
             mutableStateOf(
                 settingsManager
-                    .getAppTheme("System")
+                    .getAppTheme(AppThemeMode.System)
             )
         }
-        PDFReaderJetpackComposeTheme(darkTheme = ((currentTheme.value == "System" && isSystemInDarkTheme()) || currentTheme.value == "Dark")) {
+        PDFReaderJetpackComposeTheme(darkTheme = ((currentTheme.value == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme.value == AppThemeMode.Dark)) {
             Scaffold(bottomBar = {
                 BottomNavigationBar(navController)
             }) { innerPadding ->
@@ -184,7 +186,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     composable("dashboard") { DashboardScreen() }
                     composable("notifications") { NotificationsScreen() }
-                    composable("settings") {
+                    composable(settingsKey) {
                         SettingsScreen(
                             { theme ->
                                 currentTheme.value = theme
@@ -231,7 +233,7 @@ class MainActivity : AppCompatActivity() {
             },
                 label = { Text("Settings") }, // TODO еще картинку поменять
                 selected = false,
-                onClick = { navController.navigate("settings") })
+                onClick = { navController.navigate(settingsKey) })
         }
     }
 

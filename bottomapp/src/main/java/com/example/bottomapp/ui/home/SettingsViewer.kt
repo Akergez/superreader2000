@@ -26,15 +26,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.backend.AppThemeMode
+import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
 
 @Composable
 fun SettingsScreen(
-    updateAppTheme: (String) -> Unit, appTheme: String
+    updateAppTheme: (AppThemeMode) -> Unit, appTheme: AppThemeMode
 ) {
     val context = LocalContext.current
     val settingsManager = SettingsManager(context)
-    var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme("AsIs")) } // State to control inversion
+    var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
+
+    val themeModeToStringMap = mapOf(
+        AppThemeMode.Light to "Светлая",
+        AppThemeMode.Dark to "Темная",
+        AppThemeMode.System to "Системная"
+    )
 
     Column(
         modifier = Modifier
@@ -43,9 +51,9 @@ fun SettingsScreen(
     ) {
         Text("App Theme", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            listOf("Light", "Dark", "System").forEach { theme ->
+            AppThemeMode.entries.forEach { theme ->
                 RadioButton(selected = appTheme == theme, onClick = { updateAppTheme(theme) })
-                Text(text = theme,
+                Text(text = themeModeToStringMap[theme] ?: "",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable { updateAppTheme(theme) }
@@ -55,9 +63,9 @@ fun SettingsScreen(
 
         Text("Documents Theme", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            listOf("AsIs", "Invert").forEach { theme ->
+            DocThemeMode.entries.forEach { theme ->
                 RadioButton(selected = docTheme == theme, onClick = { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) })
-                Text(text = theme,
+                Text(text = theme.value,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) }

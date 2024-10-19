@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.max
+import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
@@ -136,7 +137,7 @@ fun PdfContent(
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
     val context = LocalContext.current
-    var applyInversion by remember { mutableStateOf(settingsManager.getDocumentsTheme("AsIs")) } // State to control inversion
+    var applyInversion by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
     var zoomMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(pagerState.current) {
@@ -150,9 +151,9 @@ fun PdfContent(
             onPageChange = onPageChange,  // Update page on scroll
             onToggleMode = onToggleMode,
             pdfRendererHelper = pdfRendererHelper,
-            applyInversion = applyInversion == "Invert",
+            applyInversion = applyInversion == DocThemeMode.Invert,
             onApplyInversionToggle = { b ->
-                applyInversion =  if (b) "Invert" else "AsIs";
+                applyInversion =  if (b) DocThemeMode.Invert else DocThemeMode.AsIs;
                 settingsManager.setDocumentsTheme(applyInversion)
             } // Update inversion setting
         )
@@ -163,14 +164,14 @@ fun PdfContent(
             state = pagerState,
             config = rememberPageCurlConfig(
                 backPageContentAlpha = 0f,
-                backPageColor = if (applyInversion == "Invert") MaterialTheme.colorScheme.background else Color.White
+                backPageColor = if (applyInversion == DocThemeMode.Invert) MaterialTheme.colorScheme.background else Color.White
             )
         ) { index ->
             PdfPage(
                 page = index,
                 pdfRendererHelper = pdfRendererHelper,
                 onPageChange = onPageChange,
-                applyInversion = applyInversion == "Invert", // Update page on swipe
+                applyInversion = applyInversion == DocThemeMode.Invert, // Update page on swipe
                 mode = Mode.Curl,
                 onToggleMode = onToggleMode
             )
@@ -182,7 +183,7 @@ fun PdfContent(
             onToggleMode = onToggleMode,
             pdfRendererHelper = pdfRendererHelper,
             onPageChange = onPageChange,
-            applyInversion = applyInversion == "Invert"
+            applyInversion = applyInversion == DocThemeMode.Invert
         )
     }
 }
