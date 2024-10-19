@@ -40,6 +40,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,20 +84,8 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         booksLinksStorage = BooksLinksStorage(this)
         FileKit.init(this)
-        val currentTheme = SettingsManager(this)
-            .getAppTheme("System")
-        if (currentTheme != "System") {
-            setContent {
-                PDFReaderJetpackComposeTheme(darkTheme = (currentTheme == "Dark")) {
-                    MainScreen()
-                }
-            }
-        } else {
-            setContent {
-                PDFReaderJetpackComposeTheme {
-                    MainScreen()
-                }
-            }
+        setContent {
+            MainScreen()
         }
     }
 
@@ -152,50 +143,67 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MainScreen() {
         val navController = rememberNavController()
-        Scaffold(bottomBar = {
-            BottomNavigationBar(navController)
-        }) { innerPadding ->
-            NavHost(
-                navController,
-                startDestination = "home",
-                modifier = Modifier.padding(innerPadding),
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None }
-            ) {
-                composable("home") {
-                    HomeScreen(
-                        booksLinks = booksLinksStorage.booksLinks,
-                        onAddPdf = {
-                            lifecycleScope.launch {
-                                openFilePicker()
+        val settingsManager = SettingsManager(this);
+        val currentTheme = remember {
+            mutableStateOf(
+                settingsManager
+                    .getAppTheme("System")
+            )
+        }
+        PDFReaderJetpackComposeTheme(darkTheme = (currentTheme.value != "System" && currentTheme.value == "Dark")) {
+            Scaffold(bottomBar = {
+                BottomNavigationBar(navController)
+            }) { innerPadding ->
+                NavHost(
+                    navController,
+                    startDestination = "home",
+                    modifier = Modifier.padding(innerPadding),
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None }
+                ) {
+                    composable("home") {
+                        HomeScreen(
+                            booksLinks = booksLinksStorage.booksLinks,
+                            onAddPdf = {
+                                lifecycleScope.launch {
+                                    openFilePicker()
+                                }
+                            },
+                            onItemClick = { bookLink ->
+                                navController.navigate(
+                                    "pdfReader/${
+                                        URLEncoder.encode(
+                                            bookLink.filePath,
+                                            StandardCharsets.UTF_8.toString()
+                                        )
+                                    }"
+                                )
                             }
-                        },
-                        onItemClick = { bookLink ->
-                            navController.navigate(
-                                "pdfReader/${
-                                    URLEncoder.encode(
-                                        bookLink.filePath,
-                                        StandardCharsets.UTF_8.toString()
-                                    )
-                                }"
-                            )
-                        }
-                    )
-                }
-                composable("dashboard") { DashboardScreen() }
-                composable("notifications") { NotificationsScreen() }
-                composable("settings") {
-                    SettingsScreen()
-                }
-                composable("pdfReader/{filePath}") { backStackEntry ->
-                    val filePath = backStackEntry.arguments?.getString("filePath")
-                    filePath?.let {
-                        val bookLink = booksLinksStorage.booksLinks.find { it.filePath == filePath }
-                        bookLink?.let {
-                            val pdfBookDomainModel = PdfBookDomainModel(it, this@MainActivity) { updatedBookLink ->
-                                booksLinksStorage.upsertBook(updatedBookLink)
+                        )
+                    }
+                    composable("dashboard") { DashboardScreen() }
+                    composable("notifications") { NotificationsScreen() }
+                    composable("settings") {
+                        SettingsScreen(
+                            { theme ->
+                                currentTheme.value = theme
+                                settingsManager.setAppTheme(theme)
+                            },
+                            currentTheme.value
+                        )
+                    }
+                    composable("pdfReader/{filePath}") { backStackEntry ->
+                        val filePath = backStackEntry.arguments?.getString("filePath")
+                        filePath?.let {
+                            val bookLink =
+                                booksLinksStorage.booksLinks.find { it.filePath == filePath }
+                            bookLink?.let {
+                                val pdfBookDomainModel =
+                                    PdfBookDomainModel(it, this@MainActivity) { updatedBookLink ->
+                                        booksLinksStorage.upsertBook(updatedBookLink)
+                                    }
+                                PdfReaderScreen(pdfBookDomainModel, settingsManager)
                             }
-                            PdfReaderScreen(pdfBookDomainModel)
                         }
                     }
                 }

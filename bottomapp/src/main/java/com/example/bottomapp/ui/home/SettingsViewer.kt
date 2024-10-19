@@ -29,42 +29,26 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.SettingsManager
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    updateAppTheme: (String) -> Unit, appTheme: String
+) {
     val context = LocalContext.current
     val settingsManager = SettingsManager(context)
-    var appTheme by remember { mutableStateOf(settingsManager.getAppTheme("System")) }
-    var pdfTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme("System")) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text("App Theme", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             listOf("Light", "Dark", "System").forEach { theme ->
-                RadioButton(
-                    selected = appTheme == theme,
-                    onClick = { appTheme = theme; settingsManager.setAppTheme(theme) }
-                )
-                Text(
-                    text = theme,
+                RadioButton(selected = appTheme == theme, onClick = { updateAppTheme(theme) })
+                Text(text = theme,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.clickable { appTheme = theme; settingsManager.setAppTheme(theme) }.padding(start = 8.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("PDF Theme", style = MaterialTheme.typography.headlineMedium)
-        Row(Modifier.padding(vertical = 8.dp)) {
-            listOf("Light", "Dark", "System").forEach { theme ->
-                RadioButton(
-                    selected = pdfTheme == theme,
-                    onClick = { pdfTheme = theme; settingsManager.setDocumentsTheme(theme) }
-                )
-                Text(
-                    text = theme,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.clickable { pdfTheme = theme; settingsManager.setDocumentsTheme(theme) }.padding(start = 8.dp)
-                )
+                    modifier = Modifier
+                        .clickable { updateAppTheme(theme) }
+                        .padding(start = 8.dp))
             }
         }
     }
