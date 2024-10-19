@@ -1,11 +1,8 @@
 package com.example.bottomapp.backend
 
 import android.content.Context
-import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
 import com.google.gson.Gson
 import java.io.File
-import java.io.FileReader
 
 
 data class PdfProgress(val pageIndex: Int) : Progress(FormatType.PDF)
@@ -14,10 +11,11 @@ class PdfBookDomainModel(
     bookLink: BookLink,
     val context: Context,
     val updateProgress: (BookLink) -> Unit,
+    val storageManager: StorageManager
 ) :
     BookDomainModel<PdfProgress> {
     val title: String = bookLink.title
-    val filePath: String = bookLink.filePath
+    val fileName: String = bookLink.fileName
     var progress: PdfProgress = bookLink.progress as PdfProgress
 
     private val gson = Gson()
@@ -27,11 +25,11 @@ class PdfBookDomainModel(
     }
 
     override fun getFile(): File {
-        return File(filePath)
+        return storageManager.getBookFile(fileName)
     }
 
     override fun saveProgress(progress: PdfProgress) {
         this.progress = progress
-        updateProgress(BookLink(title, filePath, progress))
+        updateProgress(BookLink(title, fileName, progress))
     }
 }

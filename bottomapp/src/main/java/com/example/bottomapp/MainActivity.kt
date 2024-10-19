@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -65,6 +66,7 @@ import com.example.bottomapp.backend.BooksLinksStorage
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.Progress
+import com.example.bottomapp.backend.StorageManager
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import io.github.vinceglb.filekit.core.FileKit
 import io.github.vinceglb.filekit.core.PickerType
@@ -80,20 +82,57 @@ class MainActivity : AppCompatActivity() {
     private val settingsKey = "Settings"
 
     private lateinit var booksLinksStorage: BooksLinksStorage
+    private lateinit var storageManager: StorageManager
     private val PICK_PDF_FILE = 2
+    private val PICK_DIRECTORY_REQUEST_CODE = 1
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
-        booksLinksStorage = BooksLinksStorage(this)
+        storageManager = StorageManager(this, SettingsManager(this))
+        storageManager.init()
+
+        booksLinksStorage = BooksLinksStorage(this, storageManager)
         FileKit.init(this)
         setContent {
             MainScreen()
         }
     }
 
+    fun openDirectoryPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        startActivityForResult(intent, PICK_DIRECTORY_REQUEST_CODE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PICK_DIRECTORY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            data?.data?.also { uri ->
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                val settingsManager = SettingsManager(this)
+                settingsManager.saveStorageUri(uri)
+            }
+        }
+        if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
+            data?.data?.also { uri ->
+                val fileName = getFileName(uri)
+                storageManager.copyBookToStorage(uri, BookLink(fileName, fileName, PdfProgress(0)), contentResolver)
+                booksLinksStorage.upsertBook(BookLink(fileName, fileName, PdfProgress(0)))
+            }
+        }
+    }
+
     override fun onStop() {
         super.onStop()
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        booksLinksStorage.saveBooksLinksToStorage()
+        storageManager.clearFileCache()
     }
 
     private fun openFilePicker() {
@@ -102,22 +141,6 @@ class MainActivity : AppCompatActivity() {
             type = "application/pdf"
         }
         startActivityForResult(intent, PICK_PDF_FILE)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
-            data?.data?.also { uri ->
-                val fileName = getFileName(uri)
-                val file = File(cacheDir, fileName)
-                contentResolver.openInputStream(uri)?.use { inputStream ->
-                    FileOutputStream(file).use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                booksLinksStorage.upsertBook(BookLink(fileName, file.path, PdfProgress(0)))
-            }
-        }
     }
 
     private fun getFileName(uri: Uri): String {
@@ -157,32 +180,26 @@ class MainActivity : AppCompatActivity() {
             Scaffold(bottomBar = {
                 BottomNavigationBar(navController)
             }) { innerPadding ->
-                NavHost(
-                    navController,
+                NavHost(navController,
                     startDestination = "home",
                     modifier = Modifier.padding(innerPadding),
                     enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None }
-                ) {
+                    exitTransition = { ExitTransition.None }) {
                     composable("home") {
-                        HomeScreen(
-                            booksLinks = booksLinksStorage.booksLinks,
-                            onAddPdf = {
-                                lifecycleScope.launch {
-                                    openFilePicker()
-                                }
-                            },
-                            onItemClick = { bookLink ->
-                                navController.navigate(
-                                    "pdfReader/${
-                                        URLEncoder.encode(
-                                            bookLink.filePath,
-                                            StandardCharsets.UTF_8.toString()
-                                        )
-                                    }"
-                                )
+                        HomeScreen(booksLinks = booksLinksStorage.booksLinks, onAddPdf = {
+                            lifecycleScope.launch {
+                                openFilePicker()
                             }
-                        )
+                        }, onItemClick = { bookLink ->
+                            navController.navigate(
+                                "pdfReader/${
+                                    URLEncoder.encode(
+                                        bookLink.fileName,
+                                        StandardCharsets.UTF_8.toString()
+                                    )
+                                }"
+                            )
+                        })
                     }
                     composable("dashboard") { DashboardScreen() }
                     composable("notifications") { NotificationsScreen() }
@@ -191,20 +208,23 @@ class MainActivity : AppCompatActivity() {
                             { theme ->
                                 currentTheme.value = theme
                                 settingsManager.setAppTheme(theme)
-                            },
-                            currentTheme.value
+                            }, currentTheme.value
                         )
                     }
-                    composable("pdfReader/{filePath}") { backStackEntry ->
-                        val filePath = backStackEntry.arguments?.getString("filePath")
-                        filePath?.let {
+                    composable("pdfReader/{fileName}") { backStackEntry ->
+                        val fileName = backStackEntry.arguments?.getString("fileName")
+                        fileName?.let {
                             val bookLink =
-                                booksLinksStorage.booksLinks.find { it.filePath == filePath }
+                                booksLinksStorage.booksLinks.find { it.fileName == fileName }
                             bookLink?.let {
                                 val pdfBookDomainModel =
-                                    PdfBookDomainModel(it, this@MainActivity) { updatedBookLink ->
-                                        booksLinksStorage.upsertBook(updatedBookLink)
-                                    }
+                                    PdfBookDomainModel(
+                                        it,
+                                        this@MainActivity,
+                                        storageManager = storageManager,
+                                        updateProgress = { updatedBookLink ->
+                                            booksLinksStorage.upsertBook(updatedBookLink)
+                                        })
                                 PdfReaderScreen(pdfBookDomainModel, settingsManager)
                             }
                         }
@@ -227,8 +247,7 @@ class MainActivity : AppCompatActivity() {
                 onClick = { navController.navigate("dashboard") })
             NavigationBarItem(icon = {
                 Icon(
-                    Icons.Filled.Notifications,
-                    contentDescription = null
+                    Icons.Filled.Notifications, contentDescription = null
                 )
             },
                 label = { Text("Settings") }, // TODO еще картинку поменять
@@ -239,9 +258,7 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun HomeScreen(
-        booksLinks: List<BookLink>,
-        onAddPdf: () -> Unit,
-        onItemClick: (BookLink) -> Unit
+        booksLinks: List<BookLink>, onAddPdf: () -> Unit, onItemClick: (BookLink) -> Unit
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -253,19 +270,19 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
                 items(booksLinks) { bookLink ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                            .clickable { onItemClick(bookLink) }
-                    ) {
+                    Card(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .clickable { onItemClick(bookLink) }) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Row(modifier = Modifier.padding(8.dp)) {
-                                val previewBitmap = File(bookLink.filePath).getPreviewBitmap()
+
+                                val previewBitmap =
+                                    storageManager.getBookFile(bookLink.fileName).getPreviewBitmap()
                                 if (previewBitmap != null) {
                                     Image(
                                         bitmap = previewBitmap.asImageBitmap(),

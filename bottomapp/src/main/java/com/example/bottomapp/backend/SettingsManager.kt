@@ -1,5 +1,7 @@
 package com.example.bottomapp.backend
+
 import android.content.Context
+import android.net.Uri
 
 
 enum class AppThemeMode(val value: String) {
@@ -23,13 +25,14 @@ class SettingsManager(context: Context) {
         sharedPreferences.edit().putString(key, value).apply()
     }
 
-    private fun getSetting(key: String, defaultValue: String): String {
-        return sharedPreferences.getString(key, defaultValue) ?: defaultValue
+    private fun getSetting(key: String): String? {
+        return sharedPreferences.getString(key, null)
     }
 
     fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
+        val setting = getSetting(appThemeKey) ?: return defaultTheme;
         return try {
-            AppThemeMode.valueOf(getSetting(appThemeKey, defaultTheme.value))
+            AppThemeMode.valueOf(setting)
         } catch (e: Throwable) {
             defaultTheme
         }
@@ -40,8 +43,9 @@ class SettingsManager(context: Context) {
     }
 
     fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
+        val setting = getSetting(docThemeKey) ?: return defaultTheme;
         return try {
-            DocThemeMode.valueOf(getSetting(docThemeKey, defaultTheme.value))
+            DocThemeMode.valueOf(setting)
         } catch (e: Throwable) {
             defaultTheme
         }
@@ -51,11 +55,12 @@ class SettingsManager(context: Context) {
         saveSetting(docThemeKey, theme.value)
     }
 
-    fun getStorage(defaultTheme: String): String {
-        return getSetting("storage", defaultTheme)
+    fun getStorageUri(): Uri? {
+        val setting: String = getSetting("storage") ?: return null;
+        return Uri.parse(setting);
     }
 
-    fun setStorage(theme: String) {
-        saveSetting("storage", theme)
+    fun saveStorageUri(uri: Uri): Unit {
+        saveSetting("storage", uri.toString());
     }
 }

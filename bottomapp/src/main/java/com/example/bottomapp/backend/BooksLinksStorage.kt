@@ -9,12 +9,9 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 
-data class BookLink(val title: String, val filePath: String, val progress: Progress)
+data class BookLink(val fileName: String, val title: String, val progress: Progress)
 
-class BooksLinksStorage(context: Context) {
-
-    private val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences("BooksLinksStorage", Context.MODE_PRIVATE)
+class BooksLinksStorage(context: Context, val storageManager: StorageManager) {
 
     private val progressAdapterFactory = RuntimeTypeAdapterFactory
         .of(Progress::class.java, "type")
@@ -30,23 +27,15 @@ class BooksLinksStorage(context: Context) {
     }
 
     private fun getBooksLinksFromStorage(): List<BookLink> {
-        val json = sharedPreferences.getString("booksLinks", null)
-        return if (json != null) {
-            val type = object : TypeToken<List<BookLink>>() {}.type
-            gson.fromJson(json, type)
-        } else {
-            emptyList()
-        }
+        return storageManager.listAllBooks();
     }
 
-    private fun saveBooksLinksToStorage() {
-        val json = gson.toJson(booksLinks)
-        sharedPreferences.edit().putString("booksLinks", json).apply()
+    fun saveBooksLinksToStorage() {
+        booksLinks.map { bookLink -> storageManager.updateProgressData(bookLink) }
     }
 
     fun upsertBook(bookLink: BookLink) {
-        booksLinks.removeAll { it.filePath == bookLink.filePath }
+        booksLinks.removeAll { it.fileName == bookLink.fileName }
         booksLinks.add(bookLink)
-        saveBooksLinksToStorage()
     }
 }
