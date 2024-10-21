@@ -76,9 +76,13 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
         return storageDir.listFiles().mapNotNull { file ->
             val metaFile = storageDir.findFile("${file.name}_meta.json")
-            if (metaFile != null && metaFile.exists()) {
+            if (file.name?.get(0) != '.' && metaFile != null && metaFile.exists()) {
                 val jsonString = context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader().use { it?.readText() }
-                gson.fromJson(jsonString, BookLink::class.java)
+                try{
+                    gson.fromJson(jsonString, BookLink::class.java)
+                } catch (e: Exception) {
+                    null
+                }
             } else {
                 null
             }

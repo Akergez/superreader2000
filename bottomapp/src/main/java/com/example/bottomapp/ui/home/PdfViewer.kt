@@ -290,8 +290,6 @@ fun PdfPage(
                     }
                     .background(color = MaterialTheme.colorScheme.background)
             ) {
-
-                Log.e("TAG", "PdfPage: $scale")
                 // Enable pinch-to-zoom
                 PdfViewer(
                     pdfRendererHelper = pdfRendererHelper,
@@ -323,7 +321,6 @@ fun PdfPage(
                     .background(color = MaterialTheme.colorScheme.background)
             ) {
 
-                Log.e("TAG", "PdfPage: $scale")
                 // Enable pinch-to-zoom
                 PdfViewer(
                     pdfRendererHelper = pdfRendererHelper,
@@ -354,8 +351,6 @@ fun PdfPage(
                     }
                     .background(color = MaterialTheme.colorScheme.background)
             ) {
-
-                Log.e("TAG", "PdfPage: $scale")
                 // Enable pinch-to-zoom
                 CurlPdfViewer(
                     pdfRendererHelper = pdfRendererHelper,

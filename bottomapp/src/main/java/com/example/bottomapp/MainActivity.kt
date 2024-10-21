@@ -1,11 +1,13 @@
 package com.example.bottomapp
 
 import PdfReaderScreen
+import PreviewGenerator
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
@@ -50,14 +52,20 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -90,6 +98,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -98,6 +107,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var booksLinksStorage: BooksLinksStorage
     private lateinit var storageManager: StorageManager
+    private lateinit var previewGenerator: PreviewGenerator
     private val PICK_PDF_FILE = 2
     private val PICK_DIRECTORY_REQUEST_CODE = 1
 
@@ -109,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         storageManager.init()
 
         booksLinksStorage = BooksLinksStorage(this, storageManager)
+        previewGenerator = PreviewGenerator();
         FileKit.init(this)
         setContent {
             MainScreen()
@@ -130,6 +141,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 val settingsManager = SettingsManager(this)
                 settingsManager.saveStorageUri(uri)
+                booksLinksStorage.refreshBooksLinks()
             }
         }
         if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
@@ -253,7 +265,16 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                     composable("pdfReader/{fileName}") { backStackEntry ->
-                        val fileName = backStackEntry.arguments?.getString("fileName")
+                        val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            URLDecoder.decode(
+                                backStackEntry.arguments?.getString("fileName"),
+                                StandardCharsets.UTF_8
+                            )
+                        } else {
+                            URLDecoder.decode(
+                                backStackEntry.arguments?.getString("fileName")
+                            )
+                        }
                         fileName?.let {
                             val bookLink =
                                 booksLinksStorage.booksLinks.find { it.fileName == fileName }
@@ -306,6 +327,7 @@ class MainActivity : AppCompatActivity() {
         onAddPdf: () -> Unit,
         onItemClick: (BookLink) -> Unit
     ) {
+        booksLinksStorage.saveBooksLinksToStorage();
         val rememberedBooksLinks = remember { booksLinks }
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -333,6 +355,17 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun BookItem(bookLink: BookLink, onItemClick: (BookLink) -> Unit) {
+        val context = LocalContext.current
+        val previewGenerator = remember { PreviewGenerator() }
+        var previewBitmap = remember {mutableStateOf(storageManager.getBookFile(bookLink.fileName).getPreviewBitmap())}
+
+        /*LaunchedEffect(bookLink) {
+            coroutineScope.launch {
+                val bitmap = previewGenerator.getPreviewBitmap(storageManager.getBookFile(bookLink.fileName))
+                previewBitmap = bitmap
+            }
+        }*/
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -345,16 +378,21 @@ class MainActivity : AppCompatActivity() {
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 Row(modifier = Modifier.padding(8.dp)) {
-                    val previewBitmap = remember {
-                        storageManager.getBookFile(bookLink.fileName).getPreviewBitmap()
-                    }
                     if (previewBitmap != null) {
                         Image(
-                            bitmap = previewBitmap.asImageBitmap(),
+                            bitmap = previewBitmap.value!!.asImageBitmap(),
                             contentDescription = null,
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .background(Color.White)
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .background(Color.Gray)
                                 .size(100.dp)
                                 .clip(RoundedCornerShape(8.dp))
                         )

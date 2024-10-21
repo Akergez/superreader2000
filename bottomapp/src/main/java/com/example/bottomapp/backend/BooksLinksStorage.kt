@@ -21,21 +21,34 @@ class BooksLinksStorage(context: Context, val storageManager: StorageManager) {
         .registerTypeAdapterFactory(progressAdapterFactory)
         .create()
     val booksLinks: SnapshotStateList<BookLink> = mutableStateListOf()
+    val booksHashMap: HashSet<String> = HashSet();
 
     init {
-        booksLinks.addAll(getBooksLinksFromStorage())
+        refreshBooksLinks()
     }
 
     private fun getBooksLinksFromStorage(): List<BookLink> {
         return storageManager.listAllBooks();
     }
 
+    fun refreshBooksLinks() {
+        booksLinks.clear()
+        booksLinks.addAll(getBooksLinksFromStorage())
+    }
+
     fun saveBooksLinksToStorage() {
-        booksLinks.map { bookLink -> storageManager.updateProgressData(bookLink) }
+        booksLinks.filter { booksHashMap.contains(it.fileName) }
+            .map { bookLink -> storageManager.updateProgressData(bookLink) }
+        booksHashMap.clear()
     }
 
     fun upsertBook(bookLink: BookLink) {
-        booksLinks.removeAll { it.fileName == bookLink.fileName }
+        val exist = booksLinks.find { it.fileName == bookLink.fileName }
+        if (exist != null) {
+            if (exist == bookLink) return;
+            booksLinks.remove(exist)
+        }
         booksLinks.add(bookLink)
+        booksHashMap.add(bookLink.fileName)
     }
 }
