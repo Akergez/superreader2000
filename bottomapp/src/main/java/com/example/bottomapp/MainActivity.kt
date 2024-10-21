@@ -11,8 +11,11 @@ import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideInHorizontally
@@ -61,9 +64,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavDeepLink
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.SettingsManager
@@ -174,6 +182,7 @@ class MainActivity : AppCompatActivity() {
         return result ?: "unknown"
     }
 
+
     @Composable
     fun MainScreen() {
         val navController = rememberNavController()
@@ -184,34 +193,39 @@ class MainActivity : AppCompatActivity() {
         }
 
         PDFReaderJetpackComposeTheme(darkTheme = ((currentTheme.value == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme.value == AppThemeMode.Dark)) {
-            Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
+            Scaffold(
+                bottomBar = {
+                    if (shouldShowBottomBar(navController)) {
+                        BottomNavigationBar(navController)
+                    }
+                }
+            ) { innerPadding ->
                 NavHost(
                     navController = navController,
                     startDestination = "home",
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it }
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it }
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { it / 2 }
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { it / 2 }
+                        )
+                    }
                 ) {
-                    composable("home",
-                        enterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it }
-                            )
-                        },
-                        popEnterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it / 2 }
-                            )
-                        },
-                        exitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it }
-                            )
-                        },
-                        popExitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it / 2 }
-                            )
-                        }
-                    ) {
+                    composable("home") {
                         HomeScreen(
                             booksLinks = booksLinksStorage.booksLinks,
                             onAddPdf = {
@@ -229,29 +243,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         )
                     }
-                    composable(settingsKey,
-                        enterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it }
-                            )
-                        },
-                        popEnterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it / 2 }
-                            )
-                        },
-                        exitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it }
-                            )
-                        },
-                        popExitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it / 2 }
-                            )
-                        }
-
-                    ) {
+                    composable(settingsKey) {
                         SettingsScreen(
                             updateAppTheme = { theme ->
                                 currentTheme.value = theme
@@ -260,28 +252,7 @@ class MainActivity : AppCompatActivity() {
                             appTheme = currentTheme.value
                         )
                     }
-                    composable("pdfReader/{fileName}",
-                        enterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it }
-                            )
-                        },
-                        popEnterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it / 2 }
-                            )
-                        },
-                        exitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it }
-                            )
-                        },
-                        popExitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it / 2 }
-                            )
-                        }
-                    ) { backStackEntry ->
+                    composable("pdfReader/{fileName}") { backStackEntry ->
                         val fileName = backStackEntry.arguments?.getString("fileName")
                         fileName?.let {
                             val bookLink =
@@ -302,6 +273,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    @Composable
+    fun shouldShowBottomBar(navController: NavController): Boolean {
+        val currentDestination =
+            navController.currentBackStackEntryAsState().value?.destination?.route
+        return currentDestination != null && currentDestination != "pdfReader/{fileName}"
     }
 
     @Composable
