@@ -13,6 +13,11 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOut
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
@@ -121,7 +127,11 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
             data?.data?.also { uri ->
                 val fileName = getFileName(uri)
-                storageManager.copyBookToStorage(uri, BookLink(fileName, fileName, PdfProgress(0)), contentResolver)
+                storageManager.copyBookToStorage(
+                    uri,
+                    BookLink(fileName, fileName, PdfProgress(0)),
+                    contentResolver
+                )
                 booksLinksStorage.upsertBook(BookLink(fileName, fileName, PdfProgress(0)))
             }
         }
@@ -167,60 +177,124 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MainScreen() {
         val navController = rememberNavController()
-        val settingsManager = SettingsManager(this);
+        val settingsManager = SettingsManager(this)
         val currentTheme = remember {
-            mutableStateOf(
-                settingsManager
-                    .getAppTheme(AppThemeMode.System)
-            )
+            mutableStateOf(settingsManager
+                    .getAppTheme(AppThemeMode.System))
         }
+
         PDFReaderJetpackComposeTheme(darkTheme = ((currentTheme.value == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme.value == AppThemeMode.Dark)) {
-            Scaffold(bottomBar = {
-                BottomNavigationBar(navController)
-            }) { innerPadding ->
-                NavHost(navController,
+            Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
+                NavHost(
+                    navController = navController,
                     startDestination = "home",
-                    modifier = Modifier.padding(innerPadding),
-                    enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None }) {
-                    composable("home") {
-                        HomeScreen(booksLinks = booksLinksStorage.booksLinks, onAddPdf = {
-                            lifecycleScope.launch {
-                                openFilePicker()
-                            }
-                        }, onItemClick = { bookLink ->
-                            navController.navigate(
-                                "pdfReader/${
-                                    URLEncoder.encode(
-                                        bookLink.fileName,
-                                        StandardCharsets.UTF_8.toString()
-                                    )
-                                }"
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    composable("home",
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it }
                             )
-                        })
-                    }
-                    composable(settingsKey) {
-                        SettingsScreen(
-                            { theme ->
-                                currentTheme.value = theme
-                                settingsManager.setAppTheme(theme)
-                            }, currentTheme.value
+                        },
+                        popEnterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it / 2 }
+                            )
+                        },
+                        exitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it }
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it / 2 }
+                            )
+                        }
+                    ) {
+                        HomeScreen(
+                            booksLinks = booksLinksStorage.booksLinks,
+                            onAddPdf = {
+                                lifecycleScope.launch { openFilePicker() }
+                            },
+                            onItemClick = { bookLink ->
+                                navController.navigate(
+                                    "pdfReader/${
+                                        URLEncoder.encode(
+                                            bookLink.fileName,
+                                            StandardCharsets.UTF_8.toString()
+                                        )
+                                    }"
+                                )
+                            }
                         )
                     }
-                    composable("pdfReader/{fileName}") { backStackEntry ->
+                    composable(settingsKey,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it }
+                            )
+                        },
+                        popEnterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it / 2 }
+                            )
+                        },
+                        exitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it }
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it / 2 }
+                            )
+                        }
+
+                    ) {
+                        SettingsScreen(
+                            updateAppTheme = { theme ->
+                                currentTheme.value = theme
+                                settingsManager.setAppTheme(theme)
+                            },
+                            appTheme = currentTheme.value
+                        )
+                    }
+                    composable("pdfReader/{fileName}",
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it }
+                            )
+                        },
+                        popEnterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it / 2 }
+                            )
+                        },
+                        exitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it }
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it / 2 }
+                            )
+                        }
+                    ) { backStackEntry ->
                         val fileName = backStackEntry.arguments?.getString("fileName")
                         fileName?.let {
                             val bookLink =
                                 booksLinksStorage.booksLinks.find { it.fileName == fileName }
                             bookLink?.let {
-                                val pdfBookDomainModel =
-                                    PdfBookDomainModel(
-                                        it,
-                                        this@MainActivity,
-                                        storageManager = storageManager,
-                                        updateProgress = { updatedBookLink ->
-                                            booksLinksStorage.upsertBook(updatedBookLink)
-                                        })
+                                val pdfBookDomainModel = PdfBookDomainModel(
+                                    it,
+                                    this@MainActivity,
+                                    storageManager = storageManager,
+                                    updateProgress = { updatedBookLink ->
+                                        booksLinksStorage.upsertBook(updatedBookLink)
+                                    }
+                                )
                                 PdfReaderScreen(pdfBookDomainModel, settingsManager)
                             }
                         }
@@ -250,8 +324,11 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun HomeScreen(
-        booksLinks: List<BookLink>, onAddPdf: () -> Unit, onItemClick: (BookLink) -> Unit
+        booksLinks: List<BookLink>,
+        onAddPdf: () -> Unit,
+        onItemClick: (BookLink) -> Unit
     ) {
+        val rememberedBooksLinks = remember { booksLinks }
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 item {
@@ -261,46 +338,8 @@ class MainActivity : AppCompatActivity() {
                         style = MaterialTheme.typography.headlineMedium
                     )
                 }
-                items(booksLinks) { bookLink ->
-                    Card(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .clickable { onItemClick(bookLink) }) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceContainer)
-                        ) {
-                            Row(modifier = Modifier.padding(8.dp)) {
-
-                                val previewBitmap =
-                                    storageManager.getBookFile(bookLink.fileName).getPreviewBitmap()
-                                if (previewBitmap != null) {
-                                    Image(
-                                        bitmap = previewBitmap.asImageBitmap(),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .padding(end = 8.dp)
-                                            .background(Color.White)
-                                            .size(100.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                    )
-
-                                }
-                                Column {
-                                    Text(
-                                        text = bookLink.title,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(end = 8.dp),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                }
-                            }
-                        }
-                    }
+                items(rememberedBooksLinks) { bookLink ->
+                    BookItem(bookLink, onItemClick)
                 }
             }
             FloatingActionButton(
@@ -310,6 +349,50 @@ class MainActivity : AppCompatActivity() {
                     .padding(16.dp),
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Add PDF")
+            }
+        }
+    }
+
+    @Composable
+    fun BookItem(bookLink: BookLink, onItemClick: (BookLink) -> Unit) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .clickable { onItemClick(bookLink) }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+            ) {
+                Row(modifier = Modifier.padding(8.dp)) {
+                    val previewBitmap = remember {
+                        storageManager.getBookFile(bookLink.fileName).getPreviewBitmap()
+                    }
+                    if (previewBitmap != null) {
+                        Image(
+                            bitmap = previewBitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .background(Color.White)
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = bookLink.title,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(end = 8.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
             }
         }
     }
