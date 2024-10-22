@@ -65,6 +65,7 @@ import com.example.bottomapp.backend.BooksLinksStorage
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.StorageManager
+import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import io.github.vinceglb.filekit.core.FileKit
 import kotlinx.coroutines.Dispatchers
@@ -232,7 +233,9 @@ class MainActivity : AppCompatActivity() {
                                         )
                                     }"
                                 )
-                            }
+                            },
+                            storageManager = storageManager,
+                            booksLinksStorage = booksLinksStorage
                         )
                     }
                     composable(settingsKey) {
@@ -299,106 +302,6 @@ class MainActivity : AppCompatActivity() {
                 selected = false,
                 onClick = { navController.navigate(settingsKey) })
         }
-    }
-
-    @Composable
-    fun HomeScreen(
-        onAddPdf: () -> Unit,
-        onItemClick: (BookLink) -> Unit
-    ) {
-
-        val updatedBooksLinks by rememberUpdatedState(booksLinksStorage.booksLinks)
-
-        LaunchedEffect(Unit) {
-            booksLinksStorage.saveBooksLinksToStorage()
-        }
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                item {
-                    Text(
-                        text = "My Books",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
-                items(updatedBooksLinks, key = { it.fileName }) { bookLink ->
-                    BookItem(bookLink, onItemClick)
-                }
-            }
-            FloatingActionButton(
-                onClick = onAddPdf,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add PDF")
-            }
-        }
-    }
-
-    @Composable
-    fun BookItem(bookLink: BookLink, onItemClick: (BookLink) -> Unit) {
-        val previewUri = remember(bookLink.fileName) {
-            mutableStateOf<Uri?>(null)
-        }
-        LaunchedEffect(bookLink.fileName) {
-            previewUri.value = withContext(Dispatchers.IO) {
-                storageManager.getPreviewUri(bookLink.fileName)
-            }
-        }
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .clickable { onItemClick(bookLink) }
-        ) {
-            Row(modifier = Modifier.padding(8.dp)) {
-                AsyncImage(
-                    uri = previewUri.value,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-                Column(modifier = Modifier.padding(start = 8.dp)) {
-                    Text(
-                        text = bookLink.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun AsyncImage(
-        uri: Uri?,
-        animationDurationMillis: Int = 0,
-        modifier: Modifier,
-        alpha: Float = 1f,
-    ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(uri)
-                .crossfade(animationDurationMillis)
-                .build(),
-            contentDescription = null,
-            modifier = modifier,
-            alpha = alpha,
-            contentScale = ContentScale.Crop
-        )
-    }
-
-    @Composable
-    fun DashboardScreen() {
-        // Your Dashboard Screen content
-    }
-
-    @Composable
-    fun NotificationsScreen() {
-        // Your Notifications Screen content
     }
 
     @Preview(showBackground = true)
