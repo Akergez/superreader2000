@@ -93,10 +93,11 @@ class MainActivity : AppCompatActivity() {
 
 
         // Delay non-essential initializations
+        booksLinksStorage = BooksLinksStorage(this@MainActivity, storageManager)
         lifecycleScope.launch {
             storageManager.init()
-            booksLinksStorage = BooksLinksStorage(this@MainActivity, storageManager)
             FileKit.init(this@MainActivity)
+            booksLinksStorage.refreshBooksLinks()
         }
 
         setContent {
