@@ -1,12 +1,18 @@
 package com.example.bottomapp.backend
 
+import PreviewGenerator
 import android.content.ContentResolver
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.example.bottomapp.MainActivity
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -47,9 +53,21 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             output.write(jsonString.toByteArray())
         }
 
+        val previewFile = storageDir.createFile("image/jpeg", "${meta.fileName}_preview.jpg") ?: throw Exception("Failed to create preview file");
+        val previewBitmap = PreviewGenerator().getPreviewBitmap(getBookFile(meta.fileName)) ?: throw Exception("Failed to generate preview bitmap");
+        contentResolver.openOutputStream(previewFile.uri)?.use { output ->
+            previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+        }
+
         return destFile.uri.toString()
     }
 
+    fun getPreviewUri(fileName: String): Uri? {
+        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
+        val previewFile = storageDir.findFile("${fileName}_preview.jpg") ?: return null
+        return previewFile.uri
+    }
     fun updateProgressData(meta: BookLink) {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
@@ -70,22 +88,28 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         return gson.fromJson(jsonString, BookLink::class.java)
     }
 
-    fun listAllBooks(): List<BookLink> {
+    suspend fun listAllBooks(): List<BookLink> {
         val storageUri: Uri = settingsManager.getStorageUri() ?: return emptyList()
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return emptyList()
 
-        return storageDir.listFiles().mapNotNull { file ->
-            val metaFile = storageDir.findFile("${file.name}_meta.json")
-            if (file.name?.get(0) != '.' && metaFile != null && metaFile.exists()) {
-                val jsonString = context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader().use { it?.readText() }
-                try{
-                    gson.fromJson(jsonString, BookLink::class.java)
-                } catch (e: Exception) {
-                    null
+        return withContext(Dispatchers.IO) {
+            val files = storageDir.listFiles()
+            val bookLinks = files.mapNotNull { file ->
+                async(Dispatchers.IO) {
+                    val metaFile = storageDir.findFile("${file.name}_meta.json")
+                    if (file.name?.get(0) != '.' && metaFile != null && metaFile.exists()) {
+                        val jsonString = context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader().use { it?.readText() }
+                        try {
+                            gson.fromJson(jsonString, BookLink::class.java)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } else {
+                        null
+                    }
                 }
-            } else {
-                null
-            }
+            }.awaitAll().filterNotNull()
+            bookLinks
         }
     }
 

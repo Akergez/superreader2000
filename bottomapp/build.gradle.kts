@@ -91,5 +91,5 @@ dependencies {
     // Enables FileKit with Composable utilities
     implementation("io.github.vinceglb:filekit-compose:0.8.7")
     implementation("com.google.accompanist:accompanist-navigation-animation:0.36.0")
-
+    implementation("io.coil-kt:coil-compose:2.1.0")
 }

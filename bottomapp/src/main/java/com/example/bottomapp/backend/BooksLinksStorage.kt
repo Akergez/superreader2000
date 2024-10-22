@@ -8,6 +8,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 data class BookLink(val fileName: String, val title: String, val progress: Progress)
 
@@ -24,14 +26,16 @@ class BooksLinksStorage(context: Context, val storageManager: StorageManager) {
     val booksHashMap: HashSet<String> = HashSet();
 
     init {
-        refreshBooksLinks()
+        GlobalScope.launch {
+            refreshBooksLinks()
+        }
     }
 
-    private fun getBooksLinksFromStorage(): List<BookLink> {
+    private suspend fun getBooksLinksFromStorage(): List<BookLink> {
         return storageManager.listAllBooks();
     }
 
-    fun refreshBooksLinks() {
+    suspend fun refreshBooksLinks() {
         booksLinks.clear()
         booksLinks.addAll(getBooksLinksFromStorage())
     }
