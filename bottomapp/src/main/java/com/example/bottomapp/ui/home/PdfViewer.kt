@@ -35,8 +35,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.max
+import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
+import com.example.bottomapp.backend.SettingsManager
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
@@ -52,7 +54,7 @@ import java.io.FileOutputStream
 import java.io.InputStream
 
 @Composable
-fun PdfReaderScreen(book: PdfBookDomainModel) {
+fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
     var mode by remember { mutableStateOf(Mode.Curl) }
 
@@ -74,8 +76,9 @@ fun PdfReaderScreen(book: PdfBookDomainModel) {
         onBackClick = { /* Handle back */ },
         onSearchClick = { /* Handle search */ },
         onTextSettingsClick = { /* Handle text settings */ },
-        onToggleMode = {newMode -> mode = newMode},
-        pdfRendererHelper = pdfRendererHelper
+        onToggleMode = { newMode -> mode = newMode },
+        pdfRendererHelper = pdfRendererHelper,
+        settingsManager
     )
 }
 
@@ -90,7 +93,8 @@ fun PdfReaderUI(
     onSearchClick: () -> Unit,
     onTextSettingsClick: () -> Unit,
     onToggleMode: (Mode) -> Unit,
-    pdfRendererHelper: PdfRendererHelper
+    pdfRendererHelper: PdfRendererHelper,
+    settingsManager: SettingsManager
 ) {
     // Pass the current page to PdfContent, and update the page if needed
     PdfContent(
@@ -99,7 +103,8 @@ fun PdfReaderUI(
         mode = mode,
         pdfRendererHelper = pdfRendererHelper,
         onPageChange = onPageChange,  // Synchronize the page change
-        onToggleMode = onToggleMode
+        onToggleMode = onToggleMode,
+        settingsManager
     )
 }
 
@@ -127,11 +132,12 @@ fun PdfContent(
     mode: Mode,
     pdfRendererHelper: PdfRendererHelper,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (Mode) -> Unit
+    onToggleMode: (Mode) -> Unit,
+    settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
     val context = LocalContext.current
-    var applyInversion by remember { mutableStateOf(true) } // State to control inversion
+    var applyInversion by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
     var zoomMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(pagerState.current) {
@@ -145,8 +151,11 @@ fun PdfContent(
             onPageChange = onPageChange,  // Update page on scroll
             onToggleMode = onToggleMode,
             pdfRendererHelper = pdfRendererHelper,
-            applyInversion = applyInversion,
-            onApplyInversionToggle = { b -> applyInversion = b } // Update inversion setting
+            applyInversion = applyInversion == DocThemeMode.Invert,
+            onApplyInversionToggle = { b ->
+                applyInversion =  if (b) DocThemeMode.Invert else DocThemeMode.AsIs;
+                settingsManager.setDocumentsTheme(applyInversion)
+            } // Update inversion setting
         )
     } else if (mode == Mode.Curl) {
         // Show PageCurl mode
@@ -155,14 +164,14 @@ fun PdfContent(
             state = pagerState,
             config = rememberPageCurlConfig(
                 backPageContentAlpha = 0f,
-                backPageColor = if (applyInversion) MaterialTheme.colorScheme.background else Color.White
+                backPageColor = if (applyInversion == DocThemeMode.Invert) MaterialTheme.colorScheme.background else Color.White
             )
         ) { index ->
             PdfPage(
                 page = index,
                 pdfRendererHelper = pdfRendererHelper,
                 onPageChange = onPageChange,
-                applyInversion = applyInversion, // Update page on swipe
+                applyInversion = applyInversion == DocThemeMode.Invert, // Update page on swipe
                 mode = Mode.Curl,
                 onToggleMode = onToggleMode
             )
@@ -174,7 +183,7 @@ fun PdfContent(
             onToggleMode = onToggleMode,
             pdfRendererHelper = pdfRendererHelper,
             onPageChange = onPageChange,
-            applyInversion = applyInversion
+            applyInversion = applyInversion == DocThemeMode.Invert
         )
     }
 }
@@ -264,7 +273,7 @@ fun PdfPage(
     var offsetY by remember { mutableFloatStateOf(0f) }
     var isTransforming by remember { mutableStateOf(false) }
     val onZoomModeToggleWrapper = {
-        onToggleMode(if(mode == Mode.Zoom) Mode.Curl else Mode.Zoom)
+        onToggleMode(if (mode == Mode.Zoom) Mode.Curl else Mode.Zoom)
         scale = 1f
         offsetX = 0f
         offsetY = 0f
@@ -324,7 +333,7 @@ fun PdfPage(
                         },
                         onLongPress = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onToggleMode(if(mode == Mode.Curl) Mode.Carousel else Mode.Curl)
+                            onToggleMode(if (mode == Mode.Curl) Mode.Carousel else Mode.Curl)
                         }
                     )
                 }
@@ -356,8 +365,7 @@ fun PdfViewer(
     offsetY: Float
 ) {
     val bitmap = pdfRendererHelper.openPage(pageIndex)
-    val isDarkTheme = isSystemInDarkTheme()
-    var backgroundColor = MaterialTheme.colorScheme.background
+    var backgroundColor = Color.Black
     if (!applyInversion) {
         backgroundColor = Color.White
     }
@@ -382,7 +390,7 @@ fun PdfViewer(
 
         canvas.drawColor(backgroundColor.toArgb())
 
-        if (isDarkTheme && applyInversion) {
+        if (applyInversion) {
             val colorMatrix = ColorMatrix().apply {
                 set(
                     floatArrayOf(

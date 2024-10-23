@@ -16,6 +16,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +57,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.bottomapp.backend.AppThemeMode
+import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.home.SettingsScreen
 import com.example.bottomapp.backend.BookLink
 import com.example.bottomapp.backend.BooksLinksStorage
 import com.example.bottomapp.backend.PdfBookDomainModel
@@ -70,6 +77,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
+    private val settingsKey = "Settings"
 
     private lateinit var booksLinksStorage: BooksLinksStorage
     private val PICK_PDF_FILE = 2
@@ -80,9 +88,7 @@ class MainActivity : AppCompatActivity() {
         booksLinksStorage = BooksLinksStorage(this)
         FileKit.init(this)
         setContent {
-            PDFReaderJetpackComposeTheme {
-                MainScreen()
-            }
+            MainScreen()
         }
     }
 
@@ -140,47 +146,67 @@ class MainActivity : AppCompatActivity() {
     @Composable
     fun MainScreen() {
         val navController = rememberNavController()
-        Scaffold(bottomBar = {
-            BottomNavigationBar(navController)
-        }) { innerPadding ->
-            NavHost(
-                navController,
-                startDestination = "home",
-                modifier = Modifier.padding(innerPadding),
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None }
-            ) {
-                composable("home") {
-                    HomeScreen(
-                        booksLinks = booksLinksStorage.booksLinks,
-                        onAddPdf = {
-                            lifecycleScope.launch {
-                                openFilePicker()
+        val settingsManager = SettingsManager(this);
+        val currentTheme = remember {
+            mutableStateOf(
+                settingsManager
+                    .getAppTheme(AppThemeMode.System)
+            )
+        }
+        PDFReaderJetpackComposeTheme(darkTheme = ((currentTheme.value == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme.value == AppThemeMode.Dark)) {
+            Scaffold(bottomBar = {
+                BottomNavigationBar(navController)
+            }) { innerPadding ->
+                NavHost(
+                    navController,
+                    startDestination = "home",
+                    modifier = Modifier.padding(innerPadding),
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None }
+                ) {
+                    composable("home") {
+                        HomeScreen(
+                            booksLinks = booksLinksStorage.booksLinks,
+                            onAddPdf = {
+                                lifecycleScope.launch {
+                                    openFilePicker()
+                                }
+                            },
+                            onItemClick = { bookLink ->
+                                navController.navigate(
+                                    "pdfReader/${
+                                        URLEncoder.encode(
+                                            bookLink.filePath,
+                                            StandardCharsets.UTF_8.toString()
+                                        )
+                                    }"
+                                )
                             }
-                        },
-                        onItemClick = { bookLink ->
-                            navController.navigate(
-                                "pdfReader/${
-                                    URLEncoder.encode(
-                                        bookLink.filePath,
-                                        StandardCharsets.UTF_8.toString()
-                                    )
-                                }"
-                            )
-                        }
-                    )
-                }
-                composable("dashboard") { DashboardScreen() }
-                composable("notifications") { NotificationsScreen() }
-                composable("pdfReader/{filePath}") { backStackEntry ->
-                    val filePath = backStackEntry.arguments?.getString("filePath")
-                    filePath?.let {
-                        val bookLink = booksLinksStorage.booksLinks.find { it.filePath == filePath }
-                        bookLink?.let {
-                            val pdfBookDomainModel = PdfBookDomainModel(it, this@MainActivity) { updatedBookLink ->
-                                booksLinksStorage.upsertBook(updatedBookLink)
+                        )
+                    }
+                    composable("dashboard") { DashboardScreen() }
+                    composable("notifications") { NotificationsScreen() }
+                    composable(settingsKey) {
+                        SettingsScreen(
+                            { theme ->
+                                currentTheme.value = theme
+                                settingsManager.setAppTheme(theme)
+                            },
+                            currentTheme.value
+                        )
+                    }
+                    composable("pdfReader/{filePath}") { backStackEntry ->
+                        val filePath = backStackEntry.arguments?.getString("filePath")
+                        filePath?.let {
+                            val bookLink =
+                                booksLinksStorage.booksLinks.find { it.filePath == filePath }
+                            bookLink?.let {
+                                val pdfBookDomainModel =
+                                    PdfBookDomainModel(it, this@MainActivity) { updatedBookLink ->
+                                        booksLinksStorage.upsertBook(updatedBookLink)
+                                    }
+                                PdfReaderScreen(pdfBookDomainModel, settingsManager)
                             }
-                            PdfReaderScreen(pdfBookDomainModel)
                         }
                     }
                 }
@@ -205,9 +231,9 @@ class MainActivity : AppCompatActivity() {
                     contentDescription = null
                 )
             },
-                label = { Text("Notifications") },
+                label = { Text("Settings") }, // TODO еще картинку поменять
                 selected = false,
-                onClick = { navController.navigate("notifications") })
+                onClick = { navController.navigate(settingsKey) })
         }
     }
 
