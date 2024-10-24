@@ -68,6 +68,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         val previewFile = storageDir.findFile("${fileName}_preview.jpg") ?: return null
         return previewFile.uri
     }
+
     fun updateProgressData(meta: BookLink) {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
