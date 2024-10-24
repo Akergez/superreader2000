@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
@@ -53,7 +56,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
-    var mode by remember { mutableStateOf(Mode.Curl) }
+    var mode by remember { mutableStateOf(Mode.Scroll) }
 
     val context = LocalContext.current
     val pdfFile = remember { book.getFile() }
@@ -89,7 +92,8 @@ fun rememberCurlState(
 enum class Mode {
     Carousel,
     Zoom,
-    Curl
+    Curl,
+    Scroll
 }
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -133,6 +137,20 @@ fun PdfContent(
             )
         }
 
+        Mode.Scroll -> {
+            VerticalPdfCarousel(
+                totalPages = totalPages,
+                initialPage = currentPage,
+                onPageChange = onPageChange,
+                onToggleMode = onToggleMode,
+                pdfRendererHelper = pdfRendererHelper,
+                applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
+                onApplyInversionToggle = { applyInversion ->
+                    settingsManager.setDocumentsTheme(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
+                }
+            )
+        }
+
         Mode.Curl -> {
             PageCurl(
                 count = totalPages,
@@ -161,6 +179,80 @@ fun PdfContent(
                 pdfRendererHelper = pdfRendererHelper,
                 onPageChange = onPageChange,
                 applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
+            )
+        }
+    }
+}
+
+@Composable
+fun VerticalPdfCarousel(
+    totalPages: Int,
+    initialPage: Int = 0,
+    onPageChange: (Int) -> Unit,
+    onToggleMode: (Mode) -> Unit,
+    pdfRendererHelper: PdfRendererHelper,
+    applyInversion: Boolean,
+    onApplyInversionToggle: (Boolean) -> Unit
+) {
+    val lazyListState = rememberLazyListState(initialPage)
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = lazyListState,
+        ) {
+            items(totalPages, key = { it }) { page ->
+                Box(
+                    Modifier
+                        .fillParentMaxWidth()
+                        .align(Alignment.CenterHorizontally)
+                        .padding(vertical = 5.dp)
+                ) {
+                    Card(
+                        Modifier
+                            .fillParentMaxHeight()
+                            .align(Alignment.Center)
+                    ) {
+                        PdfPage(
+                            page = page,
+                            pdfRendererHelper = pdfRendererHelper,
+                            onPageChange = onPageChange,
+                            onToggleMode = onToggleMode,
+                            mode = Mode.Scroll,
+                            applyInversion = applyInversion
+                        )
+                    }
+                }
+            }
+        }
+
+        // Emit page change when the page is scrolled
+        val firstVisibleItemIndex by remember {
+            derivedStateOf { lazyListState.firstVisibleItemIndex }
+        }
+
+        // Synchronize the page change
+        LaunchedEffect(firstVisibleItemIndex) {
+            onPageChange(firstVisibleItemIndex)
+        }
+
+        // Page indicator and inversion toggle for the carousel
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Page ${firstVisibleItemIndex + 1} of $totalPages",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = if (applyInversion) "Inversion: On" else "Inversion: Off",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.clickable { onApplyInversionToggle(!applyInversion) }
             )
         }
     }
