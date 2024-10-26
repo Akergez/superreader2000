@@ -1,9 +1,16 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package com.example.bottomapp.ui.settingsscreen
 
+import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -15,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.MainActivity
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
@@ -30,11 +38,8 @@ fun SettingsScreen(
     var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
     var pdfFlipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
 
-    val themeModeToStringMap = mapOf(
-        AppThemeMode.Light to "Светлая",
-        AppThemeMode.Dark to "Темная",
-        AppThemeMode.System to "Системная"
-    )
+    var storageAddress by remember { mutableStateOf(settingsManager.getStorageUri().toString()) }
+
 
     Column(
         modifier = Modifier
@@ -45,10 +50,14 @@ fun SettingsScreen(
         Row(Modifier.padding(vertical = 8.dp)) {
             AppThemeMode.entries.forEach { theme ->
                 RadioButton(selected = appTheme == theme, onClick = { updateAppTheme(theme) })
-                Text(text = themeModeToStringMap[theme] ?: "",
+                Text(text = when (theme) {
+                    AppThemeMode.Light -> "Светлая"
+                    AppThemeMode.Dark -> "Темная"
+                    AppThemeMode.System -> "Системная"
+                },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
-                        .clickable { updateAppTheme(theme) }
+                        .clickable { }
                         .padding(start = 8.dp))
             }
         }
@@ -56,14 +65,17 @@ fun SettingsScreen(
         Text("Documents Theme", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             DocThemeMode.entries.forEach { theme ->
-                RadioButton(selected = docTheme == theme, onClick = { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) })
+                RadioButton(
+                    selected = docTheme == theme,
+                    onClick = { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) })
                 Text(text = theme.value,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
-                        .clickable { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) }
+                        .clickable { }
                         .padding(start = 8.dp))
             }
         }
+
 
         Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
@@ -86,6 +98,33 @@ fun SettingsScreen(
                         }
                         .padding(start = 8.dp))
             }
+        }
+
+        Row(Modifier.padding(32.dp)) {
+
+        }
+
+        Text("Storage address", style = MaterialTheme.typography.headlineMedium)
+        Row(Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = storageAddress,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .combinedClickable(
+                        onClick = {
+                            (context as MainActivity).openDirectoryPicker()
+                            // не обновляет сразу, т.к. как я понял openDirectoryPicker запускаает выбор в другом потоке
+                            storageAddress = settingsManager.getStorageUri().toString()
+                        },
+                        onLongClick = {
+                            val longPressText =
+                                "Не обновляет сразу, т.к. как я понял openDirectoryPicker запускаает выбор в другом потоке"
+                            Toast.makeText(context, longPressText, Toast.LENGTH_LONG).show()
+                            storageAddress = settingsManager.getStorageUri().toString()
+                        },
+                    )
+                    .padding(start = 8.dp)
+            )
         }
     }
 }
