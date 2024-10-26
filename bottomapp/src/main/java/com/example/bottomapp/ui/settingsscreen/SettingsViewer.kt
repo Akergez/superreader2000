@@ -68,7 +68,7 @@ fun SettingsScreen(
                 RadioButton(
                     selected = docTheme == theme,
                     onClick = { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) })
-                Text(text = theme.value,
+                Text(text = theme.name,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable { }

@@ -5,15 +5,16 @@ import android.net.Uri
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 
-enum class AppThemeMode(val value: String) {
-    Light("Light"),
-    Dark("Dark"),
-    System("System")
+enum class AppThemeMode {
+    Light,
+    Dark,
+    System
 }
 
-enum class DocThemeMode(val value: String) {
-    AsIs("AsIs"),
-    Invert("Invert")
+
+enum class DocThemeMode {
+    AsIs,
+    Invert
 }
 
 class SettingsManager(context: Context) {
@@ -40,7 +41,7 @@ class SettingsManager(context: Context) {
     }
 
     fun setAppTheme(theme: AppThemeMode) {
-        saveSetting(appThemeKey, theme.value)
+        saveSetting(appThemeKey, theme.name)
     }
 
     fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
@@ -53,7 +54,7 @@ class SettingsManager(context: Context) {
     }
 
     fun setDocumentsTheme(theme: DocThemeMode) {
-        saveSetting(docThemeKey, theme.value)
+        saveSetting(docThemeKey, theme.name)
     }
 
     fun getPdfFlipMode(): FlipMode {
