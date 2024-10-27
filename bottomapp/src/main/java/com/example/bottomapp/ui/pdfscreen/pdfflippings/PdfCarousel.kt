@@ -76,8 +76,6 @@ fun PdfCarousel(
         }
 
         // Page indicator and inversion toggle for the carousel
-
-
         Row(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)

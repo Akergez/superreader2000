@@ -72,25 +72,5 @@ fun VerticalPdfScroll(
             onPageChange(firstVisibleItemIndex)
         }
 
-        // Page indicator and inversion toggle for the carousel
-        Row(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Page ${firstVisibleItemIndex + 1} of $totalPages",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(5.dp))
-            Text(
-                text = if (applyInversion) "Inversion: On" else "Inversion: Off",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.clickable { onApplyInversionToggle(!applyInversion) }
-            )
-        }
     }
 }

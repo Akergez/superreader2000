@@ -50,9 +50,7 @@ fun PdfPage(
     when (mode) {
         Mode.Zoom -> {
             Box(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxSize()
+                modifier = Modifier.basePageBoxModifier()
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             isTransforming = true
@@ -76,7 +74,6 @@ fun PdfPage(
                             }
                         )
                     }
-                    .background(color = MaterialTheme.colorScheme.background)
             ) {
                 // Enable pinch-to-zoom
                 PdfViewer(
@@ -91,10 +88,8 @@ fun PdfPage(
         }
         Mode.Carousel -> {
             Box(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
+                modifier = Modifier.basePageBoxModifier()
+                        .pointerInput(Unit) {
                         detectTapGestures(
                             onDoubleTap = {
                                 onZoomModeToggleWrapper() // Toggle zoom mode on double-click
@@ -106,7 +101,6 @@ fun PdfPage(
                             }
                         )
                     }
-                    .background(color = MaterialTheme.colorScheme.background)
             ) {
 
                 // Enable pinch-to-zoom
@@ -122,9 +116,7 @@ fun PdfPage(
         }
         else -> {
             Box(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxSize()
+                modifier = Modifier.basePageBoxModifier()
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onDoubleTap = {
@@ -137,7 +129,6 @@ fun PdfPage(
                             }
                         )
                     }
-                    .background(color = MaterialTheme.colorScheme.background)
             ) {
                 // Enable pinch-to-zoom
                 CurlPdfViewer(
@@ -151,4 +142,11 @@ fun PdfPage(
             }
         }
     }
+}
+
+@Composable
+fun Modifier.basePageBoxModifier(): Modifier {
+    return this.padding(8.dp)
+        .fillMaxSize()
+        .background(color = MaterialTheme.colorScheme.background)
 }
