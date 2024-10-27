@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
+import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.pdfscreen.PdfPage
@@ -29,8 +30,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
-    var mode by remember { mutableStateOf(Mode.Scroll) }
-    var flippingMode by remember { mutableStateOf(Mode.Scroll) }
+    var mode by remember { mutableStateOf(when(settingsManager.getPdfFlipMode()) {
+            PdfFlipMode.Curl -> Mode.Curl
+            PdfFlipMode.Scroll -> Mode.Scroll
+        })
+    }
 
     val context = LocalContext.current
     val pdfFile = remember { book.getFile() }
@@ -112,9 +116,9 @@ fun PdfContent(
                 onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,
                 applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-                onApplyInversionToggle = { applyInversion ->
-                    settingsManager.setDocumentsTheme(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
-                }
+//                onApplyInversionToggle = { applyInversion ->
+//                    settingsManager.setDocumentsTheme(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
+//                }
             )
         }
 
@@ -130,6 +134,7 @@ fun PdfContent(
                 PdfPage(
                     page = index,
                     pdfRendererHelper = pdfRendererHelper,
+                    totalPages = totalPages,
                     applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
                     onPageChange = onPageChange,
                     mode = Mode.Curl,
@@ -142,6 +147,7 @@ fun PdfContent(
             PdfPage(
                 page = pagerState.current,
                 mode = mode,
+                totalPages = totalPages,
                 onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,
                 onPageChange = onPageChange,

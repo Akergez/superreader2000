@@ -22,12 +22,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
 
 @Composable
 fun PdfPage(
     page: Int,
     pdfRendererHelper: PdfRendererHelper,
+    totalPages: Int,
     modifier: Modifier = Modifier,
     onToggleMode: (Mode) -> Unit,
     onPageChange: (Int) -> Unit,
@@ -41,6 +45,7 @@ fun PdfPage(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var isTransforming by remember { mutableStateOf(false) }
+
     val onZoomModeToggleWrapper = {
         onToggleMode(if (mode == Mode.Zoom) Mode.Curl else Mode.Zoom)
         scale = 1f
@@ -114,7 +119,7 @@ fun PdfPage(
                 )
             }
         }
-        else -> {
+        Mode.Curl -> {
             Box(
                 modifier = Modifier.basePageBoxModifier()
                     .pointerInput(Unit) {
@@ -132,6 +137,28 @@ fun PdfPage(
             ) {
                 // Enable pinch-to-zoom
                 CurlPdfViewer(
+                    pdfRendererHelper = pdfRendererHelper,
+                    pageIndex = page,
+                    applyInversion = applyInversion, // Pass the inversion setting
+                    scale = scale, // Pass the zoom scale,
+                    offsetX = offsetX,
+                    offsetY = offsetY
+                )
+            }
+        }
+        else -> {
+            Box(
+                modifier = Modifier.basePageBoxModifier()
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                onZoomModeToggleWrapper() // Toggle zoom mode on double-click
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                        )
+                    }
+            ) {
+                PdfViewer(
                     pdfRendererHelper = pdfRendererHelper,
                     pageIndex = page,
                     applyInversion = applyInversion, // Pass the inversion setting

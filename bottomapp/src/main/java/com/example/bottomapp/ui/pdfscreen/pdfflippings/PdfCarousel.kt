@@ -54,6 +54,7 @@ fun PdfCarousel(
                     ) {
                         PdfPage(
                             page = page,
+                            totalPages = totalPages,
                             pdfRendererHelper = pdfRendererHelper,
                             onPageChange = onPageChange,
                             onToggleMode = onToggleMode,
