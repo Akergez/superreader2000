@@ -79,6 +79,7 @@ fun PdfContent(
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
+    var flipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
 
     // Preload next and previous pages
     LaunchedEffect(pagerState.current) {
@@ -98,6 +99,7 @@ fun PdfContent(
             PdfCarousel(
                 totalPages = totalPages,
                 initialPage = currentPage,
+                pdfFlipMode = flipMode,
                 onPageChange = onPageChange,
                 onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,
@@ -112,6 +114,7 @@ fun PdfContent(
             VerticalPdfScroll(
                 totalPages = totalPages,
                 initialPage = currentPage,
+                pdfFlipMode = flipMode,
                 onPageChange = onPageChange,
                 onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,
@@ -134,6 +137,7 @@ fun PdfContent(
                 PdfPage(
                     page = index,
                     pdfRendererHelper = pdfRendererHelper,
+                    pdfFlipMode = flipMode,
                     totalPages = totalPages,
                     applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
                     onPageChange = onPageChange,
@@ -147,6 +151,7 @@ fun PdfContent(
             PdfPage(
                 page = pagerState.current,
                 mode = mode,
+                pdfFlipMode = flipMode,
                 totalPages = totalPages,
                 onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,

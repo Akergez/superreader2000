@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
 import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
@@ -31,6 +32,7 @@ import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
 fun PdfPage(
     page: Int,
     pdfRendererHelper: PdfRendererHelper,
+    pdfFlipMode: PdfFlipMode,
     totalPages: Int,
     modifier: Modifier = Modifier,
     onToggleMode: (Mode) -> Unit,
@@ -47,7 +49,16 @@ fun PdfPage(
     var isTransforming by remember { mutableStateOf(false) }
 
     val onZoomModeToggleWrapper = {
-        onToggleMode(if (mode == Mode.Zoom) Mode.Curl else Mode.Zoom)
+        onToggleMode(
+            if (mode == Mode.Zoom) {
+                when(pdfFlipMode) {
+                    PdfFlipMode.Scroll -> Mode.Scroll
+                    PdfFlipMode.Curl -> Mode.Curl
+                }
+            }
+            else
+                Mode.Zoom
+        )
         scale = 1f
         offsetX = 0f
         offsetY = 0f

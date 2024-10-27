@@ -15,12 +15,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.ui.pdfscreen.PdfPage
 
 @Composable
 fun VerticalPdfScroll(
     totalPages: Int,
     initialPage: Int = 0,
+    pdfFlipMode: PdfFlipMode,
     onPageChange: (Int) -> Unit,
     onToggleMode: (Mode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
@@ -44,6 +46,7 @@ fun VerticalPdfScroll(
                         PdfPage(
                             page = page,
                             pdfRendererHelper = pdfRendererHelper,
+                            pdfFlipMode = pdfFlipMode,
                             totalPages = totalPages,
                             onPageChange = onPageChange,
                             onToggleMode = onToggleMode,

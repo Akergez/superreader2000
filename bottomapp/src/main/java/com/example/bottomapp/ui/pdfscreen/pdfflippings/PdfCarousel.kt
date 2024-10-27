@@ -22,12 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.ui.pdfscreen.PdfPage
 
 @Composable
 fun PdfCarousel(
     totalPages: Int,
     initialPage: Int = 0,
+    pdfFlipMode: PdfFlipMode,
     onPageChange: (Int) -> Unit,
     onToggleMode: (Mode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
@@ -55,6 +57,7 @@ fun PdfCarousel(
                         PdfPage(
                             page = page,
                             totalPages = totalPages,
+                            pdfFlipMode = pdfFlipMode,
                             pdfRendererHelper = pdfRendererHelper,
                             onPageChange = onPageChange,
                             onToggleMode = onToggleMode,
