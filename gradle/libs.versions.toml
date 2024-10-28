@@ -1,8 +1,12 @@
 [versions]
 accompanist-pager = "0.29.1-alpha"
 agp = "8.6.1"
+coil-compose = "2.7.0"
 easyflipview = "2.0.0"
+filekit-compose = "0.8.7"
 gson = "2.8.8"
+koin-android = "3.4.0"
+koin-androidx-compose = "3.4.0"
 kotlin = "1.9.0"
 core-ktx = "1.13.1"
 junit = "4.13.2"
@@ -31,6 +35,14 @@ ui-tooling-preview = "1.7.3"
 
 
 [libraries]
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil-compose" }
+filekit-compose = { module = "io.github.vinceglb:filekit-compose", version.ref = "filekit-compose" }
+koin-androidx-compose-v340 = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin-androidx-compose" }
+koin-android-v340 = { module = "io.insert-koin:koin-android", version.ref = "koin-android" }
+koin-core = { module = "io.insert-koin:koin-core", version = "3.2.0" }
+koin-android = { module = "io.insert-koin:koin-android", version = "3.2.0" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version = "3.2.0" }
+koin-androidx-compose-navigation-v340 = { module = "io.insert-koin:koin-androidx-compose", version = "3.2.0" }
 accompanist-pager = { module = "com.google.accompanist:accompanist-pager", version.ref = "accompanist-pager" }
 androidx-navigation-compose-v240alpha10 = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose-version" }
 androidx-ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }

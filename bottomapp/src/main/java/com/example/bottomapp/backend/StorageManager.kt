@@ -29,13 +29,6 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
     private val fileCache = HashMap<String, File>()
 
-    fun init(): Unit {
-        if (settingsManager.getStorageUri() == null) {
-            // Trigger directory picker in MainActivity
-            (context as MainActivity).openDirectoryPicker()
-        }
-    }
-
     fun copyBookToStorage(file: Uri, meta: BookLink, contentResolver: ContentResolver): String {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")

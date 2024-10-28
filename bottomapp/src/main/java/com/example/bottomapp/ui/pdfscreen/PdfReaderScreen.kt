@@ -79,7 +79,7 @@ fun PdfContent(
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
-    var flipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
+    val flipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
 
     // Preload next and previous pages
     LaunchedEffect(pagerState.current) {
