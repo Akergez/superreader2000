@@ -2,19 +2,17 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
-data class BookLink(val title: String, val filePath: String, val progress: Progress)
+data class BookLink(val fileName: String, val title: String, val progress: Progress)
 
-class BooksLinksStorage(context: Context) {
-
-    private val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences("BooksLinksStorage", Context.MODE_PRIVATE)
+class BooksLinksStorage(context: Context, val storageManager: StorageManager) {
 
     private val progressAdapterFactory = RuntimeTypeAdapterFactory
         .of(Progress::class.java, "type")
@@ -23,30 +21,63 @@ class BooksLinksStorage(context: Context) {
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapterFactory(progressAdapterFactory)
         .create()
+    private val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("books_links", Context.MODE_PRIVATE)
     val booksLinks: SnapshotStateList<BookLink> = mutableStateListOf()
+    val booksHashMap: HashSet<String> = HashSet()
 
     init {
-        booksLinks.addAll(getBooksLinksFromStorage())
+        refreshBooksLinksFromCache()
     }
 
-    private fun getBooksLinksFromStorage(): List<BookLink> {
-        val json = sharedPreferences.getString("booksLinks", null)
-        return if (json != null) {
+    private suspend fun getBooksLinksFromStorage(): List<BookLink> {
+        return storageManager.listAllBooks()
+    }
+
+    private fun getBooksLinksFromCache(): List<BookLink> {
+        val cachedBooksLinks = sharedPreferences.getString("books_links_cache", null)
+        return if (cachedBooksLinks != null) {
             val type = object : TypeToken<List<BookLink>>() {}.type
-            gson.fromJson(json, type)
+            gson.fromJson(cachedBooksLinks, type)
         } else {
             emptyList()
         }
     }
 
-    private fun saveBooksLinksToStorage() {
-        val json = gson.toJson(booksLinks)
-        sharedPreferences.edit().putString("booksLinks", json).apply()
+    suspend fun refreshBooksLinks() {
+        val list = getBooksLinksFromStorage()
+        if (booksLinks.toSet() == list.toSet()) return
+        booksLinks.clear()
+        booksLinks.addAll(list)
+        cacheBooksLinks()
+    }
+
+    private fun refreshBooksLinksFromCache() {
+        booksLinks.clear()
+        booksLinks.addAll(getBooksLinksFromCache())
+    }
+
+    fun saveBooksLinksToStorage() {
+        booksLinks.filter { booksHashMap.contains(it.fileName) }
+            .map { bookLink -> storageManager.updateProgressData(bookLink) }
+        booksHashMap.clear()
+        cacheBooksLinks()
+    }
+
+    private fun cacheBooksLinks() {
+        val editor = sharedPreferences.edit()
+        val booksLinksJson = gson.toJson(booksLinks)
+        editor.putString("books_links_cache", booksLinksJson)
+        editor.apply()
     }
 
     fun upsertBook(bookLink: BookLink) {
-        booksLinks.removeAll { it.filePath == bookLink.filePath }
+        val exist = booksLinks.find { it.fileName == bookLink.fileName }
+        if (exist != null) {
+            if (exist == bookLink) return
+            booksLinks.remove(exist)
+        }
         booksLinks.add(bookLink)
-        saveBooksLinksToStorage()
+        booksHashMap.add(bookLink.fileName)
     }
 }
