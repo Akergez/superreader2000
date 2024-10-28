@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.slideInHorizontally
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var booksLinksStorage: BooksLinksStorage
     private lateinit var storageManager: StorageManager
-    private val PICK_PDF_FILE = 2
+    private val PICK_FILE = 2
     private val PICK_DIRECTORY_REQUEST_CODE = 1
 
 
@@ -103,17 +104,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
+        if (requestCode == PICK_FILE && resultCode == Activity.RESULT_OK) {
             data?.data?.also { uri ->
                 val fileName = getFileName(uri)
-                val fileType = getFileType(fileName)
-                val bookLink = when (fileType) {
-                    "pdf" -> BookLink(fileName, fileName, PdfProgress(0))
-                    "fb2" -> BookLink(fileName, fileName, Fb2Progress(0))
-                    else -> return@also
+                when (val fileType = getFileType(fileName)) {
+                    "pdf", "fb2" -> {
+                        val bookLink = when (fileType) {
+                            "pdf" -> BookLink(fileName, fileName, PdfProgress(0))
+                            "fb2" -> BookLink(fileName, fileName, Fb2Progress(0))
+                            else -> return@also // This should never happen due to the when condition
+                        }
+                        storageManager.copyBookToStorage(uri, bookLink, contentResolver)
+                        booksLinksStorage.upsertBook(bookLink)
+                    }
+                    else -> {
+                        Toast.makeText(
+                            this,
+                            "Только файлы формата PDF и FB2 поддерживаются приложением",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        lifecycleScope.launch { openFilePicker() }
+                    }
                 }
-                storageManager.copyBookToStorage(uri, bookLink, contentResolver)
-                booksLinksStorage.upsertBook(bookLink)
             }
         }
     }
@@ -128,10 +140,8 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "*/*"
-            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "application/fb2"))
-
         }
-        startActivityForResult(intent, PICK_PDF_FILE)
+        startActivityForResult(intent, PICK_FILE)
     }
 
     private fun getFileName(uri: Uri): String {
