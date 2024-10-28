@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.SettingsManager
 
 @Composable
@@ -27,6 +28,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val settingsManager = SettingsManager(context)
     var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
+    var pdfFlipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
 
     val themeModeToStringMap = mapOf(
         AppThemeMode.Light to "Светлая",
@@ -59,6 +61,28 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) }
+                        .padding(start = 8.dp))
+            }
+        }
+
+        Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
+        Row(Modifier.padding(vertical = 8.dp)) {
+            PdfFlipMode.entries.forEach { mode ->
+                RadioButton(selected = pdfFlipMode == mode, onClick = {
+                    pdfFlipMode = mode
+                    settingsManager.setPdfFlipMode(mode)
+                })
+                Text(text = when (mode) {
+                        PdfFlipMode.Curl -> "Классический"
+                        PdfFlipMode.Scroll -> "Вертикальный"
+                    }
+                    ,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .clickable {
+                            pdfFlipMode = mode
+                            settingsManager.setPdfFlipMode(mode)
+                        }
                         .padding(start = 8.dp))
             }
         }

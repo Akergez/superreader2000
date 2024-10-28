@@ -15,11 +15,17 @@ enum class DocThemeMode(val value: String) {
     Invert("Invert")
 }
 
+enum class PdfFlipMode() {
+    Scroll,
+    Curl
+}
+
 
 class SettingsManager(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val appThemeKey = "theme"
     private val docThemeKey = "doc_theme"
+    private val pdfFlipModeKey = "pdf_flip_mode"
 
     private fun saveSetting(key: String, value: String) {
         sharedPreferences.edit().putString(key, value).apply()
@@ -53,6 +59,20 @@ class SettingsManager(context: Context) {
 
     fun setDocumentsTheme(theme: DocThemeMode) {
         saveSetting(docThemeKey, theme.value)
+    }
+
+    fun getPdfFlipMode(): PdfFlipMode {
+        val defaultMode = PdfFlipMode.Scroll
+        val setting = getSetting(pdfFlipModeKey) ?: return defaultMode;
+        return try {
+            PdfFlipMode.valueOf(setting)
+        } catch (e: Throwable) {
+            defaultMode
+        }
+    }
+
+    fun setPdfFlipMode(mode: PdfFlipMode) {
+        saveSetting(pdfFlipModeKey, mode.toString())
     }
 
     fun getStorageUri(): Uri? {
