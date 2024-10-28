@@ -1,5 +1,6 @@
 package com.example.bottomapp
 
+import Fb2ReaderScreen
 import PdfReaderScreen
 import android.app.Activity
 import android.content.Intent
@@ -44,7 +45,6 @@ import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.ui.homescreen.HomeScreen
-import com.example.bottomapp.ui.home.Fb2ReaderScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import io.github.vinceglb.filekit.core.FileKit
 import kotlinx.coroutines.launch
