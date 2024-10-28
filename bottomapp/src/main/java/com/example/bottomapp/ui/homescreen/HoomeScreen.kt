@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
@@ -31,12 +32,16 @@ fun HomeScreen(
 ) {
 
     val updatedBooksLinks by rememberUpdatedState(booksLinksStorage.booksLinks)
+    val lazyListState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         booksLinksStorage.saveBooksLinksToStorage()
     }
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = lazyListState
+        ) {
             item {
                 Text(
                     text = "My Books",

@@ -15,10 +15,7 @@ fun AsyncImage(
     alpha: Float = 1f,
 ) {
     coil.compose.AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(uri)
-            .crossfade(animationDurationMillis)
-            .build(),
+        model = uri,
         contentDescription = null,
         modifier = modifier,
         alpha = alpha,
