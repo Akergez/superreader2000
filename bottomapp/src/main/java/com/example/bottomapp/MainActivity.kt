@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -63,15 +64,6 @@ import java.nio.charset.StandardCharsets
 class MainActivity : ComponentActivity() {
     private val settingsKey = "Settings"
 
-    /*
-        private lateinit var booksLinksStorage: BooksLinksStorage
-    */
-    /*
-        private lateinit var storageManager: StorageManager
-    */
-    private val PICK_FILE = 2
-    private val PICK_DIRECTORY_REQUEST_CODE = 1
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -91,95 +83,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun koinConfiguration() = koinApplication {
-        // your configuration & modules here
-        val appModule = module {
-            singleOf(::StorageManager) bind StorageManager::class
-            singleOf(::SettingsManager) bind SettingsManager::class
-            singleOf(::BooksLinksStorage) bind BooksLinksStorage::class
-        }
-
-        modules(appModule)
-        androidLogger()
-        androidContext(this@MainActivity)
-    }
-
     //ToDo починить
     /*override fun onDestroy() {
         super.onDestroy()
         booksLinksStorage.saveBooksLinksToStorage()
         storageManager.clearFileCache()
     }*/
-
-    fun pickDirectory(
-        storageManager: StorageManager,
-        booksLinksStorage: BooksLinksStorage
-    ) {
-        val resultLauncher =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) {
-                    result.data?.data?.also { uri ->
-                        contentResolver.takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                        )
-                        val settingsManager = SettingsManager(this)
-                        settingsManager.saveStorageUri(uri)
-                        lifecycleScope.launch {
-                            booksLinksStorage.refreshBooksLinks()
-                        }
-                    }
-                }
-            }
-
-        fun openSomeActivityForResult() {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            resultLauncher.launch(intent)
-        }
-        openSomeActivityForResult()
-    }
-
-    private fun pickPdf(
-        storageManager: StorageManager,
-        booksLinksStorage: BooksLinksStorage
-    ) {
-
-        val resultLauncher =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) {
-                    result.data?.data?.also { uri ->
-                        val fileName = getFileName(uri)
-                        when (val fileType = getFileType(fileName)) {
-                            "pdf", "fb2" -> {
-                                val bookLink = when (fileType) {
-                                    "pdf" -> BookLink(fileName, fileName, PdfProgress(0))
-                                    "fb2" -> BookLink(fileName, fileName, Fb2Progress(0))
-                                    else -> return@also // This should never happen due to the when condition
-                                }
-                                storageManager.copyBookToStorage(uri, bookLink, contentResolver)
-                                booksLinksStorage.upsertBook(bookLink)
-                            }
-                            else -> {
-                                Toast.makeText(
-                                    this,
-                                    "Только файлы формата PDF и FB2 поддерживаются приложением",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                lifecycleScope.launch { openFilePicker() }
-                            }
-                    }
-                }
-            }
-
-        fun openSomeActivityForResult() {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
-            }
-            resultLauncher.launch(intent)
-        }
-        openSomeActivityForResult()
-    }
 
     private fun getFileName(uri: Uri): String {
         var result: String? = null
@@ -210,6 +119,52 @@ class MainActivity : ComponentActivity() {
         storageManager: StorageManager = koinInject(),
         booksLinksStorage: BooksLinksStorage = koinInject()
     ) {
+        val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                result.data?.data?.also { uri ->
+                        result.data?.data?.also { uri ->
+                            val fileName = getFileName(uri)
+                            when (val fileType = getFileType(fileName)) {
+                                "pdf", "fb2" -> {
+                                    val bookLink = when (fileType) {
+                                        "pdf" -> BookLink(fileName, fileName, PdfProgress(0))
+                                        "fb2" -> BookLink(fileName, fileName, Fb2Progress(0))
+                                        else -> return@also // This should never happen due to the when condition
+                                    }
+                                    storageManager.copyBookToStorage(uri, bookLink, contentResolver)
+                                    booksLinksStorage.upsertBook(bookLink)
+                                }
+                                else -> {
+                                    Toast.makeText(
+                                        this,
+                                        "Только файлы формата PDF и FB2 поддерживаются приложением",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    lifecycleScope.launch { openFilePicker() }
+                                }
+                            }
+                }
+            }
+        }
+
+        val directoryLauncher =
+            rememberLauncherForActivityResult (ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK) {
+                    result.data?.data?.also { uri ->
+                        contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        )
+                        val settingsManager = SettingsManager(this)
+                        settingsManager.saveStorageUri(uri)
+                        lifecycleScope.launch {
+                            booksLinksStorage.refreshBooksLinks()
+                        }
+                    }
+                }
+            }
+
+
         val navController = rememberNavController()
         val settingsManager = SettingsManager(this)
         val currentTheme = remember {
@@ -221,7 +176,8 @@ class MainActivity : ComponentActivity() {
 
         if (settingsManager.getStorageUri() == null) {
             // Trigger directory picker in MainActivity
-            pickDirectory(storageManager, booksLinksStorage);
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            directoryLauncher.launch(intent)
         }
 
         PDFReaderJetpackComposeTheme(
@@ -263,7 +219,11 @@ class MainActivity : ComponentActivity() {
                     composable("home") {
                         HomeScreen(
                             onAddPdf = {
-                                lifecycleScope.launch { pickPdf(storageManager, booksLinksStorage) }
+                                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                    addCategory(Intent.CATEGORY_OPENABLE)
+                                    type = "application/pdf"
+                                }
+                                launcher.launch(intent)
                             },
                             onItemClick = { bookLink ->
                                 val encodedFileName = URLEncoder.encode(bookLink.fileName, StandardCharsets.UTF_8.toString())
