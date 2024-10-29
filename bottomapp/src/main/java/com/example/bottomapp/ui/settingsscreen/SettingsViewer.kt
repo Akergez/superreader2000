@@ -8,9 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -46,7 +44,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("App Theme", style = MaterialTheme.typography.headlineMedium)
+        Text("Тема приложения", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             AppThemeMode.entries.forEach { theme ->
                 RadioButton(selected = appTheme == theme, onClick = { updateAppTheme(theme) })
@@ -57,25 +55,34 @@ fun SettingsScreen(
                 },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
-                        .clickable { }
+                        .clickable { updateAppTheme(theme) }
                         .padding(start = 8.dp))
             }
         }
 
-        Text("Documents Theme", style = MaterialTheme.typography.headlineMedium)
+        Text("Тема документов", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             DocThemeMode.entries.forEach { theme ->
                 RadioButton(
                     selected = docTheme == theme,
-                    onClick = { docTheme = theme; settingsManager.setDocumentsTheme(docTheme) })
+                    onClick = {
+                        docTheme = theme
+                        settingsManager.setDocumentsTheme(docTheme)
+                    })
                 Text(text = theme.name,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
-                        .clickable { }
+                        .clickable {
+                            docTheme = theme
+                            settingsManager.setDocumentsTheme(docTheme)
+                        }
                         .padding(start = 8.dp))
             }
         }
 
+        Row(Modifier.padding(32.dp)) {
+
+        }
 
         Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
@@ -104,7 +111,7 @@ fun SettingsScreen(
 
         }
 
-        Text("Storage address", style = MaterialTheme.typography.headlineMedium)
+        Text("Адрес хранилища", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = storageAddress,

@@ -11,10 +11,14 @@ enum class AppThemeMode {
     System
 }
 
-
 enum class DocThemeMode {
     AsIs,
     Invert
+}
+
+enum class PdfFlipMode {
+    Scroll,
+    Curl
 }
 
 class SettingsManager(context: Context) {
