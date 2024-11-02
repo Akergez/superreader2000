@@ -26,9 +26,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -119,8 +121,9 @@ class MainActivity : ComponentActivity() {
         storageManager: StorageManager = koinInject(),
         booksLinksStorage: BooksLinksStorage = koinInject()
     ) {
+        val context = LocalContext.current
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
+            if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.data?.also { uri ->
                         result.data?.data?.also { uri ->
                             val fileName = getFileName(uri)
@@ -147,34 +150,31 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val directoryLauncher =
-            rememberLauncherForActivityResult (ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) {
-                    result.data?.data?.also { uri ->
-                        contentResolver.takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                        )
-                        val settingsManager = SettingsManager(this)
-                        settingsManager.saveStorageUri(uri)
-                        lifecycleScope.launch {
-                            booksLinksStorage.refreshBooksLinks()
-                        }
+        val directoryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { uri ->
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                    val settingsManager = SettingsManager(context)
+                    settingsManager.saveStorageUri(uri)
+                    (context as ComponentActivity).lifecycleScope.launch {
+                        booksLinksStorage.refreshBooksLinks()
                     }
                 }
             }
-
+        }
 
         val navController = rememberNavController()
-        val settingsManager = SettingsManager(this)
+        val settingsManager = SettingsManager(context)
         val currentTheme = remember {
             mutableStateOf(
-                settingsManager
-                    .getAppTheme(AppThemeMode.System)
+                settingsManager.getAppTheme(AppThemeMode.System)
             )
         }
 
-        if (settingsManager.getStorageUri() == null) {
+        LaunchedEffect(settingsManager.getStorageUri() == null) {
             // Trigger directory picker in MainActivity
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             directoryLauncher.launch(intent)
@@ -262,7 +262,7 @@ class MainActivity : ComponentActivity() {
                             bookLink?.let {
                                 val pdfBookDomainModel = PdfBookDomainModel(
                                     it,
-                                    this@MainActivity,
+                                    context as ComponentActivity,
                                     storageManager = storageManager,
                                     updateProgress = { updatedBookLink ->
                                         booksLinksStorage.upsertBook(updatedBookLink)
