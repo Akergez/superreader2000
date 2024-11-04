@@ -41,10 +41,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
-import com.example.bottomapp.backend.BookLink
-import com.example.bottomapp.backend.BooksLinksStorage
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
+import com.example.bottomapp.backend.BookMetaInfo
+import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.StorageManager
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
 
         val appModule = module {
             singleOf(::StorageManager) bind StorageManager::class
-            singleOf(::BooksLinksStorage) bind BooksLinksStorage::class
+            singleOf(::BookStorage) bind BookStorage::class
             singleOf(::SettingsManager) bind SettingsManager::class
         }
 
@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MainScreen(
         storageManager: StorageManager = koinInject(),
-        booksLinksStorage: BooksLinksStorage = koinInject()
+        bookStorage: BookStorage = koinInject()
     ) {
         val context = LocalContext.current
         val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -159,7 +159,7 @@ class MainActivity : ComponentActivity() {
                     val settingsManager = SettingsManager(context)
                     settingsManager.saveStorageUri(uri)
                     lifecycleScope.launch {
-                        booksLinksStorage.refreshBooksLinks()
+                        bookStorage.refreshBooksLinks()
                     }
                 }
             }
@@ -249,14 +249,14 @@ class MainActivity : ComponentActivity() {
                         }
                         fileName?.let {
                             val bookLink =
-                                booksLinksStorage.booksLinks.find { it.fileName == fileName }
+                                bookStorage.bookCache.find { it.fileName == fileName }
                             bookLink?.let {
                                 val pdfBookDomainModel = PdfBookDomainModel(
-                                    it,
+                                    it.bookMetaInfo,
                                     context as ComponentActivity,
                                     storageManager = storageManager,
                                     updateProgress = { updatedBookLink ->
-                                        booksLinksStorage.upsertBook(updatedBookLink)
+                                        bookStorage.updateProgress(updatedBookLink)
                                     }
                                 )
                                 PdfReaderScreen(pdfBookDomainModel)

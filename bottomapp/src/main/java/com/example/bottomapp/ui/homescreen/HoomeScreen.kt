@@ -19,22 +19,23 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.BookLink
-import com.example.bottomapp.backend.BooksLinksStorage
+import com.example.bottomapp.backend.BookMetaInfo
+import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookStorageEntry
 import org.koin.compose.koinInject
 
 @Composable
 fun HomeScreen(
     onAddPdf: () -> Unit,
-    onItemClick: (BookLink) -> Unit,
-    booksLinksStorage: BooksLinksStorage = koinInject()
+    onItemClick: (BookStorageEntry) -> Unit,
+    bookStorage: BookStorage = koinInject()
 ) {
 
-    val updatedBooksLinks by rememberUpdatedState(booksLinksStorage.booksLinks)
+    val updatedBooksLinks by rememberUpdatedState(bookStorage.bookCache)
     val lazyListState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
-        booksLinksStorage.saveBooksLinksToStorage()
+        bookStorage.saveBooksLinksToStorage()
     }
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

@@ -6,14 +6,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import com.example.bottomapp.MainActivity
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import org.koin.compose.koinInject
 import java.io.File
 import java.io.FileOutputStream
 
@@ -30,7 +28,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
     private val fileCache = HashMap<String, File>()
 
-    fun copyBookToStorage(file: Uri, meta: BookLink, contentResolver: ContentResolver): String {
+    fun copyBookToStorage(file: Uri, meta: BookMetaInfo, contentResolver: ContentResolver): BookStorageEntry {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
         val mimeType = when (getFileType(meta.fileName)) {
@@ -59,7 +57,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
         }
 
-        return destFile.uri.toString()
+        return BookStorageEntry(meta.fileName, previewFile.uri, meta)
     }
 
     private fun getFileType(fileName: String): String {
@@ -73,7 +71,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         return previewFile.uri
     }
 
-    fun updateProgressData(meta: BookLink) {
+    fun updateProgressData(meta: BookMetaInfo) {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
         val metaFile = storageDir.findFile("${meta.fileName}_meta.json") ?: throw Exception("Metadata file not found")
@@ -84,28 +82,29 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
     }
 
-    fun readProgressData(fileName: String): BookLink {
+    fun readProgressData(fileName: String): BookMetaInfo {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = File(storageUri.path!!)
         val metaFile = File(storageDir, "${fileName}_meta.json")
 
         val jsonString = metaFile.readText()
-        return gson.fromJson(jsonString, BookLink::class.java)
+        return gson.fromJson(jsonString, BookMetaInfo::class.java)
     }
 
-    suspend fun listAllBooks(): List<BookLink> {
+    suspend fun listAllBooks(): List<BookStorageEntry> {
         val storageUri: Uri = settingsManager.getStorageUri() ?: return emptyList()
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return emptyList()
 
         return withContext(Dispatchers.IO) {
             val files = storageDir.listFiles()
-            val bookLinks = files.mapNotNull { file ->
+            val bookMetaInfos = files.mapNotNull { file ->
                 async(Dispatchers.IO) {
                     val metaFile = storageDir.findFile("${file.name}_meta.json")
                     if (file.name?.get(0) != '.' && metaFile != null && metaFile.exists()) {
                         val jsonString = context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader().use { it?.readText() }
                         try {
-                            gson.fromJson(jsonString, BookLink::class.java)
+                            val bookMetaInfo = gson.fromJson(jsonString, BookMetaInfo::class.java);
+                            BookStorageEntry(bookMetaInfo.fileName, getPreviewUri(bookMetaInfo.fileName), bookMetaInfo)
                         } catch (e: Exception) {
                             null
                         }
@@ -114,7 +113,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
                     }
                 }
             }.awaitAll().filterNotNull()
-            bookLinks
+            bookMetaInfos
         }
     }
 
