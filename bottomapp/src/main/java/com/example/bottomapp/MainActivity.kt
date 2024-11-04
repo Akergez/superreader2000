@@ -1,5 +1,6 @@
 package com.example.bottomapp
 
+import Fb2ReaderScreen
 import PdfReaderScreen
 import android.app.Activity
 import android.content.Intent
@@ -7,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.slideInHorizontally
@@ -37,6 +39,8 @@ import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.example.bottomapp.backend.BookLink
 import com.example.bottomapp.backend.BooksLinksStorage
+import com.example.bottomapp.backend.Fb2BookDomainModel
+import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.StorageManager
@@ -53,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var booksLinksStorage: BooksLinksStorage
     private lateinit var storageManager: StorageManager
-    private val PICK_PDF_FILE = 2
+    private val PICK_FILE = 2
     private val PICK_DIRECTORY_REQUEST_CODE = 1
 
 
@@ -100,15 +104,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        if (requestCode == PICK_PDF_FILE && resultCode == Activity.RESULT_OK) {
+        if (requestCode == PICK_FILE && resultCode == Activity.RESULT_OK) {
             data?.data?.also { uri ->
                 val fileName = getFileName(uri)
-                storageManager.copyBookToStorage(
-                    uri,
-                    BookLink(fileName, fileName, PdfProgress(0)),
-                    contentResolver
-                )
-                booksLinksStorage.upsertBook(BookLink(fileName, fileName, PdfProgress(0)))
+                when (val fileType = getFileType(fileName)) {
+                    "pdf", "fb2" -> {
+                        val bookLink = when (fileType) {
+                            "pdf" -> BookLink(fileName, fileName, PdfProgress(0))
+                            "fb2" -> BookLink(fileName, fileName, Fb2Progress(0))
+                            else -> return@also // This should never happen due to the when condition
+                        }
+                        storageManager.copyBookToStorage(uri, bookLink, contentResolver)
+                        booksLinksStorage.upsertBook(bookLink)
+                    }
+                    else -> {
+                        Toast.makeText(
+                            this,
+                            "Только файлы формата PDF и FB2 поддерживаются приложением",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        lifecycleScope.launch { openFilePicker() }
+                    }
+                }
             }
         }
     }
@@ -122,9 +139,9 @@ class MainActivity : AppCompatActivity() {
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/pdf"
+            type = "*/*"
         }
-        startActivityForResult(intent, PICK_PDF_FILE)
+        startActivityForResult(intent, PICK_FILE)
     }
 
     private fun getFileName(uri: Uri): String {
@@ -202,14 +219,11 @@ class MainActivity : AppCompatActivity() {
                                 lifecycleScope.launch { openFilePicker() }
                             },
                             onItemClick = { bookLink ->
-                                navController.navigate(
-                                    "pdfReader/${
-                                        URLEncoder.encode(
-                                            bookLink.fileName,
-                                            StandardCharsets.UTF_8.toString()
-                                        )
-                                    }"
-                                )
+                                val encodedFileName = URLEncoder.encode(bookLink.fileName, StandardCharsets.UTF_8.toString())
+                                when (getFileType(bookLink.fileName)) {
+                                    "pdf" -> navController.navigate("pdfReader/$encodedFileName")
+                                    "fb2" -> navController.navigate("fb2Reader/$encodedFileName")
+                                }
                             },
                             storageManager = storageManager,
                             booksLinksStorage = booksLinksStorage
@@ -251,6 +265,33 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+                    composable("fb2Reader/{fileName}") { backStackEntry ->
+                        val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            URLDecoder.decode(
+                                backStackEntry.arguments?.getString("fileName"),
+                                StandardCharsets.UTF_8
+                            )
+                        } else {
+                            URLDecoder.decode(
+                                backStackEntry.arguments?.getString("fileName")
+                            )
+                        }
+                        fileName?.let {
+                            val bookLink =
+                                booksLinksStorage.booksLinks.find { it.fileName == fileName }
+                            bookLink?.let {
+                                val book = Fb2BookDomainModel(
+                                    it,
+                                    this@MainActivity,
+                                    storageManager = storageManager,
+                                    updateProgress = { updatedBookLink ->
+                                        booksLinksStorage.upsertBook(updatedBookLink)
+                                    }
+                                )
+                                Fb2ReaderScreen(book, settingsManager)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -287,5 +328,9 @@ class MainActivity : AppCompatActivity() {
         PDFReaderJetpackComposeTheme() {
             MainScreen()
         }
+    }
+
+    private fun getFileType(fileName: String): String {
+        return fileName.substringAfterLast('.', "").lowercase()
     }
 }

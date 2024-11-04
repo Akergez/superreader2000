@@ -21,6 +21,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
     private val progressAdapterFactory = RuntimeTypeAdapterFactory
         .of(Progress::class.java, "type")
         .registerSubtype(PdfProgress::class.java, "pdf")
+        .registerSubtype(Fb2Progress::class.java, "fb2")
 
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapterFactory(progressAdapterFactory)
@@ -38,7 +39,12 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
     fun copyBookToStorage(file: Uri, meta: BookLink, contentResolver: ContentResolver): String {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
-        val destFile = storageDir.createFile("application/pdf", meta.fileName) ?: throw Exception("Failed to create destination file")
+        val mimeType = when (getFileType(meta.fileName)) {
+            "pdf" -> "application/pdf"
+            "fb2" -> "application/fb2"
+            else -> throw Exception("Unsupported file type")
+        }
+        val destFile = storageDir.createFile(mimeType, meta.fileName) ?: throw Exception("Failed to create destination file")
 
         contentResolver.openInputStream(file)?.use { input ->
             contentResolver.openOutputStream(destFile.uri)?.use { output ->
@@ -60,6 +66,10 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
 
         return destFile.uri.toString()
+    }
+
+    private fun getFileType(fileName: String): String {
+        return fileName.substringAfterLast('.', "").lowercase()
     }
 
     fun getPreviewUri(fileName: String): Uri? {

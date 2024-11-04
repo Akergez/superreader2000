@@ -17,6 +17,7 @@ class BooksLinksStorage(context: Context, val storageManager: StorageManager) {
     private val progressAdapterFactory = RuntimeTypeAdapterFactory
         .of(Progress::class.java, "type")
         .registerSubtype(PdfProgress::class.java, "pdf")
+        .registerSubtype(Fb2Progress::class.java, "fb2")
 
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapterFactory(progressAdapterFactory)
