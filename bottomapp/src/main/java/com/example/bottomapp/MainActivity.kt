@@ -305,10 +305,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        LaunchedEffect(settingsManager.getStorageUri() == null) {
-            // Trigger directory picker in MainActivity
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            directoryLauncher.launch(intent)
+        if (settingsManager.getStorageUri() == null) {
+            LaunchedEffect("storage") {
+                // Trigger directory picker in MainActivity
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                directoryLauncher.launch(intent)
+            }
         }
     }
 
