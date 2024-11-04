@@ -38,6 +38,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import coil.ImageLoader
+import coil.memory.MemoryCache
+import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
@@ -72,6 +75,14 @@ class MainActivity : ComponentActivity() {
             singleOf(::StorageManager) bind StorageManager::class
             singleOf(::BookStorage) bind BookStorage::class
             singleOf(::SettingsManager) bind SettingsManager::class
+            single {
+                ImageLoader.Builder(androidContext())
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .memoryCache {
+                        MemoryCache.Builder(androidContext()).maxSizePercent(0.25).build()
+                    } // 25% of app's memory
+                    .build()
+            }
         }
 
         startKoin {
@@ -121,12 +132,12 @@ class MainActivity : ComponentActivity() {
         bookStorage: BookStorage = koinInject()
     ) {
         val context = LocalContext.current
-        val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.also { uri ->
-                        result.data?.data?.also { uri ->
-                            val fileName = getFileName(uri)
-                            when (val fileType = getFileType(fileName)) {
+        val launcher =
+            rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    result.data?.data?.also { uri ->
+                        result.data?.data?.also { uri ->val fileName = getFileName(uri)
+                        when (val fileType = getFileType(fileName)) {
                                 "pdf", "fb2" -> {
                                     val bookLink = when (fileType) {
                                         "pdf" -> BookLink(fileName, fileName, PdfProgress(0))
@@ -145,25 +156,26 @@ class MainActivity : ComponentActivity() {
                                     lifecycleScope.launch { openFilePicker() }
                                 }
                             }
-                }
-            }
-        }
-
-        val directoryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.also { uri ->
-                    context.contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    )
-                    val settingsManager = SettingsManager(context)
-                    settingsManager.saveStorageUri(uri)
-                    lifecycleScope.launch {
-                        bookStorage.refreshBooksLinks()
                     }
                 }
             }
-        }
+
+        val directoryLauncher =
+            rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    result.data?.data?.also { uri ->
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        )
+                        val settingsManager = SettingsManager(context)
+                        settingsManager.saveStorageUri(uri)
+                        lifecycleScope.launch {
+                            bookStorage.refreshBooksLinks()
+                        }
+                    }
+                }
+            }
 
         val navController = rememberNavController()
         val settingsManager = SettingsManager(context)

@@ -23,6 +23,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
 
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapterFactory(progressAdapterFactory)
+        .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
         .create()
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("books_links", Context.MODE_PRIVATE)
@@ -40,7 +41,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
     private fun getBooksLinksFromCache(): List<BookStorageEntry> {
         val cachedBooksLinks = sharedPreferences.getString("books_links_cache", null)
         return if (cachedBooksLinks != null) {
-            val type = object : TypeToken<List<BookMetaInfo>>() {}.type
+            val type = object : TypeToken<List<BookStorageEntry>>() {}.type
             gson.fromJson(cachedBooksLinks, type)
         } else {
             emptyList()
