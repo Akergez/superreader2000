@@ -1,3 +1,7 @@
+package com.example.bottomapp
+
+import Fb2ReaderScreen
+import PdfReaderScreen
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -26,7 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -34,7 +37,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.backend.AppThemeMode
-import com.example.bottomapp.backend.BookMetaInfo
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
@@ -88,27 +90,26 @@ fun MainScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.data?.also { uri ->
-                    result.data?.data?.also { uri ->
-                        val fileName = getFileName(context, uri)
-                        when (val fileType = getFileType(fileName)) {
-                            "pdf", "fb2" -> {
-                                val bookLink = when (fileType) {
-                                    "pdf" -> PdfProgress(0)
-                                    "fb2" -> Fb2Progress(0)
-                                    else -> return@also // This should never happen due to the when condition
-                                }
-                                bookStorage.addNewBook(uri, fileName, bookLink)
+                    val fileName = getFileName(context, uri)
+                    when (val fileType = getFileType(fileName)) {
+                        "pdf", "fb2" -> {
+                            val bookLink = when (fileType) {
+                                "pdf" -> PdfProgress(0)
+                                "fb2" -> Fb2Progress(0)
+                                else -> return@also // This should never happen due to the when condition
                             }
+                            bookStorage.addNewBook(uri, fileName, bookLink)
+                        }
 
-                            else -> {
-                                Toast.makeText(
-                                    context,
-                                    "Только файлы формата PDF и FB2 поддерживаются приложением",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+                        else -> {
+                            Toast.makeText(
+                                context,
+                                "Только файлы формата PDF и FB2 поддерживаются приложением",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
+
                 }
             }
         }
@@ -183,8 +184,11 @@ fun MainScreen(
                             }
                             launcher.launch(intent)
                         },
-                        onItemClick = {  bookLink ->
-                            val encodedFileName = URLEncoder.encode(bookLink.fileName, StandardCharsets.UTF_8.toString())
+                        onItemClick = { bookLink ->
+                            val encodedFileName = URLEncoder.encode(
+                                bookLink.fileName,
+                                StandardCharsets.UTF_8.toString()
+                            )
                             when (bookLink.bookMetaInfo.progress) {
                                 is PdfProgress -> navController.navigate("pdfReader/$encodedFileName")
                                 is Fb2Progress -> navController.navigate("fb2Reader/$encodedFileName")
@@ -208,6 +212,7 @@ fun MainScreen(
                             StandardCharsets.UTF_8
                         )
                     } else {
+                        @Suppress("DEPRECATION")
                         URLDecoder.decode(
                             backStackEntry.arguments?.getString("fileName")
                         )
@@ -235,6 +240,7 @@ fun MainScreen(
                             StandardCharsets.UTF_8
                         )
                     } else {
+                        @Suppress("DEPRECATION")
                         URLDecoder.decode(
                             backStackEntry.arguments?.getString("fileName")
                         )
