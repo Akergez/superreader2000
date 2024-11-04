@@ -1,5 +1,6 @@
 package com.example.bottomapp
 
+import MainScreen
 import Fb2ReaderScreen
 import PdfReaderScreen
 import android.app.Activity
@@ -54,6 +55,7 @@ import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.compose.koinInject
@@ -67,6 +69,7 @@ import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
     private val settingsKey = "Settings"
+    private val storageManager = inject<StorageManager>();
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,9 +98,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    //ToDo починить
-    /*override fun onDestroy() {
+
+    override fun onDestroy() {
         super.onDestroy()
+        storageManager.value.clearFileCache()
+    }
+}
         booksLinksStorage.saveBooksLinksToStorage()
         storageManager.clearFileCache()
     }*/
@@ -339,6 +345,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+@Preview(showBackground = true)
+@Composable
+fun DefaultPreview() {
+    MainScreen()
     @Preview(showBackground = true)
     @Composable
     fun DefaultPreview() {
