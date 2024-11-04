@@ -47,11 +47,9 @@ fun VerticalPdfScroll(
                             page = page,
                             pdfRendererHelper = pdfRendererHelper,
                             pdfFlipMode = pdfFlipMode,
-                            totalPages = totalPages,
-                            onPageChange = onPageChange,
                             onToggleMode = onToggleMode,
-                            mode = Mode.Scroll,
-                            applyInversion = applyInversion
+                            applyInversion = applyInversion,
+                            mode = Mode.Scroll
                         )
                     }
                 }

@@ -23,11 +23,12 @@ import com.example.bottomapp.backend.BookLink
 import com.example.bottomapp.backend.StorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.koin.compose.koinInject
 
 @Composable
 fun BookItem(bookLink: BookLink,
              onItemClick: (BookLink) -> Unit,
-             storageManager: StorageManager
+             storageManager: StorageManager = koinInject()
 ) {
     val previewUri = remember(bookLink.fileName) {
         mutableStateOf<Uri?>(null)

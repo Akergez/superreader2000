@@ -20,13 +20,14 @@ import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.SettingsManager
+import org.koin.compose.koinInject
 
 @Composable
 fun SettingsScreen(
-    updateAppTheme: (AppThemeMode) -> Unit, appTheme: AppThemeMode
+    updateAppTheme: (AppThemeMode) -> Unit,
+    appTheme: AppThemeMode,
+    settingsManager: SettingsManager = koinInject()
 ) {
-    val context = LocalContext.current
-    val settingsManager = SettingsManager(context)
     var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
     var pdfFlipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
 

@@ -57,7 +57,6 @@ import org.koin.compose.koinInject
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
-import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -159,7 +158,7 @@ class MainActivity : ComponentActivity() {
                     )
                     val settingsManager = SettingsManager(context)
                     settingsManager.saveStorageUri(uri)
-                    (context as ComponentActivity).lifecycleScope.launch {
+                    lifecycleScope.launch {
                         booksLinksStorage.refreshBooksLinks()
                     }
                 }
@@ -172,12 +171,6 @@ class MainActivity : ComponentActivity() {
             mutableStateOf(
                 settingsManager.getAppTheme(AppThemeMode.System)
             )
-        }
-
-        LaunchedEffect(settingsManager.getStorageUri() == null) {
-            // Trigger directory picker in MainActivity
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            directoryLauncher.launch(intent)
         }
 
         PDFReaderJetpackComposeTheme(
@@ -231,9 +224,7 @@ class MainActivity : ComponentActivity() {
                                     "pdf" -> navController.navigate("pdfReader/$encodedFileName")
                                     "fb2" -> navController.navigate("fb2Reader/$encodedFileName")
                                 }
-                            },
-                            storageManager = storageManager,
-                            booksLinksStorage = booksLinksStorage
+                            }
                         )
                     }
                     composable(settingsKey) {
@@ -268,7 +259,7 @@ class MainActivity : ComponentActivity() {
                                         booksLinksStorage.upsertBook(updatedBookLink)
                                     }
                                 )
-                                PdfReaderScreen(pdfBookDomainModel, settingsManager)
+                                PdfReaderScreen(pdfBookDomainModel)
                             }
                         }
                     }
@@ -301,6 +292,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+        LaunchedEffect(settingsManager.getStorageUri() == null) {
+            // Trigger directory picker in MainActivity
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            directoryLauncher.launch(intent)
         }
     }
 

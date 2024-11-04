@@ -21,14 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.BookLink
 import com.example.bottomapp.backend.BooksLinksStorage
-import com.example.bottomapp.backend.StorageManager
+import org.koin.compose.koinInject
 
 @Composable
 fun HomeScreen(
     onAddPdf: () -> Unit,
     onItemClick: (BookLink) -> Unit,
-    booksLinksStorage: BooksLinksStorage,
-    storageManager: StorageManager
+    booksLinksStorage: BooksLinksStorage = koinInject()
 ) {
 
     val updatedBooksLinks by rememberUpdatedState(booksLinksStorage.booksLinks)
@@ -50,7 +49,7 @@ fun HomeScreen(
                 )
             }
             items(updatedBooksLinks, key = { it.fileName }) { bookLink ->
-                BookItem(bookLink, onItemClick, storageManager)
+                BookItem(bookLink, onItemClick)
             }
         }
         FloatingActionButton(

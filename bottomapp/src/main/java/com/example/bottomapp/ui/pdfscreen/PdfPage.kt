@@ -22,21 +22,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfFlipMode
-import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
 
 @Composable
 fun PdfPage(
     page: Int,
     pdfRendererHelper: PdfRendererHelper,
     pdfFlipMode: PdfFlipMode,
-    totalPages: Int,
-    modifier: Modifier = Modifier,
     onToggleMode: (Mode) -> Unit,
-    onPageChange: (Int) -> Unit,
     applyInversion: Boolean, // Add this parameter
     mode: Mode,
 ) {
