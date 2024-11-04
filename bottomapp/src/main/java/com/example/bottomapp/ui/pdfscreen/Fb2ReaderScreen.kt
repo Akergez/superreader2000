@@ -41,7 +41,9 @@ import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
+import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
@@ -145,6 +147,8 @@ fun Fb2Content(
                 settingsManager = settingsManager
             )
         }
+
+        Mode.Scroll -> throw IllegalStateException("Scroll mode is not supported for FB2")
     }
 }
 
