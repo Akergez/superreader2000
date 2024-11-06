@@ -8,15 +8,15 @@ import java.io.File
 data class PdfProgress(val pageIndex: Int) : Progress(FormatType.PDF)
 
 class PdfBookDomainModel(
-    bookLink: BookLink,
+    bookMetaInfo: BookMetaInfo,
     val context: Context,
-    val updateProgress: (BookLink) -> Unit,
+    val updateProgress: (BookMetaInfo) -> Unit,
     val storageManager: StorageManager
 ) :
     BookDomainModel<PdfProgress> {
-    val title: String = bookLink.title
-    val fileName: String = bookLink.fileName
-    var progress: PdfProgress = bookLink.progress as PdfProgress
+    val title: String = bookMetaInfo.title
+    val fileName: String = bookMetaInfo.fileName
+    var progress: PdfProgress = bookMetaInfo.progress as PdfProgress
 
     private val gson = Gson()
 
@@ -30,6 +30,6 @@ class PdfBookDomainModel(
 
     override fun saveProgress(progress: PdfProgress) {
         this.progress = progress
-        updateProgress(BookLink(title, fileName, progress))
+        updateProgress(BookMetaInfo(title, fileName, progress))
     }
 }

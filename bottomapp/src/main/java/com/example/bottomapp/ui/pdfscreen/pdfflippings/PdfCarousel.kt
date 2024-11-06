@@ -56,13 +56,11 @@ fun PdfCarousel(
                     ) {
                         PdfPage(
                             page = page,
-                            totalPages = totalPages,
-                            pdfFlipMode = pdfFlipMode,
                             pdfRendererHelper = pdfRendererHelper,
-                            onPageChange = onPageChange,
+                            pdfFlipMode = pdfFlipMode,
                             onToggleMode = onToggleMode,
-                            mode = Mode.Carousel,
-                            applyInversion = applyInversion
+                            applyInversion = applyInversion,
+                            mode = Mode.Carousel
                         )
                     }
                 }

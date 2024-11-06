@@ -1,4 +1,3 @@
-import androidx.annotation.IntRange
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -7,7 +6,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.bottomapp.backend.DocThemeMode
@@ -22,13 +20,13 @@ import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
-import eu.wewox.pagecurl.page.PageCurlState
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @Composable
-fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager) {
+fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
     var mode by remember { mutableStateOf(when(settingsManager.getPdfFlipMode()) {
             PdfFlipMode.Curl -> Mode.Curl
@@ -59,16 +57,6 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager) 
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
-fun rememberCurlState(
-    @IntRange(from = 0) initialPage: Int = 0, max: Int = 0
-): PageCurlState = rememberSaveable() {
-    PageCurlState(
-        initialCurrent = initialPage, initialMax = max
-    )
-}
-
-@OptIn(ExperimentalPageCurlApi::class)
-@Composable
 fun PdfContent(
     currentPage: Int,
     totalPages: Int,
@@ -79,7 +67,7 @@ fun PdfContent(
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
-    var flipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
+    val flipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
 
     // Preload next and previous pages
     LaunchedEffect(pagerState.current) {
@@ -138,11 +126,9 @@ fun PdfContent(
                     page = index,
                     pdfRendererHelper = pdfRendererHelper,
                     pdfFlipMode = flipMode,
-                    totalPages = totalPages,
+                    onToggleMode = onToggleMode,
                     applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-                    onPageChange = onPageChange,
-                    mode = Mode.Curl,
-                    onToggleMode = onToggleMode
+                    mode = Mode.Curl
                 )
             }
         }
@@ -150,13 +136,11 @@ fun PdfContent(
         Mode.Zoom -> {
             PdfPage(
                 page = pagerState.current,
-                mode = mode,
-                pdfFlipMode = flipMode,
-                totalPages = totalPages,
-                onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,
-                onPageChange = onPageChange,
-                applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
+                pdfFlipMode = flipMode,
+                onToggleMode = onToggleMode,
+                applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
+                mode = mode
             )
         }
     }

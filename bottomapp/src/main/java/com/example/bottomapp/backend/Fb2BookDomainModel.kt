@@ -8,15 +8,15 @@ import java.io.File
 data class Fb2Progress(val pageIndex: Int) : Progress(FormatType.FB2)
 
 class Fb2BookDomainModel(
-    bookLink: BookLink,
+    bookLink: BookStorageEntry,
     val context: Context,
-    val updateProgress: (BookLink) -> Unit,
+    val updateProgress: (BookMetaInfo) -> Unit,
     val storageManager: StorageManager
 ) :
     BookDomainModel<Fb2Progress> {
-    val title: String = bookLink.title
+    val title: String = bookLink.bookMetaInfo.title
     val fileName: String = bookLink.fileName
-    var progress: Fb2Progress = bookLink.progress as Fb2Progress
+    var progress: Fb2Progress = bookLink.bookMetaInfo.progress as Fb2Progress
 
     private val gson = Gson()
 
@@ -30,6 +30,6 @@ class Fb2BookDomainModel(
 
     override fun saveProgress(progress: Fb2Progress) {
         this.progress = progress
-        updateProgress(BookLink(title, fileName, progress))
+        updateProgress(BookMetaInfo(title, fileName, progress))
     }
 }

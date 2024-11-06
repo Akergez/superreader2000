@@ -4,21 +4,22 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import coil.request.ImageRequest
+import coil.ImageLoader
+import org.koin.compose.koinInject
 
 @Composable
 fun AsyncImage(
     uri: Uri?,
-    animationDurationMillis: Int = 0,
     modifier: Modifier,
     alpha: Float = 1f,
+    imageLoader: ImageLoader = koinInject()
 ) {
     coil.compose.AsyncImage(
         model = uri,
         contentDescription = null,
         modifier = modifier,
         alpha = alpha,
-        contentScale = ContentScale.Crop
+        contentScale = ContentScale.Crop,
+        imageLoader = imageLoader
     )
 }
