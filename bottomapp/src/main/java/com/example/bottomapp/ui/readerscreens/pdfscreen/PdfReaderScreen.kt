@@ -1,3 +1,6 @@
+package com.example.bottomapp.ui.readerscreens.pdfscreen
+
+import PdfRendererHelper
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,13 +13,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
-import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.PdfPage
-import com.example.bottomapp.ui.readerscreens.pdfflippings.Mode
-import com.example.bottomapp.ui.readerscreens.pdfflippings.PdfCarousel
-import com.example.bottomapp.ui.readerscreens.pdfflippings.VerticalPdfScroll
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.PdfCarousel
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
@@ -28,11 +29,7 @@ import org.koin.compose.koinInject
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
-    var mode by remember { mutableStateOf(when(settingsManager.getPdfFlipMode()) {
-            PdfFlipMode.Curl -> Mode.Curl
-            PdfFlipMode.Scroll -> Mode.Scroll
-        })
-    }
+    var mode by remember { mutableStateOf(settingsManager.getPdfFlipMode())}
 
     val context = LocalContext.current
     val pdfFile = remember { book.getFile() }

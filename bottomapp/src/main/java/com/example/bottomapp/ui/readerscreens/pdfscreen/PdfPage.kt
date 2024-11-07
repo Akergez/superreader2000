@@ -1,8 +1,6 @@
-package com.example.bottomapp.ui.readerscreens
+package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import CurlPdfViewer
 import PdfRendererHelper
-import PdfViewer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -22,14 +20,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.PdfFlipMode
-import com.example.bottomapp.ui.readerscreens.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
 
 @Composable
 fun PdfPage(
     page: Int,
     pdfRendererHelper: PdfRendererHelper,
-    pdfFlipMode: PdfFlipMode,
+    pdfFlipMode: Mode,
     onToggleMode: (Mode) -> Unit,
     applyInversion: Boolean, // Add this parameter
     mode: Mode,
@@ -43,16 +40,7 @@ fun PdfPage(
     var isTransforming by remember { mutableStateOf(false) }
 
     val onZoomModeToggleWrapper = {
-        onToggleMode(
-            if (mode == Mode.Zoom) {
-                when(pdfFlipMode) {
-                    PdfFlipMode.Scroll -> Mode.Scroll
-                    PdfFlipMode.Curl -> Mode.Curl
-                }
-            }
-            else
-                Mode.Zoom
-        )
+        onToggleMode(if (mode == Mode.Zoom) pdfFlipMode else Mode.Zoom)
         scale = 1f
         offsetX = 0f
         offsetY = 0f

@@ -2,6 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
 
 
 enum class AppThemeMode(val value: String) {
@@ -14,12 +15,6 @@ enum class DocThemeMode(val value: String) {
     AsIs("AsIs"),
     Invert("Invert")
 }
-
-enum class PdfFlipMode() {
-    Scroll,
-    Curl
-}
-
 
 class SettingsManager(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -61,17 +56,17 @@ class SettingsManager(context: Context) {
         saveSetting(docThemeKey, theme.value)
     }
 
-    fun getPdfFlipMode(): PdfFlipMode {
-        val defaultMode = PdfFlipMode.Scroll
+    fun getPdfFlipMode(): Mode {
+        val defaultMode = Mode.Scroll
         val setting = getSetting(pdfFlipModeKey) ?: return defaultMode;
         return try {
-            PdfFlipMode.valueOf(setting)
+            Mode.valueOf(setting)
         } catch (e: Throwable) {
             defaultMode
         }
     }
 
-    fun setPdfFlipMode(mode: PdfFlipMode) {
+    fun setPdfFlipMode(mode: Mode) {
         saveSetting(pdfFlipModeKey, mode.toString())
     }
 
