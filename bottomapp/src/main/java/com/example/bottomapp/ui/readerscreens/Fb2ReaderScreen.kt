@@ -42,7 +42,7 @@ import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
@@ -52,9 +52,10 @@ import kotlinx.coroutines.withContext
 import org.w3c.dom.Node
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
+import org.koin.compose.koinInject
 
 @Composable
-fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager) {
+fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
     var mode by remember { mutableStateOf(Mode.Curl) }
     val context = LocalContext.current

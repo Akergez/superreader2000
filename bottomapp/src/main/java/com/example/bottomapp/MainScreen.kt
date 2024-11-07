@@ -1,7 +1,7 @@
 package com.example.bottomapp
 
 import Fb2ReaderScreen
-import PdfReaderScreen
+import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -223,7 +223,7 @@ fun MainScreen(
                         bookLink?.let {
                             val pdfBookDomainModel = PdfBookDomainModel(
                                 it.bookMetaInfo,
-                                context as ComponentActivity,
+                                context,
                                 storageManager = storageManager,
                                 updateProgress = { updatedBookLink ->
                                     bookStorage.updateProgress(updatedBookLink)
@@ -257,7 +257,7 @@ fun MainScreen(
                                     bookStorage.updateProgress(updatedBookLink)
                                 }
                             )
-                            Fb2ReaderScreen(book, settingsManager)
+                            Fb2ReaderScreen(book)
                         }
                     }
                 }
