@@ -2,7 +2,12 @@
 
 package com.example.bottomapp.ui.settingsscreen
 
+import android.app.Activity
+import android.content.Intent
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -14,16 +19,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.MainActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
+import kotlinx.coroutines.launch
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.compose.koinInject
 
@@ -33,10 +40,22 @@ fun SettingsScreen(
     appTheme: AppThemeMode,
     settingsManager: SettingsManager = koinInject()
 ) {
+    val context = LocalContext.current
     var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
     var pdfFlipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
+    var showSecondComposable by remember { mutableStateOf(false) }
 
     var storageAddress by remember { mutableStateOf(settingsManager.getStorageUri().toString()) }
+
+
+    if (showSecondComposable) {
+        ChangeStorageAddress(settingsManager = settingsManager,
+            onResult = {
+                status, newStorageAddress ->
+            showSecondComposable = status
+            storageAddress = newStorageAddress
+        })
+    }
 
 
     Column(
@@ -108,7 +127,6 @@ fun SettingsScreen(
         }
 
         Row(Modifier.padding(32.dp)) {
-
         }
 
         Text("Адрес хранилища", style = MaterialTheme.typography.headlineMedium)
@@ -119,19 +137,51 @@ fun SettingsScreen(
                 modifier = Modifier
                     .combinedClickable(
                         onClick = {
-                            (context as MainActivity).openDirectoryPicker()
-                            // не обновляет сразу, т.к. как я понял openDirectoryPicker запускаает выбор в другом потоке
-                            storageAddress = settingsManager.getStorageUri().toString()
+                            showSecondComposable = true
+                            // это вызывает обновление экрана
                         },
                         onLongClick = {
-                            val longPressText =
-                                "Не обновляет сразу, т.к. как я понял openDirectoryPicker запускаает выбор в другом потоке"
-                            Toast.makeText(context, longPressText, Toast.LENGTH_LONG).show()
-                            storageAddress = settingsManager.getStorageUri().toString()
+                            val longPressText = "#Trump2024"
+                            Toast
+                                .makeText(context, longPressText, Toast.LENGTH_LONG)
+                                .show()
+                            storageAddress = settingsManager
+                                .getStorageUri()
+                                .toString()
                         },
                     )
                     .padding(start = 8.dp)
             )
         }
+    }
+}
+
+@Composable
+fun ChangeStorageAddress(
+    settingsManager: SettingsManager,
+    onResult: (Boolean, String) -> Unit
+) {
+    val context = LocalContext.current
+
+    val directoryLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { uri ->
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                    settingsManager.saveStorageUri(uri)
+                    (context as ComponentActivity).lifecycleScope.launch {
+                    }
+                    onResult(false, uri.toString())
+                }
+            }
+        }
+
+    LaunchedEffect("storage") {
+        // Trigger directory picker in MainActivity
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        directoryLauncher.launch(intent)
     }
 }
