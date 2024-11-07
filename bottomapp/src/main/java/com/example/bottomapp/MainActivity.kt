@@ -21,6 +21,7 @@ import org.koin.dsl.module
 
 class MainActivity : ComponentActivity() {
     private val storageManager = inject<StorageManager>()
+    private val bookStorage = inject<BookStorage>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         storageManager.value.clearFileCache()
+        bookStorage.value.saveBooksLinksToStorage()
     }
 }
 
