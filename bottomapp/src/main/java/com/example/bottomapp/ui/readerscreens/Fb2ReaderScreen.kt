@@ -41,9 +41,8 @@ import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfflippings.Mode
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
@@ -51,10 +50,7 @@ import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.w3c.dom.Node
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
-import java.io.FileInputStream
 import javax.xml.parsers.DocumentBuilderFactory
 
 @Composable

@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.pdfscreen.pdfflippings
+package com.example.bottomapp.ui.readerscreens.pdfflippings
 
 enum class Mode {
     Carousel,

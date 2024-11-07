@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.pdfscreen
+package com.example.bottomapp.ui.readerscreens
 
 import CurlPdfViewer
 import PdfRendererHelper
@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.PdfFlipMode
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfflippings.Mode
 
 @Composable
 fun PdfPage(

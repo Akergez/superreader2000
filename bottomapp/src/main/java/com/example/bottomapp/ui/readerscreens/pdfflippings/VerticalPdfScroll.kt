@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.pdfscreen.pdfflippings
+package com.example.bottomapp.ui.readerscreens.pdfflippings
 
 import PdfRendererHelper
 import androidx.compose.foundation.layout.Box
@@ -16,7 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.PdfFlipMode
-import com.example.bottomapp.ui.pdfscreen.PdfPage
+import com.example.bottomapp.ui.readerscreens.PdfPage
 
 @Composable
 fun VerticalPdfScroll(

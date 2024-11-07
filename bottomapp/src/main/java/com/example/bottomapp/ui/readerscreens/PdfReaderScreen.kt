@@ -13,10 +13,10 @@ import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.pdfscreen.PdfPage
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.PdfCarousel
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
+import com.example.bottomapp.ui.readerscreens.PdfPage
+import com.example.bottomapp.ui.readerscreens.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfflippings.PdfCarousel
+import com.example.bottomapp.ui.readerscreens.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
