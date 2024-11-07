@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
 import org.koin.compose.koinInject
 
 @Composable
@@ -67,15 +67,15 @@ fun SettingsScreen(
 
         Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            Mode.entries.forEach { mode ->
+            FlipMode.entries.forEach { mode ->
                 RadioButton(selected = pdfFlipMode == mode, onClick = {
                     pdfFlipMode = mode
                     settingsManager.setPdfFlipMode(mode)
                 })
                 Text(
                     text = when (mode) {
-                        Mode.Curl -> "Классический"
-                        Mode.Scroll -> "Вертикальный"
+                        FlipMode.Curl -> "Классический"
+                        FlipMode.Scroll -> "Вертикальный"
                         else -> "Неизвестный"
                     },
                     style = MaterialTheme.typography.titleMedium,

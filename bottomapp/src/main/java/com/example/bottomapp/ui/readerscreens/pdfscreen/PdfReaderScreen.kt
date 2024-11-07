@@ -15,7 +15,7 @@ import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
 import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.PdfCarousel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
@@ -57,10 +57,10 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
 fun PdfContent(
     currentPage: Int,
     totalPages: Int,
-    mode: Mode,
+    mode: FlipMode,
     pdfRendererHelper: PdfRendererHelper,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (Mode) -> Unit,
+    onToggleMode: (FlipMode) -> Unit,
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
@@ -80,7 +80,7 @@ fun PdfContent(
     }
 
     when (mode) {
-        Mode.Carousel -> {
+        FlipMode.Carousel -> {
             PdfCarousel(
                 totalPages = totalPages,
                 initialPage = currentPage,
@@ -95,7 +95,7 @@ fun PdfContent(
             )
         }
 
-        Mode.Scroll -> {
+        FlipMode.Scroll -> {
             VerticalPdfScroll(
                 totalPages = totalPages,
                 initialPage = currentPage,
@@ -110,7 +110,7 @@ fun PdfContent(
             )
         }
 
-        Mode.Curl -> {
+        FlipMode.Curl -> {
             PageCurl(
                 count = totalPages,
                 state = pagerState,
@@ -125,12 +125,12 @@ fun PdfContent(
                     pdfFlipMode = flipMode,
                     onToggleMode = onToggleMode,
                     applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-                    mode = Mode.Curl
+                    mode = FlipMode.Curl
                 )
             }
         }
 
-        Mode.Zoom -> {
+        FlipMode.Zoom -> {
             PdfPage(
                 page = pagerState.current,
                 pdfRendererHelper = pdfRendererHelper,

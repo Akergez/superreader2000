@@ -28,9 +28,9 @@ import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
 fun PdfCarousel(
     totalPages: Int,
     initialPage: Int = 0,
-    pdfFlipMode: Mode,
+    pdfFlipMode: FlipMode,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (Mode) -> Unit,
+    onToggleMode: (FlipMode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
     applyInversion: Boolean,
     onApplyInversionToggle: (Boolean) -> Unit
@@ -59,7 +59,7 @@ fun PdfCarousel(
                             pdfFlipMode = pdfFlipMode,
                             onToggleMode = onToggleMode,
                             applyInversion = applyInversion,
-                            mode = Mode.Carousel
+                            mode = FlipMode.Carousel
                         )
                     }
                 }

@@ -21,9 +21,9 @@ import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
 fun VerticalPdfScroll(
     totalPages: Int,
     initialPage: Int = 0,
-    pdfFlipMode: Mode,
+    pdfFlipMode: FlipMode,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (Mode) -> Unit,
+    onToggleMode: (FlipMode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
     applyInversion: Boolean
 ) {
@@ -48,7 +48,7 @@ fun VerticalPdfScroll(
                             pdfFlipMode = pdfFlipMode,
                             onToggleMode = onToggleMode,
                             applyInversion = applyInversion,
-                            mode = Mode.Scroll
+                            mode = FlipMode.Scroll
                         )
                     }
                 }

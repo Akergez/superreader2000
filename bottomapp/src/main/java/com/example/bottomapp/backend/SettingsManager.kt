@@ -2,7 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
 
 
 enum class AppThemeMode(val value: String) {
@@ -56,17 +56,17 @@ class SettingsManager(context: Context) {
         saveSetting(docThemeKey, theme.value)
     }
 
-    fun getPdfFlipMode(): Mode {
-        val defaultMode = Mode.Scroll
+    fun getPdfFlipMode(): FlipMode {
+        val defaultMode = FlipMode.Scroll
         val setting = getSetting(pdfFlipModeKey) ?: return defaultMode;
         return try {
-            Mode.valueOf(setting)
+            FlipMode.valueOf(setting)
         } catch (e: Throwable) {
             defaultMode
         }
     }
 
-    fun setPdfFlipMode(mode: Mode) {
+    fun setPdfFlipMode(mode: FlipMode) {
         saveSetting(pdfFlipModeKey, mode.toString())
     }
 
