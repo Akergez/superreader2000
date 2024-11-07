@@ -18,8 +18,6 @@ class PdfBookDomainModel(
     val fileName: String = bookMetaInfo.fileName
     var progress: PdfProgress = bookMetaInfo.progress as PdfProgress
 
-    private val gson = Gson()
-
     override fun readProgress(): PdfProgress {
         return progress;
     }

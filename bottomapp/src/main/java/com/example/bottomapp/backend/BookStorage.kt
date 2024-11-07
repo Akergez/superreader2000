@@ -93,6 +93,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
 
         bookCache.remove(exist);
         bookCache.add(BookStorageEntry(exist.fileName, exist.previewUri, bookMetaInfo))
+        booksHashMap.add(exist.bookMetaInfo.fileName)
         saveBooksLinksToStorage()
     }
 }

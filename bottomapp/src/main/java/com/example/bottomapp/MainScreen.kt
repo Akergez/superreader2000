@@ -189,10 +189,7 @@ fun MainScreen(
                                 bookLink.fileName,
                                 StandardCharsets.UTF_8.toString()
                             )
-                            when (bookLink.bookMetaInfo.progress) {
-                                is PdfProgress -> navController.navigate("pdfReader/$encodedFileName")
-                                is Fb2Progress -> navController.navigate("fb2Reader/$encodedFileName")
-                            }
+                            navController.navigate("bookReader/$encodedFileName")
                         }
                     )
                 }
@@ -205,7 +202,7 @@ fun MainScreen(
                         appTheme = currentTheme.value
                     )
                 }
-                composable("pdfReader/{fileName}") { backStackEntry ->
+                composable("bookReader/{fileName}") { backStackEntry ->
                     val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         URLDecoder.decode(
                             backStackEntry.arguments?.getString("fileName"),
@@ -218,46 +215,31 @@ fun MainScreen(
                         )
                     }
                     fileName?.let {
-                        val bookLink =
-                            bookStorage.bookCache.find { it.fileName == fileName }
-                        bookLink?.let {
-                            val pdfBookDomainModel = PdfBookDomainModel(
-                                it.bookMetaInfo,
-                                context,
-                                storageManager = storageManager,
-                                updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
-                                }
-                            )
-                            PdfReaderScreen(pdfBookDomainModel)
-                        }
-                    }
-                }
-                composable("fb2Reader/{fileName}") { backStackEntry ->
-                    val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        URLDecoder.decode(
-                            backStackEntry.arguments?.getString("fileName"),
-                            StandardCharsets.UTF_8
-                        )
-                    } else {
-                        @Suppress("DEPRECATION")
-                        URLDecoder.decode(
-                            backStackEntry.arguments?.getString("fileName")
-                        )
-                    }
-                    fileName?.let {
-                        val bookLink =
-                            bookStorage.bookCache.find { it.fileName == fileName }
-                        bookLink?.let {
-                            val book = Fb2BookDomainModel(
-                                it,
-                                context,
-                                storageManager = storageManager,
-                                updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
-                                }
-                            )
-                            Fb2ReaderScreen(book)
+                        val bookLink = bookStorage.bookCache.find { it.fileName == fileName }
+                        if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
+                            bookLink.let {
+                                val pdfBookDomainModel = PdfBookDomainModel(
+                                    it.bookMetaInfo,
+                                    context,
+                                    storageManager = storageManager,
+                                    updateProgress = { updatedBookLink ->
+                                        bookStorage.updateProgress(updatedBookLink)
+                                    }
+                                )
+                                PdfReaderScreen(pdfBookDomainModel)
+                            }
+                        } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
+                            bookLink.let {
+                                val book = Fb2BookDomainModel(
+                                    it.bookMetaInfo,
+                                    context,
+                                    storageManager = storageManager,
+                                    updateProgress = { updatedBookLink ->
+                                        bookStorage.updateProgress(updatedBookLink)
+                                    }
+                                )
+                                Fb2ReaderScreen(book)
+                            }
                         }
                     }
                 }

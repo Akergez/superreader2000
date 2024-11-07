@@ -32,7 +32,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 @Composable
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
-    var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
+    var currentPage by remember { mutableIntStateOf(book.readProgress().wordOffset) }
     var mode by remember { mutableStateOf(FlipMode.Curl) }
     val context = LocalContext.current
     val fb2File = remember { book.getFile() }
@@ -44,17 +44,25 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val fontSize = 16 //settingsManager.getFontSize()
     val applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
 
+    var sums by remember { mutableStateOf(listOf<Int>()) }
     // Парсинг FB2-контента
     LaunchedEffect(fb2File) {
-        val fullText = parseFb2Content(fb2File)
+        val tagCounter = IntArray(2) // Инициализируем массив для счетчика
+        val fullText = parseFb2Content(fb2File, tagCounter)
         pages = withContext(Dispatchers.Default) {
             paginateText(fullText, fontSize, context)
         }
+        sums = calculatePrefixSums(pages);
     }
 
     val onPageChange = rememberUpdatedState { newPage: Int ->
-        currentPage = newPage
-        book.saveProgress(Fb2Progress(newPage))
+        if (sums.isNotEmpty() && newPage > 0) {
+            currentPage = newPage
+            book.saveProgress(Fb2Progress(sums[newPage]))
+        }
+        if (newPage == 0) {
+            currentPage = 0
+        }
     }
 
     Fb2Content(
@@ -95,6 +103,7 @@ fun Fb2Content(
                 settingsManager = settingsManager
             )
         }
+
         FlipMode.Curl -> {
             PageCurl(
                 count = totalPages,
@@ -112,6 +121,7 @@ fun Fb2Content(
                 )
             }
         }
+
         FlipMode.Zoom -> {
             Fb2Page(
                 pageContent = if (currentPage < pages.size) pages[currentPage] else "",
@@ -125,7 +135,7 @@ fun Fb2Content(
     }
 }
 
-suspend fun parseFb2Content(fb2File: File): String {
+suspend fun parseFb2Content(fb2File: File, tagCounter: IntArray): String {
     return withContext(Dispatchers.IO) {
         try {
             val factory = DocumentBuilderFactory.newInstance()
@@ -146,7 +156,7 @@ suspend fun parseFb2Content(fb2File: File): String {
                 // Проверяем, является ли это основным телом текста
                 val name = body.attributes?.getNamedItem("name")?.nodeValue
                 if (name == null || name == "notes") {
-                    parseBodyContent(body, stringBuilder)
+                    parseBodyContent(body, stringBuilder, tagCounter)
                 }
             }
 
@@ -159,34 +169,44 @@ suspend fun parseFb2Content(fb2File: File): String {
     }
 }
 
-private fun parseBodyContent(node: Node, stringBuilder: StringBuilder) {
+private fun parseBodyContent(node: Node, stringBuilder: StringBuilder, tagCounter: IntArray) {
     val children = node.childNodes
     for (i in 0 until children.length) {
         val child = children.item(i)
+        // Увеличиваем счетчик для каждого узла
+        tagCounter[0]++
+
         when (child.nodeName) {
-            "section" -> parseBodyContent(child, stringBuilder)
+            "section" -> parseBodyContent(child, stringBuilder, tagCounter)
             "title" -> {
-                val title = extractTextContent(child)
+                val title = extractTextContent(child, tagCounter)
                 if (title.isNotEmpty()) {
                     stringBuilder.append(title.uppercase()).append("\n\n")
                 }
             }
+
             "p" -> {
-                val paragraph = extractTextContent(child)
+                val paragraph = extractTextContent(child, tagCounter)
                 if (paragraph.isNotEmpty()) {
                     stringBuilder.append(paragraph).append("\n\n")
                 }
             }
-            "empty-line" -> stringBuilder.append("\n")
+
+            "empty-line" -> {
+                stringBuilder.append("\n")
+            }
         }
     }
 }
 
-private fun extractTextContent(node: Node): String {
+private fun extractTextContent(node: Node, tagCounter: IntArray): String {
     val stringBuilder = StringBuilder()
     val children = node.childNodes
     for (i in 0 until children.length) {
         val child = children.item(i)
+        // Увеличиваем счетчик для каждого узла
+        tagCounter[0]++
+
         when (child.nodeType) {
             Node.TEXT_NODE -> {
                 val text = child.nodeValue?.trim() ?: ""
@@ -194,14 +214,16 @@ private fun extractTextContent(node: Node): String {
                     stringBuilder.append(text).append(" ")
                 }
             }
+
             Node.ELEMENT_NODE -> {
                 when (child.nodeName) {
                     "emphasis", "strong", "sup", "sub", "code", "a" -> {
-                        val text = extractTextContent(child)
+                        val text = extractTextContent(child, tagCounter)
                         if (text.isNotEmpty()) {
                             stringBuilder.append(text).append(" ")
                         }
                     }
+                    // Вы можете добавить дополнительные теги, если нужно
                 }
             }
         }
@@ -266,4 +288,16 @@ fun paginateText(fullText: String, fontSize: Int, context: Context): List<String
     }
 
     return pages
+}
+
+fun calculatePrefixSums(pages: List<String>): List<Int> {
+    val prefixSums = mutableListOf<Int>()
+    var currentSum = 0
+
+    for (page in pages) {
+        prefixSums.add(currentSum)
+        currentSum += page.length
+    }
+
+    return prefixSums
 }
