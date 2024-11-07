@@ -20,7 +20,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 @Composable
 fun PdfPage(

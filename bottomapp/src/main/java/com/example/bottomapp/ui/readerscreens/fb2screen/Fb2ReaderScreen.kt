@@ -18,7 +18,7 @@ import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Carousel
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Page
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
@@ -41,7 +41,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     var pages by remember { mutableStateOf(listOf<String>()) }
 
     // Настройки оформления
-    val fontSize = 16; //settingsManager.getFontSize()
+    val fontSize = 16 //settingsManager.getFontSize()
     val applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
 
     // Парсинг FB2-контента

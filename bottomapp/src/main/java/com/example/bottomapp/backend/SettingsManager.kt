@@ -2,7 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 
 enum class AppThemeMode(val value: String) {
@@ -31,7 +31,7 @@ class SettingsManager(context: Context) {
     }
 
     fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
-        val setting = getSetting(appThemeKey) ?: return defaultTheme;
+        val setting = getSetting(appThemeKey) ?: return defaultTheme
         return try {
             AppThemeMode.valueOf(setting)
         } catch (e: Throwable) {
@@ -44,7 +44,7 @@ class SettingsManager(context: Context) {
     }
 
     fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
-        val setting = getSetting(docThemeKey) ?: return defaultTheme;
+        val setting = getSetting(docThemeKey) ?: return defaultTheme
         return try {
             DocThemeMode.valueOf(setting)
         } catch (e: Throwable) {
@@ -58,7 +58,7 @@ class SettingsManager(context: Context) {
 
     fun getPdfFlipMode(): FlipMode {
         val defaultMode = FlipMode.Scroll
-        val setting = getSetting(pdfFlipModeKey) ?: return defaultMode;
+        val setting = getSetting(pdfFlipModeKey) ?: return defaultMode
         return try {
             FlipMode.valueOf(setting)
         } catch (e: Throwable) {
@@ -71,11 +71,11 @@ class SettingsManager(context: Context) {
     }
 
     fun getStorageUri(): Uri? {
-        val setting: String = getSetting("storage") ?: return null;
-        return Uri.parse(setting);
+        val setting: String = getSetting("storage") ?: return null
+        return Uri.parse(setting)
     }
 
-    fun saveStorageUri(uri: Uri): Unit {
-        saveSetting("storage", uri.toString());
+    fun saveStorageUri(uri: Uri) {
+        saveSetting("storage", uri.toString())
     }
 }

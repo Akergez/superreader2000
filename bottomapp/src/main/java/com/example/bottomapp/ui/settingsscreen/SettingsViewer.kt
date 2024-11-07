@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.compose.koinInject
 
 @Composable

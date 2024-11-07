@@ -15,7 +15,7 @@ import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.PdfCarousel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
