@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.DocThemeMode
@@ -37,6 +38,8 @@ fun Fb2Page(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     var isTransforming by remember { mutableStateOf(false) }
+    // Настройки оформления
+    val fontSize = 16 //settingsManager.getFontSize()
 
     val backgroundColor = if (settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert)
         Color.Black else Color.White
@@ -76,9 +79,10 @@ fun Fb2Page(
     ) {
         Text(
             text = pageContent,
-            fontSize = 18.sp * scale,
+            fontSize = fontSize.sp * scale,
             color = textColor,
-            modifier = Modifier.offset(offsetX.dp, offsetY.dp)
+            modifier = Modifier.offset(offsetX.dp, offsetY.dp),
+            textAlign = TextAlign.Left
         )
     }
 }

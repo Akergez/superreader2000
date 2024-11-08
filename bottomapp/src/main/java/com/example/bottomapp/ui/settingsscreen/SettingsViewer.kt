@@ -67,7 +67,7 @@ fun SettingsScreen(
 
         Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            FlipMode.entries.forEach { mode ->
+            arrayOf(FlipMode.Curl, FlipMode.Scroll).forEach { mode ->
                 RadioButton(selected = pdfFlipMode == mode, onClick = {
                     pdfFlipMode = mode
                     settingsManager.setPdfFlipMode(mode)
