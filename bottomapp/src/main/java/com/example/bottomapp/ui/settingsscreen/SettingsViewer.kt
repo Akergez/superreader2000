@@ -4,6 +4,7 @@ package com.example.bottomapp.ui.settingsscreen
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -25,6 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.bottomapp.backend.AppThemeMode
@@ -33,6 +37,17 @@ import com.example.bottomapp.backend.SettingsManager
 import kotlinx.coroutines.launch
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.compose.koinInject
+
+
+@Preview(showBackground = true)
+@Composable
+fun DefaultSettingsScreen() {
+    SettingsScreen({ theme -> },
+        AppThemeMode.Light,
+        SettingsManager(LocalContext.current)
+    )
+}
+
 
 @Composable
 fun SettingsScreen(
@@ -63,14 +78,14 @@ fun SettingsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Тема приложения", style = MaterialTheme.typography.headlineMedium)
+        Text("App theme", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             AppThemeMode.entries.forEach { theme ->
                 RadioButton(selected = appTheme == theme, onClick = { updateAppTheme(theme) })
                 Text(text = when (theme) {
-                    AppThemeMode.Light -> "Светлая"
-                    AppThemeMode.Dark -> "Темная"
-                    AppThemeMode.System -> "Системная"
+                    AppThemeMode.Light -> "Light"
+                    AppThemeMode.Dark -> "Dark"
+                    AppThemeMode.System -> "System"
                 },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
@@ -79,7 +94,7 @@ fun SettingsScreen(
             }
         }
 
-        Text("Тема документов", style = MaterialTheme.typography.headlineMedium)
+        Text("Documents theme", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             DocThemeMode.entries.forEach { theme ->
                 RadioButton(
@@ -103,7 +118,7 @@ fun SettingsScreen(
 
         }
 
-        Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
+        Text("Paging mode", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             arrayOf(FlipMode.Curl, FlipMode.Scroll).forEach { mode ->
                 RadioButton(selected = pdfFlipMode == mode, onClick = {
@@ -129,7 +144,7 @@ fun SettingsScreen(
         Row(Modifier.padding(32.dp)) {
         }
 
-        Text("Адрес хранилища", style = MaterialTheme.typography.headlineMedium)
+        Text("Storage address", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
             Text(
                 text = storageAddress,

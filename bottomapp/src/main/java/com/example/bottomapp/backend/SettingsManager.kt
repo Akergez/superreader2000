@@ -17,8 +17,8 @@ enum class DocThemeMode {
 }
 
 enum class PdfFlipMode {
+    Curl,
     Scroll,
-    Curl
 }
 
 class SettingsManager(context: Context) {
