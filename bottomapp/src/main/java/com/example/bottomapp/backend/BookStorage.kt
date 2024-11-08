@@ -33,7 +33,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
         refreshBooksLinksFromCache()
     }
 
-    private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
+    suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
         return storageManager.listAllBooks()
     }
 
@@ -55,7 +55,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
         cacheBooksLinks()
     }
 
-    private fun refreshBooksLinksFromCache() {
+    fun refreshBooksLinksFromCache() {
         bookCache.clear()
         bookCache.addAll(getBooksLinksFromCache())
     }
@@ -67,7 +67,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
         cacheBooksLinks()
     }
 
-    private fun cacheBooksLinks() {
+    fun cacheBooksLinks() {
         val editor = sharedPreferences.edit()
         val booksLinksJson = gson.toJson(bookCache)
         editor.putString("books_links_cache", booksLinksJson)

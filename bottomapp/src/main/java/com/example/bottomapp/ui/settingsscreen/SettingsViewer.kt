@@ -32,8 +32,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.bottomapp.backend.AppThemeMode
+import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.backend.StorageManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.compose.koinInject
@@ -187,9 +191,18 @@ fun ChangeStorageAddress(
                         Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     )
                     settingsManager.saveStorageUri(uri)
+
+
                     (context as ComponentActivity).lifecycleScope.launch {
+                        val svo = BookStorage(context, StorageManager(context, settingsManager))
+                        svo.refreshBooksLinks()
                     }
                     onResult(false, uri.toString())
+
+                    //val scope = CoroutineScope(Dispatchers.Default)
+
+                    //svo.cacheBooksLinks()
+                    //svo.refreshBooksLinksFromCache()
                 }
             }
         }
