@@ -55,7 +55,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
         cacheBooksLinks()
     }
 
-    fun refreshBooksLinksFromCache() {
+    private fun refreshBooksLinksFromCache() {
         bookCache.clear()
         bookCache.addAll(getBooksLinksFromCache())
     }
@@ -67,7 +67,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
         cacheBooksLinks()
     }
 
-    fun cacheBooksLinks() {
+    private fun cacheBooksLinks() {
         val editor = sharedPreferences.edit()
         val booksLinksJson = gson.toJson(bookCache)
         editor.putString("books_links_cache", booksLinksJson)
