@@ -8,7 +8,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import java.io.File
 
 data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
 
@@ -88,11 +87,11 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
     fun updateProgress(bookMetaInfo: BookMetaInfo) {
         val exist = bookCache.find { it.bookMetaInfo.fileName == bookMetaInfo.fileName }
         if (exist == null) {
-            return;
+            return
         }
 
-        bookCache.remove(exist);
+        bookCache.remove(exist)
         bookCache.add(BookStorageEntry(exist.fileName, exist.previewUri, bookMetaInfo))
-        saveBooksLinksToStorage()
+        booksHashMap.add(exist.bookMetaInfo.fileName)
     }
 }

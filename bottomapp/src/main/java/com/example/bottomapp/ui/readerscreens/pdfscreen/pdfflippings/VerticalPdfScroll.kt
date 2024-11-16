@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.pdfscreen.pdfflippings
+package com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings
 
 import PdfRendererHelper
 import androidx.compose.foundation.layout.Box
@@ -15,16 +15,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.PdfFlipMode
-import com.example.bottomapp.ui.pdfscreen.PdfPage
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
 
 @Composable
 fun VerticalPdfScroll(
     totalPages: Int,
     initialPage: Int = 0,
-    pdfFlipMode: PdfFlipMode,
+    pdfFlipMode: FlipMode,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (Mode) -> Unit,
+    onToggleMode: (FlipMode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
     applyInversion: Boolean
 ) {
@@ -49,7 +49,7 @@ fun VerticalPdfScroll(
                             pdfFlipMode = pdfFlipMode,
                             onToggleMode = onToggleMode,
                             applyInversion = applyInversion,
-                            mode = Mode.Scroll
+                            mode = FlipMode.Scroll
                         )
                     }
                 }

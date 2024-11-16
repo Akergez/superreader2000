@@ -1,3 +1,7 @@
+package com.example.bottomapp.ui.readerscreens.pdfscreen
+
+import CanvasWithPage
+import PdfRendererHelper
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

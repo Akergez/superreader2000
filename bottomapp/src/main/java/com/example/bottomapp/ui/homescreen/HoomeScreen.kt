@@ -59,7 +59,7 @@ fun HomeScreen(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = "Add PDF")
+            Icon(Icons.Filled.Add, contentDescription = "Add book")
         }
     }
 }

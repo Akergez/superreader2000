@@ -1,3 +1,6 @@
+package com.example.bottomapp.ui.readerscreens.pdfscreen
+
+import PdfRendererHelper
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,13 +13,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
-import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.pdfscreen.PdfPage
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.PdfCarousel
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.VerticalPdfScroll
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.PdfCarousel
+import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
@@ -28,11 +29,7 @@ import org.koin.compose.koinInject
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
-    var mode by remember { mutableStateOf(when(settingsManager.getPdfFlipMode()) {
-            PdfFlipMode.Curl -> Mode.Curl
-            PdfFlipMode.Scroll -> Mode.Scroll
-        })
-    }
+    var mode by remember { mutableStateOf(settingsManager.getPdfFlipMode())}
 
     val context = LocalContext.current
     val pdfFile = remember { book.getFile() }
@@ -60,10 +57,10 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
 fun PdfContent(
     currentPage: Int,
     totalPages: Int,
-    mode: Mode,
+    mode: FlipMode,
     pdfRendererHelper: PdfRendererHelper,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (Mode) -> Unit,
+    onToggleMode: (FlipMode) -> Unit,
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
@@ -83,7 +80,7 @@ fun PdfContent(
     }
 
     when (mode) {
-        Mode.Carousel -> {
+        FlipMode.Carousel -> {
             PdfCarousel(
                 totalPages = totalPages,
                 initialPage = currentPage,
@@ -98,7 +95,7 @@ fun PdfContent(
             )
         }
 
-        Mode.Scroll -> {
+        FlipMode.Scroll -> {
             VerticalPdfScroll(
                 totalPages = totalPages,
                 initialPage = currentPage,
@@ -113,7 +110,7 @@ fun PdfContent(
             )
         }
 
-        Mode.Curl -> {
+        FlipMode.Curl -> {
             PageCurl(
                 count = totalPages,
                 state = pagerState,
@@ -128,12 +125,12 @@ fun PdfContent(
                     pdfFlipMode = flipMode,
                     onToggleMode = onToggleMode,
                     applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-                    mode = Mode.Curl
+                    mode = FlipMode.Curl
                 )
             }
         }
 
-        Mode.Zoom -> {
+        FlipMode.Zoom -> {
             PdfPage(
                 page = pagerState.current,
                 pdfRendererHelper = pdfRendererHelper,

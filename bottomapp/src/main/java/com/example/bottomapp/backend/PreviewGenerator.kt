@@ -10,8 +10,6 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.collection.LruCache
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
@@ -76,8 +74,8 @@ class PreviewGenerator(private val cacheSize: Int = 10) {
             var title = ""
             var author = ""
             var coverData: String? = null
+            var coverId: String? = null
             var eventType = parser.eventType
-            var insideCoverpage = false
 
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 when (eventType) {
@@ -85,22 +83,25 @@ class PreviewGenerator(private val cacheSize: Int = 10) {
                         when (parser.name) {
                             "book-title" -> title = parser.nextText()
                             "first-name", "last-name" -> author += parser.nextText() + " "
-                            "coverpage" -> insideCoverpage = true
+                            "coverpage" -> {
+                                // Ищем ссылку на обложку
+                                while (parser.next() != XmlPullParser.END_TAG) {
+                                    if (parser.eventType == XmlPullParser.START_TAG && parser.name == "image") {
+                                        coverId = parser.getAttributeValue("http://www.w3.org/1999/xlink", "href")?.removePrefix("#")
+                                        break
+                                    }
+                                }
+                            }
                             "binary" -> {
-                                if (insideCoverpage && parser.getAttributeValue(null, "content-type").startsWith("image/")) {
+                                val id = parser.getAttributeValue(null, "id")
+                                if (id == coverId && parser.getAttributeValue(null, "content-type").startsWith("image/")) {
                                     coverData = parser.nextText()
                                     break
                                 }
                             }
                         }
                     }
-                    XmlPullParser.END_TAG -> {
-                        if (parser.name == "coverpage") {
-                            insideCoverpage = false
-                        }
-                    }
                 }
-                if (coverData != null) break
                 eventType = parser.next()
             }
 

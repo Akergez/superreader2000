@@ -1,8 +1,6 @@
-package com.example.bottomapp.ui.pdfscreen
+package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import CurlPdfViewer
 import PdfRendererHelper
-import PdfViewer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -22,17 +20,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.PdfFlipMode
-import com.example.bottomapp.ui.pdfscreen.pdfflippings.Mode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 @Composable
 fun PdfPage(
     page: Int,
     pdfRendererHelper: PdfRendererHelper,
-    pdfFlipMode: PdfFlipMode,
-    onToggleMode: (Mode) -> Unit,
+    pdfFlipMode: FlipMode,
+    onToggleMode: (FlipMode) -> Unit,
     applyInversion: Boolean, // Add this parameter
-    mode: Mode,
+    mode: FlipMode,
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -43,22 +40,13 @@ fun PdfPage(
     var isTransforming by remember { mutableStateOf(false) }
 
     val onZoomModeToggleWrapper = {
-        onToggleMode(
-            if (mode == Mode.Zoom) {
-                when(pdfFlipMode) {
-                    PdfFlipMode.Scroll -> Mode.Scroll
-                    PdfFlipMode.Curl -> Mode.Curl
-                }
-            }
-            else
-                Mode.Zoom
-        )
+        onToggleMode(if (mode == FlipMode.Zoom) pdfFlipMode else FlipMode.Zoom)
         scale = 1f
         offsetX = 0f
         offsetY = 0f
     }
     when (mode) {
-        Mode.Zoom -> {
+        FlipMode.Zoom -> {
             Box(
                 modifier = Modifier.basePageBoxModifier()
                     .pointerInput(Unit) {
@@ -96,7 +84,7 @@ fun PdfPage(
                 )
             }
         }
-        Mode.Carousel -> {
+        FlipMode.Carousel -> {
             Box(
                 modifier = Modifier.basePageBoxModifier()
                         .pointerInput(Unit) {
@@ -107,7 +95,7 @@ fun PdfPage(
                             },
                             onLongPress = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onToggleMode(Mode.Curl)
+                                onToggleMode(FlipMode.Curl)
                             }
                         )
                     }
@@ -124,7 +112,7 @@ fun PdfPage(
                 )
             }
         }
-        Mode.Curl -> {
+        FlipMode.Curl -> {
             Box(
                 modifier = Modifier.basePageBoxModifier()
                     .pointerInput(Unit) {
@@ -135,7 +123,7 @@ fun PdfPage(
                             },
                             onLongPress = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onToggleMode(Mode.Carousel)
+                                onToggleMode(FlipMode.Carousel)
                             }
                         )
                     }

@@ -2,6 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 
 enum class AppThemeMode(val value: String) {
@@ -14,12 +15,6 @@ enum class DocThemeMode(val value: String) {
     AsIs("AsIs"),
     Invert("Invert")
 }
-
-enum class PdfFlipMode() {
-    Scroll,
-    Curl
-}
-
 
 class SettingsManager(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -36,7 +31,7 @@ class SettingsManager(context: Context) {
     }
 
     fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
-        val setting = getSetting(appThemeKey) ?: return defaultTheme;
+        val setting = getSetting(appThemeKey) ?: return defaultTheme
         return try {
             AppThemeMode.valueOf(setting)
         } catch (e: Throwable) {
@@ -49,7 +44,7 @@ class SettingsManager(context: Context) {
     }
 
     fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
-        val setting = getSetting(docThemeKey) ?: return defaultTheme;
+        val setting = getSetting(docThemeKey) ?: return defaultTheme
         return try {
             DocThemeMode.valueOf(setting)
         } catch (e: Throwable) {
@@ -61,26 +56,26 @@ class SettingsManager(context: Context) {
         saveSetting(docThemeKey, theme.value)
     }
 
-    fun getPdfFlipMode(): PdfFlipMode {
-        val defaultMode = PdfFlipMode.Scroll
-        val setting = getSetting(pdfFlipModeKey) ?: return defaultMode;
+    fun getPdfFlipMode(): FlipMode {
+        val defaultMode = FlipMode.Scroll
+        val setting = getSetting(pdfFlipModeKey) ?: return defaultMode
         return try {
-            PdfFlipMode.valueOf(setting)
+            FlipMode.valueOf(setting)
         } catch (e: Throwable) {
             defaultMode
         }
     }
 
-    fun setPdfFlipMode(mode: PdfFlipMode) {
+    fun setPdfFlipMode(mode: FlipMode) {
         saveSetting(pdfFlipModeKey, mode.toString())
     }
 
     fun getStorageUri(): Uri? {
-        val setting: String = getSetting("storage") ?: return null;
-        return Uri.parse(setting);
+        val setting: String = getSetting("storage") ?: return null
+        return Uri.parse(setting)
     }
 
-    fun saveStorageUri(uri: Uri): Unit {
-        saveSetting("storage", uri.toString());
+    fun saveStorageUri(uri: Uri) {
+        saveSetting("storage", uri.toString())
     }
 }

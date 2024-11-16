@@ -14,12 +14,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
-import com.example.bottomapp.backend.PdfFlipMode
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.compose.koinInject
 
 @Composable
@@ -68,16 +67,17 @@ fun SettingsScreen(
 
         Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            PdfFlipMode.entries.forEach { mode ->
+            arrayOf(FlipMode.Curl, FlipMode.Scroll).forEach { mode ->
                 RadioButton(selected = pdfFlipMode == mode, onClick = {
                     pdfFlipMode = mode
                     settingsManager.setPdfFlipMode(mode)
                 })
-                Text(text = when (mode) {
-                        PdfFlipMode.Curl -> "Классический"
-                        PdfFlipMode.Scroll -> "Вертикальный"
-                    }
-                    ,
+                Text(
+                    text = when (mode) {
+                        FlipMode.Curl -> "Классический"
+                        FlipMode.Scroll -> "Вертикальный"
+                        else -> "Неизвестный"
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable {

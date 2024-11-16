@@ -5,20 +5,18 @@ import com.google.gson.Gson
 import java.io.File
 
 
-data class Fb2Progress(val pageIndex: Int) : Progress(FormatType.FB2)
+data class Fb2Progress(val wordOffset: Int) : Progress(FormatType.FB2)
 
 class Fb2BookDomainModel(
-    bookLink: BookStorageEntry,
+    bookLink: BookMetaInfo,
     val context: Context,
     val updateProgress: (BookMetaInfo) -> Unit,
     val storageManager: StorageManager
 ) :
     BookDomainModel<Fb2Progress> {
-    val title: String = bookLink.bookMetaInfo.title
+    val title: String = bookLink.title
     val fileName: String = bookLink.fileName
-    var progress: Fb2Progress = bookLink.bookMetaInfo.progress as Fb2Progress
-
-    private val gson = Gson()
+    var progress: Fb2Progress = bookLink.progress as Fb2Progress
 
     override fun readProgress(): Fb2Progress {
         return progress;
