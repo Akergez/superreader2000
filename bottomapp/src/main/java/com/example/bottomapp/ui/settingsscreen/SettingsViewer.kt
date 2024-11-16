@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.CurlMode
 import org.koin.compose.koinInject
 
 @Composable
@@ -28,7 +28,7 @@ fun SettingsScreen(
     settingsManager: SettingsManager = koinInject()
 ) {
     var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
-    var pdfFlipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
+    var pdfFlipMode by remember { mutableStateOf(settingsManager.getCurlMode()) }
 
     val themeModeToStringMap = mapOf(
         AppThemeMode.Light to "Светлая",
@@ -67,22 +67,21 @@ fun SettingsScreen(
 
         Text("Режим листания", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            arrayOf(FlipMode.Curl, FlipMode.Scroll).forEach { mode ->
+            arrayOf(CurlMode.PagingCurl, CurlMode.Vertical).forEach { mode ->
                 RadioButton(selected = pdfFlipMode == mode, onClick = {
                     pdfFlipMode = mode
-                    settingsManager.setPdfFlipMode(mode)
+                    settingsManager.setCurlMode(mode)
                 })
                 Text(
                     text = when (mode) {
-                        FlipMode.Curl -> "Классический"
-                        FlipMode.Scroll -> "Вертикальный"
-                        else -> "Неизвестный"
+                        CurlMode.PagingCurl -> "Классический"
+                        CurlMode.Vertical -> "Вертикальный"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
                         .clickable {
                             pdfFlipMode = mode
-                            settingsManager.setPdfFlipMode(mode)
+                            settingsManager.setCurlMode(mode)
                         }
                         .padding(start = 8.dp))
             }

@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.fb2screen
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -23,14 +24,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 
 
+@SuppressLint("UseOfNonLambdaOffsetOverload")
 @Composable
 fun Fb2Page(
     pageContent: String,
-    mode: FlipMode,
-    onToggleMode: (FlipMode) -> Unit,
+    mode: ReaderMode,
+    onToggleMode: (ReaderMode) -> Unit,
     settingsManager: SettingsManager
 ) {
     val haptic = LocalHapticFeedback.current
@@ -51,7 +53,7 @@ fun Fb2Page(
             .fillMaxSize()
             .background(backgroundColor)
             .let {
-                if (mode == FlipMode.Zoom) {
+                if (mode == ReaderMode.Zoom) {
                     it.pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             isTransforming = true
@@ -66,13 +68,13 @@ fun Fb2Page(
                 detectTapGestures(
                     onDoubleTap = {
                         if (!isTransforming) {
-                            onToggleMode(if (mode == FlipMode.Zoom) FlipMode.Curl else FlipMode.Zoom)
+                            onToggleMode(if (mode == ReaderMode.Zoom) ReaderMode.Reading else ReaderMode.Zoom)
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         }
                     },
                     onLongPress = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onToggleMode(if (mode == FlipMode.Curl) FlipMode.Carousel else FlipMode.Curl )
+                        onToggleMode(if (mode == ReaderMode.Reading) ReaderMode.Carousel else ReaderMode.Reading )
                     }
                 )
             }

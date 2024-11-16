@@ -3,7 +3,6 @@ package com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings
 import PdfRendererHelper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -15,22 +14,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
 
 @Composable
 fun VerticalPdfScroll(
     totalPages: Int,
-    initialPage: Int = 0,
-    pdfFlipMode: FlipMode,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (FlipMode) -> Unit,
     pdfRendererHelper: PdfRendererHelper,
-    applyInversion: Boolean
+    applyInversion: Boolean,
+    modifier: Modifier = Modifier,
+    initialPage: Int = 0,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier) {
         LazyColumn(
             state = lazyListState,
         ) {
@@ -46,10 +43,7 @@ fun VerticalPdfScroll(
                         PdfPage(
                             page = page,
                             pdfRendererHelper = pdfRendererHelper,
-                            pdfFlipMode = pdfFlipMode,
-                            onToggleMode = onToggleMode,
-                            applyInversion = applyInversion,
-                            mode = FlipMode.Scroll
+                            applyInversion = applyInversion
                         )
                     }
                 }

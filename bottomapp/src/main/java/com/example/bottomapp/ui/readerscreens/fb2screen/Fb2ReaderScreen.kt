@@ -1,6 +1,5 @@
 import android.content.Context
 import android.util.Log
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,11 +18,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Carousel
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Page
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
@@ -40,7 +38,7 @@ import kotlin.math.roundToInt
 @Composable
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
-    var mode by remember { mutableStateOf(FlipMode.Curl) }
+    var mode by remember { mutableStateOf(ReaderMode.Reading) }
     val context = LocalContext.current
     val fb2File = remember { book.getFile() }
 
@@ -49,7 +47,6 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
     // Настройки оформления
     val fontSize = 16 //settingsManager.getFontSize()
-    val applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
 
     var sums by remember { mutableStateOf(listOf<Int>()) }
 
@@ -62,7 +59,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     ) }
 
     sums = remember { calculatePrefixSums(pages) }
-    val offset = book.readProgress().wordOffset;
+    val offset = book.readProgress().wordOffset
 
     if (offset > 0) {
         for (i in 0..pages.size) {
@@ -100,9 +97,9 @@ fun Fb2Content(
     currentPage: Int,
     totalPages: Int,
     pages: List<String>,
-    mode: FlipMode,
+    mode: ReaderMode,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (FlipMode) -> Unit,
+    onToggleMode: (ReaderMode) -> Unit,
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
@@ -112,7 +109,7 @@ fun Fb2Content(
     }
 
     when (mode) {
-        FlipMode.Carousel -> {
+        ReaderMode.Carousel -> {
             Fb2Carousel(
                 pages = pages,
                 initialPage = currentPage,
@@ -122,7 +119,7 @@ fun Fb2Content(
             )
         }
 
-        FlipMode.Curl -> {
+        ReaderMode.Reading -> {
             PageCurl(
                 count = totalPages,
                 state = pagerState,
@@ -133,14 +130,14 @@ fun Fb2Content(
             ) { index ->
                 Fb2Page(
                     pageContent = if (index < pages.size) pages[index] else "",
-                    mode = FlipMode.Curl,
+                    mode = ReaderMode.Reading,
                     onToggleMode = onToggleMode,
                     settingsManager = settingsManager
                 )
             }
         }
 
-        FlipMode.Zoom -> {
+        ReaderMode.Zoom -> {
             Fb2Page(
                 pageContent = if (currentPage < pages.size) pages[currentPage] else "",
                 mode = mode,
@@ -148,8 +145,6 @@ fun Fb2Content(
                 settingsManager = settingsManager
             )
         }
-
-        FlipMode.Scroll -> throw IllegalStateException("Scroll mode is not supported for FB2")
     }
 }
 

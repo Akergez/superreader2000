@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 
 
 @Composable
@@ -31,7 +31,7 @@ fun Fb2Carousel(
     pages: List<String>,
     initialPage: Int,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (FlipMode) -> Unit,
+    onToggleMode: (ReaderMode) -> Unit,
     settingsManager: SettingsManager
 ) {
     val lazyListState = rememberLazyListState(initialPage)
@@ -55,7 +55,7 @@ fun Fb2Carousel(
                     ) {
                         Fb2Page(
                             pageContent = pages[page],
-                            mode = FlipMode.Carousel,
+                            mode = ReaderMode.Carousel,
                             onToggleMode = onToggleMode,
                             settingsManager = settingsManager
                         )

@@ -1,21 +1,27 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
 import PdfRendererHelper
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.common.CurlMode
+import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.PdfCarousel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.VerticalPdfScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
@@ -25,18 +31,20 @@ import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import kotlin.math.abs
 
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(book.readProgress().pageIndex) }
-    var mode by remember { mutableStateOf(settingsManager.getPdfFlipMode())}
+    var mode by remember { mutableStateOf(ReaderMode.Reading) }
 
     val context = LocalContext.current
     val pdfFile = remember { book.getFile() }
     val pdfRendererHelper = remember { PdfRendererHelper(context, pdfFile) }
     val totalPages = remember { pdfRendererHelper.getPageCount() }
+    val curlMode = remember { settingsManager.getCurlMode() }
 
-    val onPageChange = rememberUpdatedState { newPage: Int ->
+    val onPageChange = { newPage: Int ->
         currentPage = newPage
         book.saveProgress(PdfProgress(newPage))
     }
@@ -46,9 +54,10 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
         totalPages = totalPages,
         mode = mode,
         pdfRendererHelper = pdfRendererHelper,
-        onPageChange = onPageChange.value,
+        onPageChange = onPageChange,
         onToggleMode = { newMode -> mode = newMode },
-        settingsManager = settingsManager
+        settingsManager = settingsManager,
+        curlMode = curlMode
     )
 }
 
@@ -57,14 +66,18 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
 fun PdfContent(
     currentPage: Int,
     totalPages: Int,
-    mode: FlipMode,
+    mode: ReaderMode,
+    curlMode: CurlMode,
     pdfRendererHelper: PdfRendererHelper,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (FlipMode) -> Unit,
+    onToggleMode: (ReaderMode) -> Unit,
     settingsManager: SettingsManager
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
-    val flipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
+
+    var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
 
     // Preload next and previous pages
     LaunchedEffect(pagerState.current) {
@@ -79,66 +92,104 @@ fun PdfContent(
         }
     }
 
+    val transformGesturesHandler = { _: Offset, pan: Offset, zoom: Float, _: Float ->
+        val newScale = zoom * scale
+
+        if (abs(newScale - 1f) < 0.1f
+            || (mode == ReaderMode.Zoom && offsetX + pan.x == 0f)) {
+            if (mode != ReaderMode.Reading)
+                onToggleMode(ReaderMode.Reading)
+        } else if (newScale < 0.9f) {
+            if (mode != ReaderMode.Carousel)
+                onToggleMode(ReaderMode.Carousel)
+        } else {
+            if (mode != ReaderMode.Zoom)
+                onToggleMode(ReaderMode.Zoom)
+        }
+        scale = (scale * zoom)
+        offsetX += pan.x
+        offsetY += pan.y
+    }
+
     when (mode) {
-        FlipMode.Carousel -> {
+        ReaderMode.Carousel -> {
             PdfCarousel(
                 totalPages = totalPages,
                 initialPage = currentPage,
-                pdfFlipMode = flipMode,
                 onPageChange = onPageChange,
-                onToggleMode = onToggleMode,
                 pdfRendererHelper = pdfRendererHelper,
                 applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
                 onApplyInversionToggle = { applyInversion ->
                     settingsManager.setDocumentsTheme(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { centroid, pan, zoom, rotation ->
+                            transformGesturesHandler(centroid, pan, zoom, rotation)
+                        }
+                    }
+            )
+        }
+
+        ReaderMode.Reading -> {
+            when (curlMode) {
+                CurlMode.PagingCurl -> PageCurl(
+                    count = totalPages,
+                    state = pagerState,
+                    config = rememberPageCurlConfig(
+                        backPageContentAlpha = 0f,
+                        backPageColor = MaterialTheme.colorScheme.background
+                    ),
+                    modifier = Modifier
+                        .pointerInput(Unit) {
+                            detectTransformGestures { centroid, pan, zoom, rotation ->
+                                transformGesturesHandler(centroid, pan, zoom, rotation)
+                            }
+                        }
+                ) { index ->
+                    PdfPage(
+                        page = index,
+                        pdfRendererHelper = pdfRendererHelper,
+                        applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
+                        modifier = Modifier
+                            .basePageBoxModifier()
+                    )
                 }
-            )
-        }
 
-        FlipMode.Scroll -> {
-            VerticalPdfScroll(
-                totalPages = totalPages,
-                initialPage = currentPage,
-                pdfFlipMode = flipMode,
-                onPageChange = onPageChange,
-                onToggleMode = onToggleMode,
-                pdfRendererHelper = pdfRendererHelper,
-                applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-//                onApplyInversionToggle = { applyInversion ->
-//                    settingsManager.setDocumentsTheme(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
-//                }
-            )
-        }
-
-        FlipMode.Curl -> {
-            PageCurl(
-                count = totalPages,
-                state = pagerState,
-                config = rememberPageCurlConfig(
-                    backPageContentAlpha = 0f,
-                    backPageColor = MaterialTheme.colorScheme.background
-                )
-            ) { index ->
-                PdfPage(
-                    page = index,
+                CurlMode.Vertical -> VerticalPdfScroll(
+                    totalPages = totalPages,
+                    initialPage = currentPage,
+                    onPageChange = onPageChange,
                     pdfRendererHelper = pdfRendererHelper,
-                    pdfFlipMode = flipMode,
-                    onToggleMode = onToggleMode,
                     applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-                    mode = FlipMode.Curl
+                    modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                        detectTransformGestures { centroid, pan, zoom, rotation ->
+                            transformGesturesHandler(centroid, pan, zoom, rotation)
+                        }
+                    }
                 )
             }
         }
 
-        FlipMode.Zoom -> {
+        ReaderMode.Zoom -> {
             PdfPage(
                 page = pagerState.current,
                 pdfRendererHelper = pdfRendererHelper,
-                pdfFlipMode = flipMode,
-                onToggleMode = onToggleMode,
                 applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
-                mode = mode
+                modifier = Modifier
+                    .basePageBoxModifier()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { centroid, pan, zoom, rotation ->
+                            transformGesturesHandler(centroid, pan, zoom, rotation)
+                        }
+                    },
+                scale = scale,
+                offsetX = offsetX,
+                offsetY = offsetY
             )
         }
     }
 }
+
+
