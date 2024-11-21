@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.backend.RenderHelper.IRenderHelper
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
+import com.example.bottomapp.ui.readerscreens.pdfscreen.CurlPdfViewer
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
 
 @Composable
@@ -22,20 +23,31 @@ fun BookPage(
     scale: Float = 1f,
     offsetX: Float = 0f,
     offsetY: Float = 0f,
+    async: Boolean = true
 ) {
     Box(
         modifier = modifier
     ) {
-        // Enable pinch-to-zoom
         if (renderHelper.getBookType() == FormatType.PDF) {
-            PdfViewer(
-                renderHelper = renderHelper,
-                pageIndex = page,
-                applyInversion = applyInversion, // Pass the inversion setting
-                scale = scale, // Pass the zoom scale,
-                offsetX = offsetX,
-                offsetY = offsetY
-            )
+            if (async) {
+                PdfViewer(
+                    renderHelper = renderHelper,
+                    pageIndex = page,
+                    applyInversion = applyInversion, // Pass the inversion setting
+                    scale = scale, // Pass the zoom scale,
+                    offsetX = offsetX,
+                    offsetY = offsetY
+                )
+            } else {
+                CurlPdfViewer(
+                    renderHelper = renderHelper,
+                    pageIndex = page,
+                    applyInversion = applyInversion, // Pass the inversion setting
+                    scale = scale, // Pass the zoom scale,
+                    offsetX = offsetX,
+                    offsetY = offsetY
+                )
+            }
         } else {
             Fb2Viewer(
                 renderHelper = renderHelper,
