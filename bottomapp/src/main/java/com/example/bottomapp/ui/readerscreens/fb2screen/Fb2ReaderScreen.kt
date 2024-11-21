@@ -51,12 +51,12 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val bb = LocalDensity.current.run { componentHeight.toPx() }
 
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-    var isLoaded = remember { mutableStateOf(false) }
+    val isLoaded = remember { mutableStateOf(false) }
 
 
     LaunchedEffect(componentHeight) {
         launch(Dispatchers.IO) {
-            if(componentHeight != 0.dp) {
+            if(componentHeight.value != 0f) {
                 fb2RenderHelper.value = Fb2RenderHelper(aa.toInt(), bb.toInt(), textMeasurer, fb2File)
                 fb2RenderHelper.value!!.Init(16)
                 isLoaded.value = true;

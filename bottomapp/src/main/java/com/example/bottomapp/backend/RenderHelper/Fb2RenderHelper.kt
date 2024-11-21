@@ -56,7 +56,6 @@ class Fb2RenderHelper(
                 currentPage.append(word)
             }
         }
-
         if (currentPage.isNotEmpty()) {
             pages.add(currentPage.toString().trim())
         }
