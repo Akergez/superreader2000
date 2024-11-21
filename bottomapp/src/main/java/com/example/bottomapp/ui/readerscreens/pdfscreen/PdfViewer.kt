@@ -70,7 +70,7 @@ fun PdfViewer(
 }
 
 @Composable
-fun CurlViewer(
+fun CurlPdfViewer(
     renderHelper: IRenderHelper,
     pageIndex: Int,
     modifier: Modifier = Modifier,
