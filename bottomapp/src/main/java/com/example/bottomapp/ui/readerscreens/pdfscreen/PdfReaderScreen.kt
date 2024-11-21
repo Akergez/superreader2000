@@ -164,7 +164,8 @@ fun PdfContent(
                             pdfRendererHelper = pdfRendererHelper,
                             applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
                             modifier = modifier
-                                .basePageBoxModifier()
+                                .basePageBoxModifier(),
+                            async = false
                         )
                     }
 

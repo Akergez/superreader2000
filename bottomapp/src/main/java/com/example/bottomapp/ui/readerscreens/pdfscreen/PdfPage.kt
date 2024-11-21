@@ -16,22 +16,32 @@ fun PdfPage(
     pdfRendererHelper: PdfRendererHelper,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
-    scale : Float = 1f,
+    scale: Float = 1f,
     offsetX: Float = 0f,
     offsetY: Float = 0f,
+    async: Boolean = true
 ) {
     Box(
         modifier = modifier
     ) {
-        // Enable pinch-to-zoom
-        PdfViewer(
-            pdfRendererHelper = pdfRendererHelper,
-            pageIndex = page,
-            applyInversion = applyInversion, // Pass the inversion setting
-            scale = scale, // Pass the zoom scale,
-            offsetX = offsetX,
-            offsetY = offsetY
-        )
+        if (async)
+            PdfViewer(
+                pdfRendererHelper = pdfRendererHelper,
+                pageIndex = page,
+                applyInversion = applyInversion, // Pass the inversion setting
+                scale = scale, // Pass the zoom scale,
+                offsetX = offsetX,
+                offsetY = offsetY
+            )
+        else
+            CurlPdfViewer(
+                pdfRendererHelper = pdfRendererHelper,
+                pageIndex = page,
+                applyInversion = applyInversion, // Pass the inversion setting
+                scale = scale, // Pass the zoom scale,
+                offsetX = offsetX,
+                offsetY = offsetY
+            )
     }
 }
 

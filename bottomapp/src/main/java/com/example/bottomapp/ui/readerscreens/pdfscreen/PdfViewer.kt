@@ -58,7 +58,12 @@ fun PdfViewer(
         )
     } ?: run {
         // Show loading indicator while page is being rendered
-        Box(modifier = modifier.fillMaxSize().background(backgroundColor), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(backgroundColor),
+            contentAlignment = Alignment.Center
+        ) {
             Text("Loading...", color = if (applyInversion) Color.White else Color.Black)
         }
     }
@@ -75,7 +80,7 @@ fun CurlPdfViewer(
     offsetY: Float
 ) {
     val bitmap = pdfRendererHelper.openPage(pageIndex)
-    val backgroundColor = if(applyInversion) Color.Black else Color.White;
+    val backgroundColor = if (applyInversion) Color.Black else Color.White
 
     CanvasWithPage(
         modifier,
