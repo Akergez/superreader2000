@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
+import BookContent
 import PdfRendererHelper
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -9,33 +10,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.CurlMode
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.PdfCarousel
-import com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings.VerticalPdfScroll
-import eu.wewox.pagecurl.ExperimentalPageCurlApi
-import eu.wewox.pagecurl.config.rememberPageCurlConfig
-import eu.wewox.pagecurl.page.PageCurl
-import eu.wewox.pagecurl.page.rememberPageCurlState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import kotlin.math.abs
 
 @Composable
 fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager = koinInject()) {
@@ -54,11 +39,11 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
     }
 
     Scaffold() { innerPadding ->
-        PdfContent(
+        BookContent(
             currentPage = currentPage,
             totalPages = totalPages,
             mode = mode,
-            pdfRendererHelper = pdfRendererHelper,
+            renderHelper = pdfRendererHelper,
             onPageChange = onPageChange,
             onToggleMode = { newMode -> mode = newMode },
             settingsManager = settingsManager,
@@ -70,7 +55,7 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
-fun PdfContent(
+fun BookContent(
     currentPage: Int,
     totalPages: Int,
     mode: ReaderMode,

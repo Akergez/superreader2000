@@ -25,8 +25,8 @@ fun PdfPage(
         modifier = modifier
     ) {
         if (async)
-            PdfViewer(
-                pdfRendererHelper = pdfRendererHelper,
+            BookViewer(
+                renderHelper = renderHelper,
                 pageIndex = page,
                 applyInversion = applyInversion, // Pass the inversion setting
                 scale = scale, // Pass the zoom scale,
@@ -35,7 +35,7 @@ fun PdfPage(
             )
         else
             CurlPdfViewer(
-                pdfRendererHelper = pdfRendererHelper,
+                renderHelper = renderHelper,
                 pageIndex = page,
                 applyInversion = applyInversion, // Pass the inversion setting
                 scale = scale, // Pass the zoom scale,

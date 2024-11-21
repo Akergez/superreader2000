@@ -1,6 +1,5 @@
-package com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings
+package com.example.bottomapp.ui.readerscreens.pdfscreen.bookFlippings
 
-import PdfRendererHelper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -14,13 +13,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
+import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.pdfscreen.BookPage
 
 @Composable
-fun VerticalPdfScroll(
+fun VerticalBookScroll(
     totalPages: Int,
     onPageChange: (Int) -> Unit,
-    pdfRendererHelper: PdfRendererHelper,
+    renderHelper: IRenderHelper,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
@@ -40,9 +40,9 @@ fun VerticalPdfScroll(
                         Modifier
                             .fillParentMaxHeight()
                     ) {
-                        PdfPage(
+                        BookPage(
                             page = page,
-                            pdfRendererHelper = pdfRendererHelper,
+                            renderHelper = renderHelper,
                             applyInversion = applyInversion
                         )
                     }

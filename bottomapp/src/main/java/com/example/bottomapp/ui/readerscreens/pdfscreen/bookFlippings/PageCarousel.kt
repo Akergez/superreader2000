@@ -1,6 +1,5 @@
-package com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings
+package com.example.bottomapp.ui.readerscreens.pdfscreen.bookFlippings
 
-import PdfRendererHelper
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,13 +20,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
+import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.pdfscreen.BookPage
 
 @Composable
-fun PdfCarousel(
+fun PageCarousel(
     totalPages: Int,
     onPageChange: (Int) -> Unit,
-    pdfRendererHelper: PdfRendererHelper,
+    renderHelper: IRenderHelper,
     applyInversion: Boolean,
     onApplyInversionToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -51,9 +51,9 @@ fun PdfCarousel(
                             .fillParentMaxWidth(0.9f)
                             .align(Alignment.Center)
                     ) {
-                        PdfPage(
+                        BookPage(
                             page = page,
-                            pdfRendererHelper = pdfRendererHelper,
+                            renderHelper = renderHelper,
                             applyInversion = applyInversion
                         )
                     }
