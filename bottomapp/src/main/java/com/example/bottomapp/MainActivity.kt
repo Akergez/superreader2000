@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.room.Room
 import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
+import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.StorageManager
@@ -37,6 +39,15 @@ class MainActivity : ComponentActivity() {
                         MemoryCache.Builder(androidContext()).maxSizePercent(0.25).build()
                     } // 25% of app's memory
                     .build()
+            }
+            single {
+                val db = Room.databaseBuilder(
+                    applicationContext,
+                    AppDatabase::class.java, "database-name"
+                )
+                    .allowMainThreadQueries()
+                    .build()
+                db.userDao()
             }
         }
 

@@ -5,6 +5,15 @@ import android.content.SharedPreferences
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.RoomDatabase
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -13,7 +22,27 @@ data class BookMetaInfo(val fileName: String, val title: String, val progress: P
 
 data class BookStorageEntry(val fileName: String, val previewUri: Uri?, val bookMetaInfo: BookMetaInfo)
 
-class BookStorage(val context: Context, private val storageManager: StorageManager) {
+@Entity
+data class Book(
+    @PrimaryKey val fileName: String,
+    @ColumnInfo(name = "payload") val payload: String?,
+)
+
+@Dao
+interface UserDao {
+    @Query("SELECT * FROM book")
+    fun getAll(): List<Book>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(vararg users: Book)
+}
+
+@Database(entities = [Book::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+}
+
+class BookStorage(val context: Context, private val storageManager: StorageManager, private val dao: UserDao) {
 
     private val progressAdapterFactory = RuntimeTypeAdapterFactory
         .of(Progress::class.java, "type")
@@ -38,13 +67,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
     }
 
     private fun getBooksLinksFromCache(): List<BookStorageEntry> {
-        val cachedBooksLinks = sharedPreferences.getString("books_links_cache", null)
-        return if (cachedBooksLinks != null) {
-            val type = object : TypeToken<List<BookStorageEntry>>() {}.type
-            gson.fromJson(cachedBooksLinks, type)
-        } else {
-            emptyList()
-        }
+        return dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
     }
 
     suspend fun refreshBooksLinks() {
@@ -68,10 +91,7 @@ class BookStorage(val context: Context, private val storageManager: StorageManag
     }
 
     private fun cacheBooksLinks() {
-        val editor = sharedPreferences.edit()
-        val booksLinksJson = gson.toJson(bookCache)
-        editor.putString("books_links_cache", booksLinksJson)
-        editor.apply()
+        dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
     }
 
     fun addNewBook(fileUri: Uri, fileName: String, progress: Progress)
