@@ -1,7 +1,5 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import com.example.bottomapp.ui.readerscreens.common.BookContent
-import com.example.bottomapp.backend.RenderHelper.PdfRendererHelper
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -14,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
+import com.example.bottomapp.backend.RenderHelper.PdfRendererHelper
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import org.koin.compose.koinInject
 
@@ -34,7 +34,7 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
         book.saveProgress(PdfProgress(newPage))
     }
 
-    Scaffold() { innerPadding ->
+    Scaffold { innerPadding ->
         BookContent(
             currentPage = currentPage,
             totalPages = totalPages,

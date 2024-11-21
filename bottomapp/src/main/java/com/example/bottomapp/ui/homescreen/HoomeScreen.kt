@@ -1,6 +1,6 @@
 package com.example.bottomapp.ui.homescreen
 
-import androidx.compose.foundation.layout.Box
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,14 +11,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.bottomapp.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageEntry
 import org.koin.compose.koinInject
@@ -27,18 +29,29 @@ import org.koin.compose.koinInject
 fun HomeScreen(
     onAddBook: () -> Unit,
     onItemClick: (BookStorageEntry) -> Unit,
-    bookStorage: BookStorage = koinInject()
+    bookStorage: BookStorage = koinInject(),
+    navController: NavController
 ) {
 
     val updatedBooksLinks by rememberUpdatedState(bookStorage.bookCache)
     val lazyListState = rememberLazyListState()
+    Log.d("color", "HomeScreen: ${MaterialTheme.colorScheme.background}")
 
-    LaunchedEffect(Unit) {
-        bookStorage.saveBooksLinksToStorage()
-    }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddBook
+            )
+            {
+                Icon(Icons.Filled.Add, contentDescription = "Add book")
+            }
+        },
+        bottomBar = { BottomNavigationBar(navController) }
+    ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
             state = lazyListState
         ) {
             item {
@@ -52,13 +65,9 @@ fun HomeScreen(
                 BookItem(bookLink, onItemClick)
             }
         }
-        FloatingActionButton(
-            onClick = onAddBook,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Add book")
-        }
+    }
+
+    LaunchedEffect(Unit) {
+        bookStorage.saveBooksLinksToStorage()
     }
 }
