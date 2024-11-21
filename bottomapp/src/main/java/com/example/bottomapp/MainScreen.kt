@@ -49,6 +49,10 @@ import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.constants.Route
+import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
+import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
+import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
+import com.example.bottomapp.backend.exceptions.StorageNotSetException
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.google.accompanist.navigation.animation.AnimatedNavHost
@@ -104,7 +108,8 @@ fun MainScreen(
                                 "fb2" -> Fb2Progress(0)
                                 else -> return@also // This should never happen due to the when condition
                             }
-                            bookStorage.addNewBook(uri, fileName, bookLink)
+                            ExceptionsCatcher.runAndHandleErrors(context,
+                                 { bookStorage.addNewBook(uri, fileName, bookLink) })
                         }
 
                         else -> {
