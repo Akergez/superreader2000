@@ -1,7 +1,7 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import BookContent
-import PdfRendererHelper
+import com.example.bottomapp.ui.readerscreens.common.BookContent
+import com.example.bottomapp.backend.RenderHelper.PdfRendererHelper
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box

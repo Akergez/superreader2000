@@ -1,9 +1,11 @@
+package com.example.bottomapp.backend.RenderHelper
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.backend.FormatType
 import java.io.File
 
 class PdfRendererHelper(private val context: Context, private val pdfFile: File): IRenderHelper {
@@ -38,10 +40,18 @@ class PdfRendererHelper(private val context: Context, private val pdfFile: File)
         }
     }
 
+    override fun openPagedText(pageIndex: Int): String {
+        TODO("Not yet implemented")
+    }
+
     override fun close() {
         synchronized(lock) {
             pdfRenderer.close()
             bitmapCache.clear()
         }
+    }
+
+    override fun getBookType(): FormatType {
+        return FormatType.PDF
     }
 }

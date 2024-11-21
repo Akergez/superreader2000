@@ -1,3 +1,5 @@
+package com.example.bottomapp.ui.readerscreens.common
+
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -13,12 +15,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.RenderHelper.IRenderHelper
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.CurlMode
-import com.example.bottomapp.ui.readerscreens.common.ReaderMode
-import com.example.bottomapp.ui.readerscreens.pdfscreen.BookPage
-import com.example.bottomapp.ui.readerscreens.pdfscreen.basePageBoxModifier
-import com.example.bottomapp.ui.readerscreens.pdfscreen.bookFlippings.PageCarousel
-import com.example.bottomapp.ui.readerscreens.pdfscreen.bookFlippings.VerticalBookScroll
+import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
+import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl

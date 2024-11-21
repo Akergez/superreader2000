@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.readerscreens.pdfscreen.bookFlippings
+package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -21,7 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.RenderHelper.IRenderHelper
-import com.example.bottomapp.ui.readerscreens.pdfscreen.BookPage
+import com.example.bottomapp.ui.readerscreens.common.BookPage
 
 @Composable
 fun PageCarousel(

@@ -1,6 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import CanvasWithPage
+import com.example.bottomapp.ui.readerscreens.common.BitmapCanvas
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun BookViewer(
+fun PdfViewer(
     renderHelper: IRenderHelper,
     pageIndex: Int,
     modifier: Modifier = Modifier,
@@ -47,7 +47,7 @@ fun BookViewer(
 
     // Only render when bitmap is ready
     bitmap?.let { loadedBitmap ->
-        CanvasWithPage(
+        BitmapCanvas(
             modifier = modifier,
             bitmap = loadedBitmap,
             scale = scale.toDouble(),
@@ -82,7 +82,7 @@ fun CurlViewer(
     val bitmap = renderHelper.openPage(pageIndex)
     val backgroundColor = if (applyInversion) Color.Black else Color.White
 
-    CanvasWithPage(
+    BitmapCanvas(
         modifier,
         bitmap,
         scale.toDouble(),

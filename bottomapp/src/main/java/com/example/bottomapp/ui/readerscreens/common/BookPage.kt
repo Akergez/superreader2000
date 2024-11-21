@@ -1,6 +1,5 @@
-package com.example.bottomapp.ui.readerscreens.pdfscreen
+package com.example.bottomapp.ui.readerscreens.common
 
-import PdfRendererHelper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,23 +8,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.backend.FormatType
+import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
+import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
 
 @Composable
-fun PdfPage(
+fun BookPage(
     page: Int,
-    pdfRendererHelper: PdfRendererHelper,
+    renderHelper: IRenderHelper,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
     offsetX: Float = 0f,
     offsetY: Float = 0f,
-    async: Boolean = true
 ) {
     Box(
         modifier = modifier
     ) {
-        if (async)
-            BookViewer(
+        // Enable pinch-to-zoom
+        if (renderHelper.getBookType() == FormatType.PDF) {
+            PdfViewer(
                 renderHelper = renderHelper,
                 pageIndex = page,
                 applyInversion = applyInversion, // Pass the inversion setting
@@ -33,8 +36,8 @@ fun PdfPage(
                 offsetX = offsetX,
                 offsetY = offsetY
             )
-        else
-            CurlPdfViewer(
+        } else {
+            Fb2Viewer(
                 renderHelper = renderHelper,
                 pageIndex = page,
                 applyInversion = applyInversion, // Pass the inversion setting
@@ -42,6 +45,7 @@ fun PdfPage(
                 offsetX = offsetX,
                 offsetY = offsetY
             )
+        }
     }
 }
 
