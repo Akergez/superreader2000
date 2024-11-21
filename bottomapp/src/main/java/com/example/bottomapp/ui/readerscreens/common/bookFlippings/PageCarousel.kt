@@ -1,12 +1,10 @@
-package com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings
+package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
-import PdfRendererHelper
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,23 +20,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
+import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.common.BookPage
 
 @Composable
-fun PdfCarousel(
+fun PageCarousel(
     totalPages: Int,
-    initialPage: Int = 0,
-    pdfFlipMode: FlipMode,
     onPageChange: (Int) -> Unit,
-    onToggleMode: (FlipMode) -> Unit,
-    pdfRendererHelper: PdfRendererHelper,
+    renderHelper: IRenderHelper,
     applyInversion: Boolean,
-    onApplyInversionToggle: (Boolean) -> Unit
+    onApplyInversionToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    initialPage: Int = 0,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier) {
         LazyRow(
             modifier = Modifier.weight(0.9f),
             state = lazyListState,
@@ -54,13 +51,10 @@ fun PdfCarousel(
                             .fillParentMaxWidth(0.9f)
                             .align(Alignment.Center)
                     ) {
-                        PdfPage(
+                        BookPage(
                             page = page,
-                            pdfRendererHelper = pdfRendererHelper,
-                            pdfFlipMode = pdfFlipMode,
-                            onToggleMode = onToggleMode,
-                            applyInversion = applyInversion,
-                            mode = FlipMode.Carousel
+                            renderHelper = renderHelper,
+                            applyInversion = applyInversion
                         )
                     }
                 }
