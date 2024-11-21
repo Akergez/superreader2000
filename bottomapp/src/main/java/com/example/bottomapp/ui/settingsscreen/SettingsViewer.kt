@@ -131,9 +131,9 @@ fun SettingsScreen(
                 })
                 Text(
                     text = when (mode) {
-                        FlipMode.Curl -> "Классический"
-                        FlipMode.Scroll -> "Вертикальный"
-                        else -> "Неизвестный"
+                        FlipMode.Curl -> "Classic"
+                        FlipMode.Scroll -> "Vertical"
+                        else -> "Unknown"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
