@@ -12,8 +12,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -31,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,6 +42,7 @@ import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
+import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
@@ -153,10 +151,10 @@ fun MainScreen(
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = "home",
+                startDestination = Route.Main,
                 modifier = Modifier.padding(innerPadding)
             ) {
-                composable("home") {
+                composable(Route.Main) {
                     HomeScreen(
                         onAddPdf = {
                             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -174,7 +172,7 @@ fun MainScreen(
                         }
                     )
                 }
-                composable("Settings") {
+                composable(Route.Settings) {
                     SettingsScreen(
                         updateAppTheme = { theme ->
                             currentTheme.value = theme
@@ -250,9 +248,9 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text("Home") },
             selected = false,
             onClick = {
-                if (navController.currentDestination?.route != "home") {
-                    navController.navigate("home") {
-                        popUpTo("Settings") { inclusive = true } // Удалить все экраны до "Settings", включая "Settings"
+                if (navController.currentDestination?.route != Route.Main) {
+                    navController.navigate(Route.Main) {
+                        popUpTo(Route.Settings) { inclusive = true } // Удалить все экраны до "Settings", включая "Settings"
                         launchSingleTop = true
                     }
                 }
@@ -265,8 +263,8 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text("Settings") }, // TODO еще картинку поменять
             selected = false,
             onClick = {
-                if (navController.currentDestination?.route != "Settings") {
-                    navController.navigate("Settings"){
+                if (navController.currentDestination?.route != Route.Settings) {
+                    navController.navigate(Route.Settings){
                     launchSingleTop = true // Предотвратить дублирование "Settings" в стеке
                     }
                 }
