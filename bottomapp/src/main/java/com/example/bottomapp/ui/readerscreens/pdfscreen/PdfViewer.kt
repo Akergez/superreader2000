@@ -1,6 +1,7 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import com.example.bottomapp.ui.readerscreens.common.BitmapCanvas
+import CanvasWithPage
+import PdfRendererHelper
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,14 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
 fun PdfViewer(
-    renderHelper: IRenderHelper,
+    pdfRendererHelper: PdfRendererHelper,
     pageIndex: Int,
     modifier: Modifier = Modifier,
     applyInversion: Boolean,
@@ -35,10 +35,10 @@ fun PdfViewer(
     val coroutineScope = rememberCoroutineScope()
     val backgroundColor = if (applyInversion) Color.Black else Color.White
 
-    // Offload page rendering to a background thread
+    // Offload PDF rendering to a background thread
     LaunchedEffect(pageIndex) {
         coroutineScope.launch(Dispatchers.IO) {
-            val renderedBitmap = renderHelper.openPage(pageIndex)
+            val renderedBitmap = pdfRendererHelper.openPage(pageIndex)
             withContext(Dispatchers.Main) {
                 bitmap = renderedBitmap
             }
@@ -47,7 +47,7 @@ fun PdfViewer(
 
     // Only render when bitmap is ready
     bitmap?.let { loadedBitmap ->
-        BitmapCanvas(
+        CanvasWithPage(
             modifier = modifier,
             bitmap = loadedBitmap,
             scale = scale.toDouble(),
@@ -58,12 +58,7 @@ fun PdfViewer(
         )
     } ?: run {
         // Show loading indicator while page is being rendered
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(backgroundColor),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = modifier.fillMaxSize().background(backgroundColor), contentAlignment = Alignment.Center) {
             Text("Loading...", color = if (applyInversion) Color.White else Color.Black)
         }
     }
@@ -71,7 +66,7 @@ fun PdfViewer(
 
 @Composable
 fun CurlPdfViewer(
-    renderHelper: IRenderHelper,
+    pdfRendererHelper: PdfRendererHelper,
     pageIndex: Int,
     modifier: Modifier = Modifier,
     applyInversion: Boolean,
@@ -79,10 +74,10 @@ fun CurlPdfViewer(
     offsetX: Float,
     offsetY: Float
 ) {
-    val bitmap = renderHelper.openPage(pageIndex)
-    val backgroundColor = if (applyInversion) Color.Black else Color.White
+    val bitmap = pdfRendererHelper.openPage(pageIndex)
+    val backgroundColor = if(applyInversion) Color.Black else Color.White;
 
-    BitmapCanvas(
+    CanvasWithPage(
         modifier,
         bitmap,
         scale.toDouble(),

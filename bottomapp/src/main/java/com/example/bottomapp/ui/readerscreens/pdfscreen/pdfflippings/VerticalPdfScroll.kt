@@ -1,7 +1,9 @@
-package com.example.bottomapp.ui.readerscreens.common.bookFlippings
+package com.example.bottomapp.ui.readerscreens.pdfscreen.pdfflippings
 
+import PdfRendererHelper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -13,21 +15,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
-import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfPage
 
 @Composable
-fun VerticalBookScroll(
+fun VerticalPdfScroll(
     totalPages: Int,
-    onPageChange: (Int) -> Unit,
-    renderHelper: IRenderHelper,
-    applyInversion: Boolean,
-    modifier: Modifier = Modifier,
     initialPage: Int = 0,
+    pdfFlipMode: FlipMode,
+    onPageChange: (Int) -> Unit,
+    onToggleMode: (FlipMode) -> Unit,
+    pdfRendererHelper: PdfRendererHelper,
+    applyInversion: Boolean
 ) {
     val lazyListState = rememberLazyListState(initialPage)
 
-    Column(modifier = modifier) {
+    Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = lazyListState,
         ) {
@@ -40,10 +43,13 @@ fun VerticalBookScroll(
                         Modifier
                             .fillParentMaxHeight()
                     ) {
-                        BookPage(
+                        PdfPage(
                             page = page,
-                            renderHelper = renderHelper,
-                            applyInversion = applyInversion
+                            pdfRendererHelper = pdfRendererHelper,
+                            pdfFlipMode = pdfFlipMode,
+                            onToggleMode = onToggleMode,
+                            applyInversion = applyInversion,
+                            mode = FlipMode.Scroll
                         )
                     }
                 }

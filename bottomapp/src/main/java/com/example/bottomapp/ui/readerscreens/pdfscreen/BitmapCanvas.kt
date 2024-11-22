@@ -1,5 +1,3 @@
-package com.example.bottomapp.ui.readerscreens.common
-
 import android.graphics.Bitmap
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
@@ -14,13 +12,13 @@ import androidx.compose.ui.graphics.toArgb
 
 
 @Composable
-fun BitmapCanvas(modifier: Modifier,
-                 bitmap: Bitmap,
-                 scale: Double,
-                 offsetX: Double,
-                 offsetY: Double,
-                 backgroundColor: Color,
-                 applyInversion: Boolean
+fun CanvasWithPage(modifier: Modifier,
+                   bitmap: Bitmap,
+                   scale: Double,
+                   offsetX: Double,
+                   offsetY: Double,
+                   backgroundColor: Color,
+                   applyInversion: Boolean
 )
 {
     Canvas(modifier = modifier.fillMaxSize()) {

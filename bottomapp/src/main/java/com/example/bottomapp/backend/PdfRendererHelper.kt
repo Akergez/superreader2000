@@ -1,14 +1,12 @@
-package com.example.bottomapp.backend.RenderHelper
-
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import com.example.bottomapp.backend.FormatType
 import java.io.File
+import kotlin.math.max
 
-class PdfRendererHelper(private val context: Context, private val pdfFile: File): IRenderHelper {
+class PdfRendererHelper(private val context: Context, private val pdfFile: File) {
     private val pdfRenderer: PdfRenderer
     private val bitmapCache = mutableMapOf<Int, Bitmap>()
     private val lock = Any()
@@ -18,10 +16,11 @@ class PdfRendererHelper(private val context: Context, private val pdfFile: File)
         pdfRenderer = PdfRenderer(parcelFileDescriptor)
     }
 
-    override fun getPageCount(): Int = pdfRenderer.pageCount
+    fun getPageCount(): Int = pdfRenderer.pageCount
 
-    override fun openPage(pageIndex: Int): Bitmap {
-        bitmapCache[pageIndex]?.let {
+    fun openPage(pageIndex: Int, scale: Float = 4f): Bitmap {
+        val cacheKey = pageIndex
+        bitmapCache[cacheKey]?.let {
             return it
         }
         synchronized(lock) {
@@ -29,29 +28,23 @@ class PdfRendererHelper(private val context: Context, private val pdfFile: File)
 
             // Render the page and cache the bitmap
             val page = pdfRenderer.openPage(pageIndex)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            val rect = Rect(0, 0, page.width, page.height)
+            val width = (page.width * scale).toInt()
+            val height = (page.height * scale).toInt()
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val rect = Rect(0, 0, width, height)
             page.render(bitmap, rect, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
 
             // Cache the rendered bitmap
-            bitmapCache[pageIndex] = bitmap
+            bitmapCache[cacheKey] = bitmap
             return bitmap
         }
     }
 
-    override fun openPagedText(pageIndex: Int): String {
-        TODO("Not yet implemented")
-    }
-
-    override fun close() {
+    fun close() {
         synchronized(lock) {
             pdfRenderer.close()
             bitmapCache.clear()
         }
-    }
-
-    override fun getBookType(): FormatType {
-        return FormatType.PDF
     }
 }

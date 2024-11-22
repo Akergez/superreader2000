@@ -2,7 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
-import com.example.bottomapp.ui.readerscreens.common.CurlMode
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 
 enum class AppThemeMode(val value: String) {
@@ -56,17 +56,17 @@ class SettingsManager(context: Context) {
         saveSetting(docThemeKey, theme.value)
     }
 
-    fun getCurlMode(): CurlMode {
-        val defaultMode = CurlMode.PagingCurl
+    fun getPdfFlipMode(): FlipMode {
+        val defaultMode = FlipMode.Scroll
         val setting = getSetting(pdfFlipModeKey) ?: return defaultMode
         return try {
-            CurlMode.valueOf(setting)
+            FlipMode.valueOf(setting)
         } catch (e: Throwable) {
             defaultMode
         }
     }
 
-    fun setCurlMode(mode: CurlMode) {
+    fun setPdfFlipMode(mode: FlipMode) {
         saveSetting(pdfFlipModeKey, mode.toString())
     }
 

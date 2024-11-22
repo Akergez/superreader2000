@@ -1,6 +1,7 @@
 package com.example.bottomapp
 
 import Fb2ReaderScreen
+import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -14,22 +15,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookStorage
@@ -40,7 +45,6 @@ import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.ui.homescreen.HomeScreen
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import kotlinx.coroutines.launch
@@ -139,96 +143,103 @@ fun MainScreen(
         darkTheme = ((currentTheme.value == AppThemeMode.System && isSystemInDarkTheme())
                 || currentTheme.value == AppThemeMode.Dark)
     ) {
-        NavHost(
-            navController = navController,
-            startDestination = "home",
-            enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth }
-                )
-            },
-            exitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth }
-                )
-            },
-            popEnterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth / 2 }
-                )
-            },
-            popExitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth / 2 }
-                )
+        Scaffold(
+            bottomBar = {
+                if (shouldShowBottomBar(navController)) {
+                    BottomNavigationBar(navController)
+                }
             }
-        ) {
-            composable("home") {
-                HomeScreen(
-                    onAddPdf = {
-                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                            addCategory(Intent.CATEGORY_OPENABLE)
-                            type = "*/*"
-                        }
-                        launcher.launch(intent)
-                    },
-                    onItemClick = { bookLink ->
-                        val encodedFileName = URLEncoder.encode(
-                            bookLink.fileName,
-                            StandardCharsets.UTF_8.toString()
-                        )
-                        navController.navigate("bookReader/$encodedFileName")
-                    },
-                    navController = navController
-                )
-            }
-            composable("Settings") {
-                SettingsScreen(
-                    updateAppTheme = { theme ->
-                        currentTheme.value = theme
-                        settingsManager.setAppTheme(theme)
-                    },
-                    appTheme = currentTheme.value,
-                    navController = navController
-                )
-            }
-            composable("bookReader/{fileName}") { backStackEntry ->
-                val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    URLDecoder.decode(
-                        backStackEntry.arguments?.getString("fileName"),
-                        StandardCharsets.UTF_8
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = "home",
+                modifier = Modifier.padding(innerPadding),
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth }
                     )
-                } else {
-                    @Suppress("DEPRECATION")
-                    URLDecoder.decode(
-                        backStackEntry.arguments?.getString("fileName")
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth }
+                    )
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth / 2 }
+                    )
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth / 2 }
                     )
                 }
-                fileName?.let {
-                    val bookLink = bookStorage.bookCache.find { it.fileName == fileName }
-                    if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
-                        bookLink.let {
-                            val pdfBookDomainModel = PdfBookDomainModel(
-                                it.bookMetaInfo,
-                                context,
-                                storageManager = storageManager,
-                                updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
-                                }
+            ) {
+                composable("home") {
+                    HomeScreen(
+                        onAddPdf = {
+                            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                type = "*/*"
+                            }
+                            launcher.launch(intent)
+                        },
+                        onItemClick = { bookLink ->
+                            val encodedFileName = URLEncoder.encode(
+                                bookLink.fileName,
+                                StandardCharsets.UTF_8.toString()
                             )
-                            PdfReaderScreen(pdfBookDomainModel)
+                            navController.navigate("bookReader/$encodedFileName")
                         }
-                    } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
-                        bookLink.let {
-                            val book = Fb2BookDomainModel(
-                                it.bookMetaInfo,
-                                context,
-                                storageManager = storageManager,
-                                updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
-                                }
-                            )
-                            Fb2ReaderScreen(book)
+                    )
+                }
+                composable("Settings") {
+                    SettingsScreen(
+                        updateAppTheme = { theme ->
+                            currentTheme.value = theme
+                            settingsManager.setAppTheme(theme)
+                        },
+                        appTheme = currentTheme.value
+                    )
+                }
+                composable("bookReader/{fileName}") { backStackEntry ->
+                    val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        URLDecoder.decode(
+                            backStackEntry.arguments?.getString("fileName"),
+                            StandardCharsets.UTF_8
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        URLDecoder.decode(
+                            backStackEntry.arguments?.getString("fileName")
+                        )
+                    }
+                    fileName?.let {
+                        val bookLink = bookStorage.bookCache.find { it.fileName == fileName }
+                        if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
+                            bookLink.let {
+                                val pdfBookDomainModel = PdfBookDomainModel(
+                                    it.bookMetaInfo,
+                                    context,
+                                    storageManager = storageManager,
+                                    updateProgress = { updatedBookLink ->
+                                        bookStorage.updateProgress(updatedBookLink)
+                                    }
+                                )
+                                PdfReaderScreen(pdfBookDomainModel)
+                            }
+                        } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
+                            bookLink.let {
+                                val book = Fb2BookDomainModel(
+                                    it.bookMetaInfo,
+                                    context,
+                                    storageManager = storageManager,
+                                    updateProgress = { updatedBookLink ->
+                                        bookStorage.updateProgress(updatedBookLink)
+                                    }
+                                )
+                                Fb2ReaderScreen(book)
+                            }
                         }
                     }
                 }
@@ -242,6 +253,13 @@ fun MainScreen(
             directoryLauncher.launch(intent)
         }
     }
+}
+
+@Composable
+fun shouldShowBottomBar(navController: NavController): Boolean {
+    val currentDestination =
+        navController.currentBackStackEntryAsState().value?.destination?.route
+    return currentDestination != null && currentDestination != "pdfReader/{fileName}"
 }
 
 @Composable
