@@ -12,6 +12,7 @@ import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookStorageRepository
 import com.example.bottomapp.backend.StorageManager
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
             singleOf(::StorageManager) bind StorageManager::class
             singleOf(::BookStorage) bind BookStorage::class
             singleOf(::SettingsManager) bind SettingsManager::class
+            singleOf(::BookStorageRepository) bind BookStorageRepository::class
             single {
                 ImageLoader.Builder(androidContext())
                     .memoryCachePolicy(CachePolicy.ENABLED)
