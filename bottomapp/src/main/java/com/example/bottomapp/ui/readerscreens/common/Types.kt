@@ -1,8 +1,12 @@
 package com.example.bottomapp.ui.readerscreens.common
 
-enum class FlipMode {
+enum class ReaderMode {
     Carousel,
     Zoom,
-    Curl,
-    Scroll
+    Reading
+}
+
+enum class CurlMode {
+    PagingCurl,
+    Vertical
 }

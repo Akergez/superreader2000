@@ -1,79 +1,70 @@
-import android.content.Context
-import android.util.Log
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
+//noinspection UsingMaterialAndMaterial3Libraries
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
+import com.example.bottomapp.backend.RenderHelper.Fb2RenderHelper
+import com.example.bottomapp.backend.RenderHelper.IRenderHelper
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
-import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Carousel
-import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Page
-import eu.wewox.pagecurl.ExperimentalPageCurlApi
-import eu.wewox.pagecurl.config.rememberPageCurlConfig
-import eu.wewox.pagecurl.page.PageCurl
-import eu.wewox.pagecurl.page.rememberPageCurlState
+import com.example.bottomapp.ui.readerscreens.common.BookContent
+import com.example.bottomapp.ui.readerscreens.common.ReaderMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import org.w3c.dom.Node
-import java.io.File
-import javax.xml.parsers.DocumentBuilderFactory
-import kotlin.math.roundToInt
 
 
 @Composable
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
-    var mode by remember { mutableStateOf(FlipMode.Curl) }
+    var mode by remember { mutableStateOf(ReaderMode.Reading) }
     val context = LocalContext.current
     val fb2File = remember { book.getFile() }
-
-    // Состояние для страниц
-    var pages by remember { mutableStateOf(listOf<String>()) }
-
-    // Настройки оформления
-    val fontSize = 16 //settingsManager.getFontSize()
-    val applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
-
     var sums by remember { mutableStateOf(listOf<Int>()) }
-
-    val fullText = remember { parseFb2Content(fb2File) }
-
     val textMeasurer = rememberTextMeasurer()
 
-    val navBarHeightPx = LocalDensity.current.run { 80.dp.toPx() }
-    pages = remember { paginateText(fullText, fontSize, context, textMeasurer, navBarHeightPx.roundToInt()
-    ) }
+    var componentHeight by remember { mutableStateOf(0.dp) }
+    var componentWidth by remember { mutableStateOf(0.dp) }
+    // get local density from composable
+    val density = LocalDensity.current
 
-    sums = remember { calculatePrefixSums(pages) }
-    val offset = book.readProgress().wordOffset;
 
-    if (offset > 0) {
-        for (i in 0..pages.size) {
-            if (sums[i] > offset) {
-                currentPage = i - 1
-                break
+    val displayMetrics = context.resources.displayMetrics
+    val navBarHeightPx = LocalDensity.current.run { 400.dp.toPx() }
+    val maxWidth = displayMetrics.widthPixels - (displayMetrics.density * 16).toInt()
+    val maxHeight = displayMetrics.heightPixels - navBarHeightPx.toInt()
+
+    val aa = LocalDensity.current.run { componentWidth.toPx() }
+    val bb = LocalDensity.current.run { componentHeight.toPx() }
+
+    val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
+    val isLoaded = remember { mutableStateOf(false) }
+
+
+    LaunchedEffect(componentHeight) {
+        launch(Dispatchers.IO) {
+            if(componentHeight.value != 0f) {
+                fb2RenderHelper.value = Fb2RenderHelper(aa.toInt(), bb.toInt(), textMeasurer, fb2File)
+                fb2RenderHelper.value!!.Init(16)
+                isLoaded.value = true;
             }
         }
     }
 
-    val onPageChange = rememberUpdatedState { newPage: Int ->
+    val onPageChange = { newPage: Int ->
         if (sums.isNotEmpty() && newPage > 0) {
             currentPage = newPage
             book.saveProgress(Fb2Progress(sums[newPage]))
@@ -83,209 +74,52 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
         }
     }
 
-    Fb2Content(
-        currentPage = currentPage,
-        totalPages = pages.size,
-        pages = pages,
-        mode = mode,
-        onPageChange = onPageChange.value,
-        onToggleMode = { newMode -> mode = newMode },
-        settingsManager = settingsManager
-    )
-}
-
-@OptIn(ExperimentalPageCurlApi::class)
-@Composable
-fun Fb2Content(
-    currentPage: Int,
-    totalPages: Int,
-    pages: List<String>,
-    mode: FlipMode,
-    onPageChange: (Int) -> Unit,
-    onToggleMode: (FlipMode) -> Unit,
-    settingsManager: SettingsManager
-) {
-    val pagerState = rememberPageCurlState(initialCurrent = currentPage)
-
-    LaunchedEffect(pagerState.current) {
-        onPageChange(pagerState.current)
-    }
-
-    when (mode) {
-        FlipMode.Carousel -> {
-            Fb2Carousel(
-                pages = pages,
-                initialPage = currentPage,
-                onPageChange = onPageChange,
-                onToggleMode = onToggleMode,
-                settingsManager = settingsManager
-            )
-        }
-
-        FlipMode.Curl -> {
-            PageCurl(
-                count = totalPages,
-                state = pagerState,
-                config = rememberPageCurlConfig(
-                    backPageContentAlpha = 0f,
-                    backPageColor = MaterialTheme.colorScheme.background
-                )
-            ) { index ->
-                Fb2Page(
-                    pageContent = if (index < pages.size) pages[index] else "",
-                    mode = FlipMode.Curl,
-                    onToggleMode = onToggleMode,
-                    settingsManager = settingsManager
-                )
-            }
-        }
-
-        FlipMode.Zoom -> {
-            Fb2Page(
-                pageContent = if (currentPage < pages.size) pages[currentPage] else "",
-                mode = mode,
-                onToggleMode = onToggleMode,
-                settingsManager = settingsManager
-            )
-        }
-
-        FlipMode.Scroll -> throw IllegalStateException("Scroll mode is not supported for FB2")
-    }
-}
-
-fun parseFb2Content(fb2File: File): String {
-    try {
-        val factory = DocumentBuilderFactory.newInstance()
-        factory.isNamespaceAware = true
-        val builder = factory.newDocumentBuilder()
-        val doc = builder.parse(fb2File)
-
-        // Нормализуем документ
-        doc.documentElement.normalize()
-
-        val stringBuilder = StringBuilder()
-
-        // Найдем все элементы body
-        val bodyElements = doc.getElementsByTagName("body")
-        for (i in 0 until bodyElements.length) {
-            val body = bodyElements.item(i)
-
-            // Проверяем, является ли это основным телом текста
-            val name = body.attributes?.getNamedItem("name")?.nodeValue
-            if (name == null || name == "notes") {
-                parseBodyContent(body, stringBuilder)
-            }
-        }
-
-        return stringBuilder.toString()
-    } catch (e: Exception) {
-        Log.e("FB2Parser", "Error parsing FB2: ${e.message}")
-        e.printStackTrace()
-        return "Ошибка при парсинге книги: ${e.message}"
-    }
-}
-
-private fun parseBodyContent(node: Node, stringBuilder: StringBuilder) {
-    val children = node.childNodes
-    for (i in 0 until children.length) {
-        val child = children.item(i)
-        when (child.nodeName) {
-            "section" -> parseBodyContent(child, stringBuilder)
-            "title" -> {
-                val title = extractTextContent(child)
-                if (title.isNotEmpty()) {
-                    stringBuilder.append(title.uppercase()).append("\n\n")
-                }
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .onGloballyPositioned {
+            componentHeight = with(density) {
+                it.size.height.toDp()
             }
 
-            "p" -> {
-                val paragraph = extractTextContent(child)
-                if (paragraph.isNotEmpty()) {
-                    stringBuilder.append(paragraph).append("\n\n")
-                }
+            componentWidth = with(density) {
+                it.size.width.toDp()
             }
 
-            "empty-line" -> {
-                stringBuilder.append("\n")
-            }
-        }
-    }
-}
 
-private fun extractTextContent(node: Node): String {
-    val stringBuilder = StringBuilder()
-    val children = node.childNodes
-    for (i in 0 until children.length) {
-        val child = children.item(i)
+        }) {
 
-        when (child.nodeType) {
-            Node.TEXT_NODE -> {
-                val text = child.nodeValue?.trim() ?: ""
-                if (text.isNotEmpty()) {
-                    stringBuilder.append(text).append(" ")
-                }
-            }
+        if (isLoaded.value) {
+            val totalPages = remember { fb2RenderHelper.value!!.getPageCount() }
+            val curlMode = remember { settingsManager.getCurlMode() }
 
-            Node.ELEMENT_NODE -> {
-                when (child.nodeName) {
-                    "emphasis", "strong", "sup", "sub", "code", "a" -> {
-                        val text = extractTextContent(child)
-                        if (text.isNotEmpty()) {
-                            stringBuilder.append(text).append(" ")
-                        }
+            sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
+            val offset = book.readProgress().wordOffset
+
+            if (offset > 0) {
+                for (i in 0..sums.size) {
+                    if (sums[i] > offset) {
+                        currentPage = i - 1
+                        break
                     }
-                    // Вы можете добавить дополнительные теги, если нужно
                 }
             }
-        }
-    }
-    return stringBuilder.toString().trim()
-}
 
-fun paginateText(
-    text: String,
-    fontSize: Int,
-    context: Context,
-    textMeasurer: TextMeasurer,
-    navBarHeightPx: Int
-): List<String> {
-    val displayMetrics = context.resources.displayMetrics
-    val maxWidth = displayMetrics.widthPixels - (displayMetrics.density * 16).toInt()
-    val maxHeight = displayMetrics.heightPixels - navBarHeightPx
+            BookContent(
+                currentPage = currentPage,
+                totalPages = totalPages,
+                mode = mode,
+                renderHelper = fb2RenderHelper.value!!,
+                onPageChange = onPageChange,
+                onToggleMode = { newMode -> mode = newMode },
+                settingsManager = settingsManager,
+                curlMode = curlMode,
+            )
 
-    val pages = mutableListOf<String>()
-    val words = text.split(" ", " ")
-    var currentPage = StringBuilder()
-
-    for (word in words) {
-        val testLine = if (currentPage.isEmpty()) word else "$currentPage $word"
-
-        val result = textMeasurer.measure(
-            text = testLine,
-            style = TextStyle(fontSize = fontSize.sp, textAlign = TextAlign.Center),
-            constraints = Constraints(
-                minWidth = maxWidth,
-                maxWidth = maxWidth,
-                minHeight = maxHeight,
-                maxHeight = maxHeight
-            ),
-            softWrap = true,
-        )
-
-        if (!result.didOverflowHeight) {
-            currentPage.append(if (currentPage.isEmpty()) word else " $word")
         } else {
-            pages.add(currentPage.toString().trim())
-            currentPage = StringBuilder()
-            currentPage.append(word)
+            Text("Loading")
         }
     }
 
-    if (currentPage.isNotEmpty()) {
-        pages.add(currentPage.toString().trim())
-    }
-
-    return pages
 }
 
 fun calculatePrefixSums(pages: List<String>): List<Int> {
@@ -299,3 +133,4 @@ fun calculatePrefixSums(pages: List<String>): List<Int> {
 
     return prefixSums
 }
+
