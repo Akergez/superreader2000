@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -153,27 +154,7 @@ fun MainScreen(
             NavHost(
                 navController = navController,
                 startDestination = "home",
-                modifier = Modifier.padding(innerPadding),
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth / 2 }
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> fullWidth / 2 }
-                    )
-                }
+                modifier = Modifier.padding(innerPadding)
             ) {
                 composable("home") {
                     HomeScreen(
@@ -268,7 +249,14 @@ fun BottomNavigationBar(navController: NavController) {
         NavigationBarItem(icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text("Home") },
             selected = false,
-            onClick = { navController.navigate("home") })
+            onClick = {
+                if (navController.currentDestination?.route != "home") {
+                    navController.navigate("home") {
+                        popUpTo("Settings") { inclusive = true } // Удалить все экраны до "Settings", включая "Settings"
+                        launchSingleTop = true
+                    }
+                }
+            })
         NavigationBarItem(icon = {
             Icon(
                 Icons.Filled.Settings, contentDescription = null
@@ -276,6 +264,12 @@ fun BottomNavigationBar(navController: NavController) {
         },
             label = { Text("Settings") }, // TODO еще картинку поменять
             selected = false,
-            onClick = { navController.navigate("Settings") })
+            onClick = {
+                if (navController.currentDestination?.route != "Settings") {
+                    navController.navigate("Settings"){
+                    launchSingleTop = true // Предотвратить дублирование "Settings" в стеке
+                    }
+                }
+            })
     }
 }
