@@ -13,6 +13,8 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Entity
 data class Book(
@@ -23,10 +25,10 @@ data class Book(
 @Dao
 interface UserDao {
     @Query("SELECT * FROM book")
-    fun getAll(): List<Book>
+    suspend fun getAll(): List<Book>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(vararg users: Book)
+    suspend fun insertAll(vararg users: Book)
 }
 
 @Database(entities = [Book::class], version = 1)
@@ -45,11 +47,15 @@ class BookStorageRepository(private val dao: UserDao) {
         .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
         .create()
 
-    fun getBookLinks(): List<BookStorageEntry> {
-        return dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
+    suspend fun getBookLinks(): List<BookStorageEntry> {
+        return withContext(Dispatchers.IO) {
+            dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
+        }
     }
 
-    fun saveBookLinks(bookCache: SnapshotStateList<BookStorageEntry>) {
-        dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
+    suspend fun saveBookLinks(bookCache: SnapshotStateList<BookStorageEntry>) {
+        withContext(Dispatchers.IO) {
+            dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
+        }
     }
 }

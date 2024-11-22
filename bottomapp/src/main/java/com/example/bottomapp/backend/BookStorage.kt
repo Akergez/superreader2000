@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import kotlinx.coroutines.runBlocking
 
 data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
 
@@ -26,7 +27,9 @@ class BookStorage(val context: Context,
     }
 
     private fun getBooksLinksFromCache(): List<BookStorageEntry> {
-        return bookRepository.getBookLinks()
+        return runBlocking {
+            bookRepository.getBookLinks()
+        }
     }
 
     suspend fun refreshBooksLinks() {
@@ -42,14 +45,14 @@ class BookStorage(val context: Context,
         bookCache.addAll(getBooksLinksFromCache())
     }
 
-    fun saveBooksLinksToStorage() {
+    suspend fun saveBooksLinksToStorage() {
         bookCache.filter { booksHashMap.contains(it.bookMetaInfo.fileName) }
             .map { bookLink -> storageManager.updateProgressData(bookLink.bookMetaInfo) }
         booksHashMap.clear()
         cacheBooksLinks()
     }
 
-    private fun cacheBooksLinks() {
+    private suspend fun cacheBooksLinks() {
         bookRepository.saveBookLinks(bookCache)
     }
 

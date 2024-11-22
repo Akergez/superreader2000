@@ -14,6 +14,7 @@ import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageRepository
 import com.example.bottomapp.backend.StorageManager
+import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -67,7 +68,9 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         storageManager.value.clearFileCache()
-        bookStorage.value.saveBooksLinksToStorage()
+        runBlocking {
+            bookStorage.value.saveBooksLinksToStorage()
+        }
     }
 }
 
