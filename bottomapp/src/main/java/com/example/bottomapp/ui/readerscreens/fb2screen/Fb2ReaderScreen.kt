@@ -1,7 +1,6 @@
-//noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,14 +10,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.RenderHelper.Fb2RenderHelper
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
@@ -31,35 +27,29 @@ import org.koin.compose.koinInject
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
     var mode by remember { mutableStateOf(ReaderMode.Reading) }
-    val context = LocalContext.current
     val fb2File = remember { book.getFile() }
     var sums by remember { mutableStateOf(listOf<Int>()) }
     val textMeasurer = rememberTextMeasurer()
 
-    var componentHeight by remember { mutableStateOf(0.dp) }
-    var componentWidth by remember { mutableStateOf(0.dp) }
+    var componentHeight by remember { mutableIntStateOf(0) }
+    var componentWidth by remember { mutableIntStateOf(0) }
     // get local density from composable
     val density = LocalDensity.current
 
-
-    val displayMetrics = context.resources.displayMetrics
-    val navBarHeightPx = LocalDensity.current.run { 400.dp.toPx() }
-    val maxWidth = displayMetrics.widthPixels - (displayMetrics.density * 16).toInt()
-    val maxHeight = displayMetrics.heightPixels - navBarHeightPx.toInt()
-
-    val aa = LocalDensity.current.run { componentWidth.toPx() }
-    val bb = LocalDensity.current.run { componentHeight.toPx() }
-
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-    var isLoaded = remember { mutableStateOf(false) }
-
+    val isLoaded = remember { mutableStateOf(false) }
 
     LaunchedEffect(componentHeight) {
         launch(Dispatchers.IO) {
-            if(componentHeight != 0.dp) {
-                fb2RenderHelper.value = Fb2RenderHelper(aa.toInt(), bb.toInt(), textMeasurer, fb2File)
-                fb2RenderHelper.value!!.Init(16)
-                isLoaded.value = true;
+            if (componentHeight != 0) {
+                fb2RenderHelper.value = Fb2RenderHelper(
+                    componentWidth - (density.density * 16).toInt(),
+                    componentHeight - (density.density * 16).toInt(),
+                    textMeasurer,
+                    fb2File
+                )
+                fb2RenderHelper.value!!.Init()
+                isLoaded.value = true
             }
         }
     }
@@ -77,17 +67,9 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     Box(modifier = Modifier
         .fillMaxSize()
         .onGloballyPositioned {
-            componentHeight = with(density) {
-                it.size.height.toDp()
-            }
-
-            componentWidth = with(density) {
-                it.size.width.toDp()
-            }
-
-
+            componentHeight = it.size.height
+            componentWidth = it.size.width
         }) {
-
         if (isLoaded.value) {
             val totalPages = remember { fb2RenderHelper.value!!.getPageCount() }
             val curlMode = remember { settingsManager.getCurlMode() }
@@ -114,9 +96,8 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 settingsManager = settingsManager,
                 curlMode = curlMode,
             )
-
         } else {
-            Text("Loading")
+            Text("Loading...")
         }
     }
 

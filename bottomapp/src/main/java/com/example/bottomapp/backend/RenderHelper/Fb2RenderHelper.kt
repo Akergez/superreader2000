@@ -20,17 +20,16 @@ class Fb2RenderHelper(
 ) : IRenderHelper {
 
     public val pages: MutableList<String> = mutableListOf()
-    private var cachedContent: String? = null
 
     override fun getPageCount(): Int = pages.size
     override fun openPage(pageIndex: Int): Bitmap {
         return Bitmap.createBitmap(1,1,Bitmap.Config.ARGB_8888)
     }
 
-    fun Init(fontSize: Int){
-        cachedContent = parseFb2Content(fb2File)
+    fun Init(){
+        val cachedContent = parseFb2Content(fb2File)
 
-        val words = cachedContent!!.split(" ", " ")
+        val words = cachedContent.split(" ", " ")
         var currentPage = StringBuilder()
 
         for (word in words) {
@@ -38,14 +37,14 @@ class Fb2RenderHelper(
 
             val result = textMeasurer.measure(
                 text = testLine,
-                style = TextStyle(fontSize = fontSize.sp, textAlign = TextAlign.Center),
+                style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Left),
                 constraints = Constraints(
                     minWidth = maxWidth,
                     maxWidth = maxWidth,
                     minHeight = maxHeight,
                     maxHeight = maxHeight
                 ),
-                softWrap = true,
+                softWrap = true
             )
 
             if (!result.didOverflowHeight) {
