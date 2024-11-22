@@ -22,7 +22,7 @@ class BookStorage(val context: Context,
         refreshBooksLinksFromCache()
     }
 
-    private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
+    suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
         return storageManager.listAllBooks()
     }
 
