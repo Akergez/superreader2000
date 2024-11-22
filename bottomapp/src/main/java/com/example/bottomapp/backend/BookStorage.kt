@@ -1,20 +1,31 @@
 package com.example.bottomapp.backend
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import kotlinx.coroutines.runBlocking
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 
 data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
 
 data class BookStorageEntry(val fileName: String, val previewUri: Uri?, val bookMetaInfo: BookMetaInfo)
 
+class BookStorage(val context: Context, private val storageManager: StorageManager) {
 
-class BookStorage(val context: Context,
-                  private val storageManager: StorageManager,
-                  private val bookRepository: BookStorageRepository
-) {
+    private val progressAdapterFactory = RuntimeTypeAdapterFactory
+        .of(Progress::class.java, "type")
+        .registerSubtype(PdfProgress::class.java, "pdf")
+        .registerSubtype(Fb2Progress::class.java, "fb2")
+
+    private val gson: Gson = GsonBuilder()
+        .registerTypeAdapterFactory(progressAdapterFactory)
+        .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
+        .create()
+    private val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("books_links", Context.MODE_PRIVATE)
     val bookCache: SnapshotStateList<BookStorageEntry> = mutableStateListOf()
     val booksHashMap: HashSet<String> = HashSet()
 
@@ -27,8 +38,12 @@ class BookStorage(val context: Context,
     }
 
     private fun getBooksLinksFromCache(): List<BookStorageEntry> {
-        return runBlocking {
-            bookRepository.getBookLinks()
+        val cachedBooksLinks = sharedPreferences.getString("books_links_cache", null)
+        return if (cachedBooksLinks != null) {
+            val type = object : TypeToken<List<BookStorageEntry>>() {}.type
+            gson.fromJson(cachedBooksLinks, type)
+        } else {
+            emptyList()
         }
     }
 
@@ -45,15 +60,18 @@ class BookStorage(val context: Context,
         bookCache.addAll(getBooksLinksFromCache())
     }
 
-    suspend fun saveBooksLinksToStorage() {
+    fun saveBooksLinksToStorage() {
         bookCache.filter { booksHashMap.contains(it.bookMetaInfo.fileName) }
             .map { bookLink -> storageManager.updateProgressData(bookLink.bookMetaInfo) }
         booksHashMap.clear()
         cacheBooksLinks()
     }
 
-    private suspend fun cacheBooksLinks() {
-        bookRepository.saveBookLinks(bookCache)
+    private fun cacheBooksLinks() {
+        val editor = sharedPreferences.edit()
+        val booksLinksJson = gson.toJson(bookCache)
+        editor.putString("books_links_cache", booksLinksJson)
+        editor.apply()
     }
 
     fun addNewBook(fileUri: Uri, fileName: String, progress: Progress)
