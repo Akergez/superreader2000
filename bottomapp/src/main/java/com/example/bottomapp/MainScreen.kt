@@ -12,6 +12,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -29,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,6 +49,7 @@ import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
+import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -152,7 +157,7 @@ fun MainScreen(
             NavHost(
                 navController = navController,
                 startDestination = Route.Main,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(innerPadding),
             ) {
                 composable(Route.Main) {
                     HomeScreen(
@@ -181,7 +186,18 @@ fun MainScreen(
                         appTheme = currentTheme.value
                     )
                 }
-                composable("bookReader/{fileName}") { backStackEntry ->
+                composable("bookReader/{fileName}",
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                    ) { backStackEntry ->
                     val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         URLDecoder.decode(
                             backStackEntry.arguments?.getString("fileName"),
