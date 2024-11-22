@@ -12,6 +12,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -31,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -44,8 +48,10 @@ import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
+import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
+import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -152,30 +158,12 @@ fun MainScreen(
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = "home",
+                startDestination = Route.Main,
                 modifier = Modifier.padding(innerPadding),
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-                popEnterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth / 2 }
-                    )
-                },
-                popExitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> fullWidth / 2 }
-                    )
-                }
+                enterTransition = { fadeIn(animationSpec = tween(300)) },
+                exitTransition = { fadeOut(animationSpec = tween(300)) }
             ) {
-                composable("home") {
+                composable(Route.Main) {
                     HomeScreen(
                         onAddPdf = {
                             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -193,7 +181,7 @@ fun MainScreen(
                         }
                     )
                 }
-                composable("Settings") {
+                composable(Route.Settings) {
                     SettingsScreen(
                         updateAppTheme = { theme ->
                             currentTheme.value = theme
@@ -202,7 +190,18 @@ fun MainScreen(
                         appTheme = currentTheme.value
                     )
                 }
-                composable("bookReader/{fileName}") { backStackEntry ->
+                composable("bookReader/{fileName}",
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                    ) { backStackEntry ->
                     val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         URLDecoder.decode(
                             backStackEntry.arguments?.getString("fileName"),
@@ -268,7 +267,14 @@ fun BottomNavigationBar(navController: NavController) {
         NavigationBarItem(icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text("Home") },
             selected = false,
-            onClick = { navController.navigate("home") })
+            onClick = {
+                if (navController.currentDestination?.route != Route.Main) {
+                    navController.navigate(Route.Main) {
+                        popUpTo(Route.Settings) { inclusive = true } // Удалить все экраны до "Settings", включая "Settings"
+                        launchSingleTop = true
+                    }
+                }
+            })
         NavigationBarItem(icon = {
             Icon(
                 Icons.Filled.Settings, contentDescription = null
@@ -276,6 +282,12 @@ fun BottomNavigationBar(navController: NavController) {
         },
             label = { Text("Settings") }, // TODO еще картинку поменять
             selected = false,
-            onClick = { navController.navigate("Settings") })
+            onClick = {
+                if (navController.currentDestination?.route != Route.Settings) {
+                    navController.navigate(Route.Settings){
+                    launchSingleTop = true // Предотвратить дублирование "Settings" в стеке
+                    }
+                }
+            })
     }
 }
