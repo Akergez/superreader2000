@@ -33,7 +33,7 @@ fun BookContent(
     currentPage: Int,
     totalPages: Int,
     mode: ReaderMode,
-    curlMode: CurlMode,
+    flipMode: FlipMode,
     renderHelper: IRenderHelper,
     onPageChange: (Int) -> Unit,
     onToggleMode: (ReaderMode) -> Unit,
@@ -109,8 +109,8 @@ fun BookContent(
             }
 
             ReaderMode.Reading -> {
-                when (curlMode) {
-                    CurlMode.PagingCurl -> PageCurl(
+                when (flipMode) {
+                    FlipMode.PagingCurl -> PageCurl(
                         count = totalPages,
                         state = pagerState,
                         config = rememberPageCurlConfig(
@@ -128,7 +128,7 @@ fun BookContent(
                         )
                     }
 
-                    CurlMode.Vertical -> VerticalBookScroll(
+                    FlipMode.VerticalScroll -> VerticalBookScroll(
                         totalPages = totalPages,
                         initialPage = currentPage,
                         onPageChange = onPageChange,

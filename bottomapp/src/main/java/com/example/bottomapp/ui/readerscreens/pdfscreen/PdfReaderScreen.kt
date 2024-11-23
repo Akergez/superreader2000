@@ -2,12 +2,7 @@ package com.example.bottomapp.ui.readerscreens.pdfscreen
 
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.backend.RenderHelper.PdfRendererHelper
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,7 +27,7 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
     val pdfFile = remember { book.getFile() }
     val pdfRendererHelper = remember { PdfRendererHelper(context, pdfFile) }
     val totalPages = remember { pdfRendererHelper.getPageCount() }
-    val curlMode = remember { settingsManager.getCurlMode() }
+    val curlMode = remember { settingsManager.getFlipMode() }
 
     val onPageChange = { newPage: Int ->
         currentPage = newPage
@@ -48,7 +43,7 @@ fun PdfReaderScreen(book: PdfBookDomainModel, settingsManager: SettingsManager =
             onPageChange = onPageChange,
             onToggleMode = { newMode -> mode = newMode },
             settingsManager = settingsManager,
-            curlMode = curlMode,
+            flipMode = curlMode,
             modifier = Modifier.padding(innerPadding)
         )
     }

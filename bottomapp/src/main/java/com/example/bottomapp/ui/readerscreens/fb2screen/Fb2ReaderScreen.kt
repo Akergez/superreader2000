@@ -72,7 +72,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
         }) {
         if (isLoaded.value) {
             val totalPages = remember { fb2RenderHelper.value!!.getPageCount() }
-            val curlMode = remember { settingsManager.getCurlMode() }
+            val curlMode = remember { settingsManager.getFlipMode() }
 
             sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
             val offset = book.readProgress().wordOffset
@@ -94,7 +94,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },
                 settingsManager = settingsManager,
-                curlMode = curlMode,
+                flipMode = curlMode,
             )
         } else {
             Text("Loading...")

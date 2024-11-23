@@ -61,8 +61,8 @@ class SettingsManager(context: Context) {
         saveSetting(docThemeKey, theme.name)
     }
 
-    fun getPdfFlipMode(): FlipMode {
-        val defaultMode = FlipMode.Scroll
+    fun getFlipMode(): FlipMode {
+        val defaultMode = FlipMode.PagingCurl
         val setting = getSetting(pdfFlipModeKey) ?: return defaultMode
         return try {
             FlipMode.valueOf(setting)

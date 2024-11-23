@@ -4,7 +4,6 @@ package com.example.bottomapp.ui.settingsscreen
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -35,11 +33,8 @@ import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.backend.StorageManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 
@@ -61,7 +56,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
-    var pdfFlipMode by remember { mutableStateOf(settingsManager.getPdfFlipMode()) }
+    var pdfFlipMode by remember { mutableStateOf(settingsManager.getFlipMode()) }
     var showSecondComposable by remember { mutableStateOf(false) }
 
     var storageAddress by remember { mutableStateOf(settingsManager.getStorageUri().toString()) }
@@ -124,16 +119,15 @@ fun SettingsScreen(
 
         Text("Paging mode", style = MaterialTheme.typography.headlineMedium)
         Row(Modifier.padding(vertical = 8.dp)) {
-            arrayOf(FlipMode.Curl, FlipMode.Scroll).forEach { mode ->
+            arrayOf(FlipMode.PagingCurl, FlipMode.VerticalScroll).forEach { mode ->
                 RadioButton(selected = pdfFlipMode == mode, onClick = {
                     pdfFlipMode = mode
                     settingsManager.setPdfFlipMode(mode)
                 })
                 Text(
                     text = when (mode) {
-                        FlipMode.Curl -> "Classic"
-                        FlipMode.Scroll -> "Vertical"
-                        else -> "Unknown"
+                        FlipMode.PagingCurl -> "Classic"
+                        FlipMode.VerticalScroll -> "Vertical scroll"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier
@@ -178,7 +172,8 @@ fun SettingsScreen(
 @Composable
 fun ChangeStorageAddress(
     settingsManager: SettingsManager,
-    onResult: (Boolean, String) -> Unit
+    onResult: (Boolean, String) -> Unit,
+    bookStorage: BookStorage = koinInject()
 ) {
     val context = LocalContext.current
 
@@ -194,21 +189,14 @@ fun ChangeStorageAddress(
 
 
                     (context as ComponentActivity).lifecycleScope.launch {
-                        val svo = BookStorage(context, StorageManager(context, settingsManager))
-                        svo.refreshBooksLinks()
+                        bookStorage.refreshBooksLinks()
                     }
                     onResult(false, uri.toString())
-
-                    //val scope = CoroutineScope(Dispatchers.Default)
-
-                    //svo.cacheBooksLinks()
-                    //svo.refreshBooksLinksFromCache()
                 }
             }
         }
 
     LaunchedEffect("storage") {
-        // Trigger directory picker in MainActivity
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         directoryLauncher.launch(intent)
     }
