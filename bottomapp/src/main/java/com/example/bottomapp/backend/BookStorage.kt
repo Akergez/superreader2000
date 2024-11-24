@@ -56,14 +56,18 @@ class BookStorage(val context: Context,
         bookRepository.saveBookLinks(bookCache)
     }
 
-    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress)
-    {
-       val storageEntry = storageManager.copyBookToStorage(
+    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress): Result<Unit> {
+        val storageEntry = storageManager.copyBookToStorage(
             fileUri,
             BookMetaInfo(fileName, fileName, progress),
             context.contentResolver
-        )
-        bookCache.add(storageEntry)
+        ).onSuccess {
+            bookCache.add(it)
+            return Result.success(Unit)
+        }.onFailure {
+                return Result.failure(it)
+            }
+        return Result.success(Unit)
     }
 
     fun updateProgress(bookMetaInfo: BookMetaInfo) {
