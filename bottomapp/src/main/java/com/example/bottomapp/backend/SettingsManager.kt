@@ -51,7 +51,12 @@ class SettingsManager(context: Context) {
     fun getFlipMode(): FlipMode {
         val defaultMode = FlipMode.PagingCurl
         val setting = getSetting(pdfFlipModeKey) ?: return defaultMode
-        return FlipMode.valueOf(setting)
+        // Оставил try потому что название полей FlipMode менялось
+        return try {
+            FlipMode.valueOf(setting)
+        } catch (e: Throwable) {
+            defaultMode
+        }
     }
 
     fun setPdfFlipMode(mode: FlipMode) {
