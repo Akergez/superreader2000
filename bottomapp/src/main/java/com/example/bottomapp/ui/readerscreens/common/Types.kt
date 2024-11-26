@@ -10,3 +10,5 @@ enum class FlipMode {
     PagingCurl,
     VerticalScroll
 }
+
+// todo перенести в слой backend

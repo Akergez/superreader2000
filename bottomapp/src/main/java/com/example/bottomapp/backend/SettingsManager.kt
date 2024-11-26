@@ -16,11 +16,6 @@ enum class DocThemeMode {
     Invert
 }
 
-enum class PdfFlipMode {
-    Curl,
-    Scroll,
-}
-
 class SettingsManager(context: Context) {
     private val sharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val appThemeKey = "theme"
@@ -37,11 +32,7 @@ class SettingsManager(context: Context) {
 
     fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
         val setting = getSetting(appThemeKey) ?: return defaultTheme
-        return try {
-            AppThemeMode.valueOf(setting)
-        } catch (e: Throwable) {
-            defaultTheme
-        }
+        return AppThemeMode.valueOf(setting)
     }
 
     fun setAppTheme(theme: AppThemeMode) {
@@ -50,11 +41,7 @@ class SettingsManager(context: Context) {
 
     fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
         val setting = getSetting(docThemeKey) ?: return defaultTheme
-        return try {
-            DocThemeMode.valueOf(setting)
-        } catch (e: Throwable) {
-            defaultTheme
-        }
+        return DocThemeMode.valueOf(setting)
     }
 
     fun setDocumentsTheme(theme: DocThemeMode) {
@@ -64,11 +51,7 @@ class SettingsManager(context: Context) {
     fun getFlipMode(): FlipMode {
         val defaultMode = FlipMode.PagingCurl
         val setting = getSetting(pdfFlipModeKey) ?: return defaultMode
-        return try {
-            FlipMode.valueOf(setting)
-        } catch (e: Throwable) {
-            defaultMode
-        }
+        return FlipMode.valueOf(setting)
     }
 
     fun setPdfFlipMode(mode: FlipMode) {
