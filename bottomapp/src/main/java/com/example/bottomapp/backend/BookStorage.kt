@@ -2,6 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.example.bottomapp.constants.FileType
@@ -65,7 +66,13 @@ class BookStorage(val context: Context,
             context.contentResolver,
             fileType
         )
-        bookCache.add(storageEntry)
+        if (storageEntry != null) {
+            bookCache.add(storageEntry)
+        } else {
+            Toast
+                .makeText(context, "Эта книга уже была добавлена", Toast.LENGTH_LONG)
+                .show()
+        }
     }
 
     fun updateProgress(bookMetaInfo: BookMetaInfo) {

@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.example.bottomapp.backend.RenderHelper.NameGenerator
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toMimeType
 import com.google.gson.Gson
@@ -16,6 +17,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.jar.Attributes.Name
 
 class StorageManager(val context: Context, val settingsManager: SettingsManager) {
 
@@ -30,10 +32,35 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
     private val fileCache = HashMap<String, File>()
 
-    fun copyBookToStorage(file: Uri, meta: BookMetaInfo, contentResolver: ContentResolver, fileType: FileType): BookStorageEntry {
-        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
-        val mimeType = fileType.toMimeType()
+    private fun createJsonMetaFile(storageDir: DocumentFile,
+                                   meta: BookMetaInfo,
+                                   contentResolver: ContentResolver,
+                                   fileName: String) {
+        val metaFile = storageDir.createFile("application/json", fileName) ?: throw Exception("Failed to create metadata file")
+
+        val jsonString = gson.toJson(meta)
+        contentResolver.openOutputStream(metaFile.uri)?.use { output ->
+            output.write(jsonString.toByteArray())
+        }
+    }
+
+    private fun createPreviewFile(storageDir: DocumentFile,
+                                  meta: BookMetaInfo,
+                                  contentResolver: ContentResolver,
+                                  fileName: String): DocumentFile {
+        val previewFile = storageDir.createFile("image/jpeg", fileName) ?: throw Exception("Failed to create preview file");
+        val previewBitmap = PreviewGenerator().getPreviewBitmap(getBookFile(meta.fileName)) ?: throw Exception("Failed to generate preview bitmap");
+        contentResolver.openOutputStream(previewFile.uri)?.use { output ->
+            previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+        }
+        return previewFile
+    }
+
+    private fun createNewBook(storageDir: DocumentFile,
+                              file: Uri,
+                              mimeType: String,
+                              meta: BookMetaInfo,
+                              contentResolver: ContentResolver): BookStorageEntry {
         val destFile = storageDir.createFile(mimeType, meta.fileName) ?: throw Exception("Failed to create destination file")
 
         contentResolver.openInputStream(file)?.use { input ->
@@ -42,23 +69,33 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             }
         }
 
-        val metaFile = storageDir.createFile("application/json", "${meta.fileName}_meta.json") ?: throw Exception("Failed to create metadata file")
-
-        val jsonString = gson.toJson(meta)
-        contentResolver.openOutputStream(metaFile.uri)?.use { output ->
-            output.write(jsonString.toByteArray())
-        }
-
-        val previewFile = storageDir.createFile("image/jpeg", "${meta.fileName}_preview.jpg") ?: throw Exception("Failed to create preview file");
-        val previewBitmap = PreviewGenerator().getPreviewBitmap(getBookFile(meta.fileName)) ?: throw Exception("Failed to generate preview bitmap");
-        contentResolver.openOutputStream(previewFile.uri)?.use { output ->
-            previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
-        }
+        createJsonMetaFile(storageDir, meta, contentResolver, NameGenerator.jsonMetaFilename(meta))
+        val previewFile = createPreviewFile(storageDir, meta, contentResolver, NameGenerator.previewFilename(meta))
 
         return BookStorageEntry(meta.fileName, previewFile.uri, meta)
     }
 
-    fun getPreviewUri(fileName: String): Uri? {
+    fun copyBookToStorage(file: Uri, meta: BookMetaInfo, contentResolver: ContentResolver, fileType: FileType): BookStorageEntry? {
+        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
+        val mimeType = fileType.toMimeType()
+
+        val existingFile = storageDir.findFile(meta.fileName)
+        if (existingFile != null) {
+            val jsonMetaFilename = NameGenerator.jsonMetaFilename(meta)
+            val existingJsonFile = storageDir.findFile(jsonMetaFilename)
+            if (existingJsonFile == null) {
+                createJsonMetaFile(storageDir, meta, contentResolver, jsonMetaFilename)
+                val previewFile = createPreviewFile(storageDir, meta, contentResolver, NameGenerator.previewFilename(meta))
+                return BookStorageEntry(meta.fileName, previewFile.uri, meta)
+            }
+            return null
+        } else {
+            return createNewBook(storageDir, file, mimeType, meta, contentResolver)
+        }
+    }
+
+    private fun getPreviewUri(fileName: String): Uri? {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
         val previewFile = storageDir.findFile("${fileName}_preview.jpg") ?: return null
