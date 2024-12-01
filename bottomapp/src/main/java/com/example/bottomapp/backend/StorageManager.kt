@@ -6,6 +6,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.constants.toMimeType
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
@@ -28,14 +30,10 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
     private val fileCache = HashMap<String, File>()
 
-    fun copyBookToStorage(file: Uri, meta: BookMetaInfo, contentResolver: ContentResolver): BookStorageEntry {
+    fun copyBookToStorage(file: Uri, meta: BookMetaInfo, contentResolver: ContentResolver, fileType: FileType): BookStorageEntry {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
-        val mimeType = when (getFileType(meta.fileName)) {
-            "pdf" -> "application/pdf"
-            "fb2" -> "application/fb2"
-            else -> throw Exception("Unsupported file type")
-        }
+        val mimeType = fileType.toMimeType()
         val destFile = storageDir.createFile(mimeType, meta.fileName) ?: throw Exception("Failed to create destination file")
 
         contentResolver.openInputStream(file)?.use { input ->
@@ -58,10 +56,6 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
 
         return BookStorageEntry(meta.fileName, previewFile.uri, meta)
-    }
-
-    private fun getFileType(fileName: String): String {
-        return fileName.substringAfterLast('.', "").lowercase()
     }
 
     fun getPreviewUri(fileName: String): Uri? {

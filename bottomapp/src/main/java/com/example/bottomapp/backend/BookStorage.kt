@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.example.bottomapp.constants.FileType
 import kotlinx.coroutines.runBlocking
 
 data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
@@ -56,12 +57,13 @@ class BookStorage(val context: Context,
         bookRepository.saveBookLinks(bookCache)
     }
 
-    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress)
+    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress, fileType: FileType)
     {
        val storageEntry = storageManager.copyBookToStorage(
             fileUri,
             BookMetaInfo(fileName, fileName, progress),
-            context.contentResolver
+            context.contentResolver,
+            fileType
         )
         bookCache.add(storageEntry)
     }

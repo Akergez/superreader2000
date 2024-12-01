@@ -19,14 +19,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.BookMetaInfo
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageEntry
 import org.koin.compose.koinInject
 
 @Composable
 fun HomeScreen(
-    onAddPdf: () -> Unit,
+    onAddBook: () -> Unit,
     onItemClick: (BookStorageEntry) -> Unit,
     bookStorage: BookStorage = koinInject()
 ) {
@@ -54,7 +53,7 @@ fun HomeScreen(
             }
         }
         FloatingActionButton(
-            onClick = onAddPdf,
+            onClick = onAddBook,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
