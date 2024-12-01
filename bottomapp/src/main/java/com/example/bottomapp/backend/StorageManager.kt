@@ -7,11 +7,11 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.example.bottomapp.backend.RenderHelper.NameGenerator
-import com.example.bottomapp.constants.FileType
-import com.example.bottomapp.constants.toMimeType
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
 import com.example.bottomapp.backend.exceptions.StorageNotSetException
+import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.constants.toMimeType
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +20,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.util.jar.Attributes.Name
 
 class StorageManager(val context: Context, val settingsManager: SettingsManager) {
 
@@ -96,18 +95,11 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             contentResolver,
             NameGenerator.previewFilename(meta)
         )
-            .onSuccess {
-                Result.success(
-                    BookStorageEntry(
-                        meta.fileName,
-                        it.uri,
-                        meta
-                    )
-                )
-            }
-            .onFailure { Result.failure<BookStorageEntry>(it.cause!!) }
 
-        return previewFile;
+        return when {
+            previewFile.isSuccess -> Result.success(BookStorageEntry(meta.fileName, previewFile.getOrNull()!!.uri, meta))
+            else -> Result.failure(previewFile.exceptionOrNull()!!)
+        }
     }
 
     fun copyBookToStorage(
@@ -115,7 +107,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         meta: BookMetaInfo,
         contentResolver: ContentResolver,
         fileType: FileType
-    ): BookStorageEntry? {
+    ): Result<BookStorageEntry> {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri)
             ?: throw Exception("Invalid storage directory")
@@ -133,9 +125,13 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
                     contentResolver,
                     NameGenerator.previewFilename(meta)
                 )
-                return BookStorageEntry(meta.fileName, previewFile.uri, meta)
+
+                return when {
+                    previewFile.isSuccess -> Result.success(BookStorageEntry(meta.fileName, previewFile.getOrNull()!!.uri, meta))
+                    else -> Result.failure<BookStorageEntry>(previewFile.exceptionOrNull()!!)
+                }
             }
-            return null
+            return Result.failure(Exception("Book already exists"))
         } else {
             return createNewBook(storageDir, file, mimeType, meta, contentResolver)
         }
@@ -166,17 +162,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         context.contentResolver.openOutputStream(metaFile.uri)?.use { output ->
             output.write(jsonString.toByteArray())
         }
-        return Result.success(Unit);
-    }
-
-    fun readProgressData(fileName: String): Result<BookMetaInfo> {
-        val storageUri: Uri =
-            settingsManager.getStorageUri() ?: return Result.failure(StorageNotSetException())
-        val storageDir = File(storageUri.path!!)
-        val metaFile = File(storageDir, "${fileName}_meta.json")
-
-        val jsonString = metaFile.readText()
-        return Result.success(gson.fromJson(jsonString, BookMetaInfo::class.java))
+        return Result.success(Unit)
     }
 
     suspend fun listAllBooks(): List<BookStorageEntry> {
@@ -193,7 +179,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
                             context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader()
                                 .use { it?.readText() }
                         try {
-                            val bookMetaInfo = gson.fromJson(jsonString, BookMetaInfo::class.java);
+                            val bookMetaInfo = gson.fromJson(jsonString, BookMetaInfo::class.java)
                             BookStorageEntry(
                                 bookMetaInfo.fileName,
                                 getPreviewUri(bookMetaInfo.fileName).getOrNull(),

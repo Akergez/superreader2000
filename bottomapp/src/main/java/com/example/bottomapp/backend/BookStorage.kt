@@ -62,10 +62,11 @@ class BookStorage(val context: Context,
     }
 
     fun addNewBook(fileUri: Uri, fileName: String, progress: Progress, fileType: FileType): Result<Unit> {
-        val storageEntry = storageManager.copyBookToStorage(
+        storageManager.copyBookToStorage(
             fileUri,
             BookMetaInfo(fileName, fileName, progress),
-            context.contentResolver
+            context.contentResolver,
+            fileType
         ).onSuccess {
             bookCache.add(it)
             CoroutineScope(Dispatchers.IO).launch {
@@ -74,7 +75,7 @@ class BookStorage(val context: Context,
             return Result.success(Unit)
         }.onFailure {
             Toast
-                .makeText(context, "Эта книга уже была добавлена", Toast.LENGTH_LONG)
+                .makeText(context, "Book already exists", Toast.LENGTH_LONG)
                 .show()
                 return Result.failure(it)
             }

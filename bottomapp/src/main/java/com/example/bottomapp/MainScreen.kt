@@ -160,7 +160,8 @@ fun MainScreen(
                     onAddBook = {
                         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
-                            type = "*/*"val mimeTypes = arrayOf("application/pdf", "application/fb2")
+                            type = "*/*"
+                            val mimeTypes = arrayOf("application/pdf", "application/fb2")
                                 putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
                         }
                         launcher.launch(intent)
