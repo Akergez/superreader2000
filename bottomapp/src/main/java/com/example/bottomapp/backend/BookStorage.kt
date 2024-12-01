@@ -6,6 +6,9 @@ import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.example.bottomapp.constants.FileType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
@@ -68,6 +71,9 @@ class BookStorage(val context: Context,
         )
         if (storageEntry != null) {
             bookCache.add(storageEntry)
+            CoroutineScope(Dispatchers.IO).launch {
+                bookRepository.addBook(storageEntry)
+            }
         } else {
             Toast
                 .makeText(context, "Эта книга уже была добавлена", Toast.LENGTH_LONG)
