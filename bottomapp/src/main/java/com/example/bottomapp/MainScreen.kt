@@ -44,6 +44,7 @@ import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.Route
+import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
@@ -104,7 +105,7 @@ fun MainScreen(
                         }
                         FileType.pdf -> {
                             val bookLink = PdfProgress(0)
-                            bookStorage.addNewBook(uri, fileName, bookLink, fileType)
+                            bookStorage.addNewBook(uri, fileName, bookLink, fileType).onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
                         }
                         FileType.unknown -> {
                             Toast.makeText(

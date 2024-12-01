@@ -61,24 +61,24 @@ class BookStorage(val context: Context,
         bookRepository.saveBookLinks(bookCache)
     }
 
-    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress, fileType: FileType)
-    {
-       val storageEntry = storageManager.copyBookToStorage(
+    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress, fileType: FileType): Result<Unit> {
+        val storageEntry = storageManager.copyBookToStorage(
             fileUri,
             BookMetaInfo(fileName, fileName, progress),
-            context.contentResolver,
-            fileType
-        )
-        if (storageEntry != null) {
-            bookCache.add(storageEntry)
+            context.contentResolver
+        ).onSuccess {
+            bookCache.add(it)
             CoroutineScope(Dispatchers.IO).launch {
-                bookRepository.addBook(storageEntry)
+                bookRepository.addBook(it)
             }
-        } else {
+            return Result.success(Unit)
+        }.onFailure {
             Toast
                 .makeText(context, "Эта книга уже была добавлена", Toast.LENGTH_LONG)
                 .show()
-        }
+                return Result.failure(it)
+            }
+        return Result.success(Unit)
     }
 
     fun updateProgress(bookMetaInfo: BookMetaInfo) {

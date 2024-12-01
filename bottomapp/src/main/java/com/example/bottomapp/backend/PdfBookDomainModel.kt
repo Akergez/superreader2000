@@ -23,7 +23,7 @@ class PdfBookDomainModel(
     }
 
     override fun getFile(): File {
-        return storageManager.getBookFile(fileName)
+        return storageManager.getBookFile(fileName).getOrThrow()
     }
 
     override fun saveProgress(progress: PdfProgress) {

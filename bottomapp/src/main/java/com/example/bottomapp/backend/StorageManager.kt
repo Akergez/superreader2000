@@ -9,6 +9,9 @@ import androidx.documentfile.provider.DocumentFile
 import com.example.bottomapp.backend.RenderHelper.NameGenerator
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toMimeType
+import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
+import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
+import com.example.bottomapp.backend.exceptions.StorageNotSetException
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
@@ -32,36 +35,53 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
     private val fileCache = HashMap<String, File>()
 
-    private fun createJsonMetaFile(storageDir: DocumentFile,
-                                   meta: BookMetaInfo,
-                                   contentResolver: ContentResolver,
-                                   fileName: String) {
-        val metaFile = storageDir.createFile("application/json", fileName) ?: throw Exception("Failed to create metadata file")
+    private fun createJsonMetaFile(
+        storageDir: DocumentFile,
+        meta: BookMetaInfo,
+        contentResolver: ContentResolver,
+        fileName: String
+    ): Result<Unit> {
+        val metaFile = storageDir.createFile("application/json", fileName) ?: return Result.failure(
+            FailedToCreateFileException()
+        )
 
         val jsonString = gson.toJson(meta)
         contentResolver.openOutputStream(metaFile.uri)?.use { output ->
             output.write(jsonString.toByteArray())
         }
+        return Result.success(Unit)
     }
 
-    private fun createPreviewFile(storageDir: DocumentFile,
-                                  meta: BookMetaInfo,
-                                  contentResolver: ContentResolver,
-                                  fileName: String): DocumentFile {
-        val previewFile = storageDir.createFile("image/jpeg", fileName) ?: throw Exception("Failed to create preview file");
-        val previewBitmap = PreviewGenerator().getPreviewBitmap(getBookFile(meta.fileName)) ?: throw Exception("Failed to generate preview bitmap");
+    private fun createPreviewFile(
+        storageDir: DocumentFile,
+        meta: BookMetaInfo,
+        contentResolver: ContentResolver,
+        fileName: String
+    ): Result<DocumentFile> {
+        val previewFile = storageDir.createFile("image/jpeg", fileName) ?: return Result.failure(
+            Exception("Failed to create preview file")
+        )
+        lateinit var bookFile: File
+        getBookFile(meta.fileName).onSuccess { bookFile = it }
+            .onFailure { return Result.failure(it) }
+        val previewBitmap = PreviewGenerator().getPreviewBitmap(bookFile) ?: return Result.failure(
+            Exception("Failed to generate preview bitmap")
+        )
         contentResolver.openOutputStream(previewFile.uri)?.use { output ->
             previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
         }
-        return previewFile
+        return Result.success(previewFile)
     }
 
-    private fun createNewBook(storageDir: DocumentFile,
-                              file: Uri,
-                              mimeType: String,
-                              meta: BookMetaInfo,
-                              contentResolver: ContentResolver): BookStorageEntry {
-        val destFile = storageDir.createFile(mimeType, meta.fileName) ?: throw Exception("Failed to create destination file")
+    private fun createNewBook(
+        storageDir: DocumentFile,
+        file: Uri,
+        mimeType: String,
+        meta: BookMetaInfo,
+        contentResolver: ContentResolver
+    ): Result<BookStorageEntry> {
+        val destFile = storageDir.createFile(mimeType, meta.fileName)
+            ?: throw Exception("Failed to create destination file")
 
         contentResolver.openInputStream(file)?.use { input ->
             contentResolver.openOutputStream(destFile.uri)?.use { output ->
@@ -70,14 +90,35 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
 
         createJsonMetaFile(storageDir, meta, contentResolver, NameGenerator.jsonMetaFilename(meta))
-        val previewFile = createPreviewFile(storageDir, meta, contentResolver, NameGenerator.previewFilename(meta))
+        val previewFile = createPreviewFile(
+            storageDir,
+            meta,
+            contentResolver,
+            NameGenerator.previewFilename(meta)
+        )
+            .onSuccess {
+                Result.success(
+                    BookStorageEntry(
+                        meta.fileName,
+                        it.uri,
+                        meta
+                    )
+                )
+            }
+            .onFailure { Result.failure<BookStorageEntry>(it.cause!!) }
 
-        return BookStorageEntry(meta.fileName, previewFile.uri, meta)
+        return previewFile;
     }
 
-    fun copyBookToStorage(file: Uri, meta: BookMetaInfo, contentResolver: ContentResolver, fileType: FileType): BookStorageEntry? {
+    fun copyBookToStorage(
+        file: Uri,
+        meta: BookMetaInfo,
+        contentResolver: ContentResolver,
+        fileType: FileType
+    ): BookStorageEntry? {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri)
+            ?: throw Exception("Invalid storage directory")
         val mimeType = fileType.toMimeType()
 
         val existingFile = storageDir.findFile(meta.fileName)
@@ -86,7 +127,12 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             val existingJsonFile = storageDir.findFile(jsonMetaFilename)
             if (existingJsonFile == null) {
                 createJsonMetaFile(storageDir, meta, contentResolver, jsonMetaFilename)
-                val previewFile = createPreviewFile(storageDir, meta, contentResolver, NameGenerator.previewFilename(meta))
+                val previewFile = createPreviewFile(
+                    storageDir,
+                    meta,
+                    contentResolver,
+                    NameGenerator.previewFilename(meta)
+                )
                 return BookStorageEntry(meta.fileName, previewFile.uri, meta)
             }
             return null
@@ -95,31 +141,42 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
     }
 
-    private fun getPreviewUri(fileName: String): Uri? {
-        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
-        val previewFile = storageDir.findFile("${fileName}_preview.jpg") ?: return null
-        return previewFile.uri
+    private fun getPreviewUri(fileName: String): Result<Uri?> {
+        val storageUri: Uri =
+            settingsManager.getStorageUri() ?: return Result.failure(StorageNotSetException())
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return Result.failure(
+            InvalidStorageDirectoryException()
+        )
+        val previewFile =
+            storageDir.findFile("${fileName}_preview.jpg") ?: return Result.success(null)
+        return Result.success(previewFile.uri)
     }
 
-    fun updateProgressData(meta: BookMetaInfo) {
-        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
-        val metaFile = storageDir.findFile("${meta.fileName}_meta.json") ?: throw Exception("Metadata file not found")
+    fun updateProgressData(meta: BookMetaInfo): Result<Unit> {
+        val storageUri: Uri =
+            settingsManager.getStorageUri() ?: return Result.failure(StorageNotSetException())
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return Result.failure(
+            InvalidStorageDirectoryException()
+        )
+        val metaFile = storageDir.findFile("${meta.fileName}_meta.json") ?: return Result.failure(
+            Exception("Metadata file not found")
+        )
 
         val jsonString = gson.toJson(meta)
         context.contentResolver.openOutputStream(metaFile.uri)?.use { output ->
             output.write(jsonString.toByteArray())
         }
+        return Result.success(Unit);
     }
 
-    fun readProgressData(fileName: String): BookMetaInfo {
-        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
+    fun readProgressData(fileName: String): Result<BookMetaInfo> {
+        val storageUri: Uri =
+            settingsManager.getStorageUri() ?: return Result.failure(StorageNotSetException())
         val storageDir = File(storageUri.path!!)
         val metaFile = File(storageDir, "${fileName}_meta.json")
 
         val jsonString = metaFile.readText()
-        return gson.fromJson(jsonString, BookMetaInfo::class.java)
+        return Result.success(gson.fromJson(jsonString, BookMetaInfo::class.java))
     }
 
     suspend fun listAllBooks(): List<BookStorageEntry> {
@@ -132,10 +189,16 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
                 async(Dispatchers.IO) {
                     val metaFile = storageDir.findFile("${file.name}_meta.json")
                     if (file.name?.get(0) != '.' && metaFile != null && metaFile.exists()) {
-                        val jsonString = context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader().use { it?.readText() }
+                        val jsonString =
+                            context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader()
+                                .use { it?.readText() }
                         try {
                             val bookMetaInfo = gson.fromJson(jsonString, BookMetaInfo::class.java);
-                            BookStorageEntry(bookMetaInfo.fileName, getPreviewUri(bookMetaInfo.fileName), bookMetaInfo)
+                            BookStorageEntry(
+                                bookMetaInfo.fileName,
+                                getPreviewUri(bookMetaInfo.fileName).getOrNull(),
+                                bookMetaInfo
+                            )
                         } catch (e: Exception) {
                             null
                         }
@@ -148,15 +211,19 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
     }
 
-    fun getBookFile(fileName: String): File {
+    fun getBookFile(fileName: String): Result<File> {
         // Check if the file is already in the cache
         fileCache[fileName]?.let {
-            return it
+            return Result.success(it)
         }
 
-        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: throw Exception("Invalid storage directory")
-        val documentFile = storageDir.findFile(fileName) ?: throw Exception("File not found in storage directory")
+        val storageUri: Uri =
+            settingsManager.getStorageUri() ?: return Result.failure(StorageNotSetException())
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return Result.failure(
+            InvalidStorageDirectoryException()
+        )
+        val documentFile = storageDir.findFile(fileName)
+            ?: return Result.failure(Exception("File not found in storage directory"))
 
         val destFile = File(context.filesDir, fileName)
         context.contentResolver.openInputStream(documentFile.uri)?.use { input ->
@@ -168,7 +235,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         // Cache the file
         fileCache[fileName] = destFile
 
-        return destFile
+        return Result.success(destFile)
     }
 
     fun clearFileCache() {
