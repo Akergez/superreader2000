@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,9 +48,9 @@ import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.constants.Route
+import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
-import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -104,7 +103,7 @@ fun MainScreen(
                                 "fb2" -> Fb2Progress(0)
                                 else -> return@also // This should never happen due to the when condition
                             }
-                            bookStorage.addNewBook(uri, fileName, bookLink)
+                            bookStorage.addNewBook(uri, fileName, bookLink).onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
                         }
 
                         else -> {
