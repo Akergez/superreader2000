@@ -115,7 +115,7 @@ fun BookContent(
                         count = totalPages,
                         state = pagerState,
                         config = rememberPageCurlConfig(
-                            backPageContentAlpha = 0f,
+                            backPageContentAlpha = 0.5f,
                             backPageColor = MaterialTheme.colorScheme.background
                         ),
                     ) { index ->
