@@ -27,6 +27,7 @@ import androidx.navigation.NavController
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.ui.mainscreen.Screen
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.androidx.compose.koinViewModel
 
@@ -52,7 +53,7 @@ fun SettingsScreen(
         }
 
 
-    Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
+    Scaffold(bottomBar = { BottomNavigationBar(navController, Screen.SETTINGS_SCREEN) }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

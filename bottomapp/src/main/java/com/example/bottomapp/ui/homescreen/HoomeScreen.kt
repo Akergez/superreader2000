@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -65,7 +66,7 @@ fun HomeScreen(
                 Icon(Icons.Filled.Add, contentDescription = "Add book")
             }
         },
-        bottomBar = { BottomNavigationBar(navController) }
+        bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier

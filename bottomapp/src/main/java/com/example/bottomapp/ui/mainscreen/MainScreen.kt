@@ -147,12 +147,15 @@ fun MainScreen(
                                 }
                             )
 
-                            PdfReaderScreen(pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(parameters = {
-                                parametersOf(
-                                    pdfBookDomainModel,
-                                    PdfRendererHelper(pdfBookDomainModel.getFile())
-                                )
-                            }))
+                            PdfReaderScreen(
+                                pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
+                                    parameters = {
+                                        parametersOf(
+                                            pdfBookDomainModel,
+                                            PdfRendererHelper(pdfBookDomainModel.getFile())
+                                        )
+                                    })
+                            )
                         }
                     } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
                         bookLink.let {
@@ -182,11 +185,14 @@ fun MainScreen(
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavController) {
+fun BottomNavigationBar(
+    navController: NavController,
+    screen: Screen
+) {
     NavigationBar {
         NavigationBarItem(icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text("Home") },
-            selected = false,
+            selected = screen == Screen.HOME_SCREEN,
             onClick = {
                 if (navController.currentDestination?.route != Route.Main) {
                     navController.navigate(Route.Main) {
@@ -203,7 +209,7 @@ fun BottomNavigationBar(navController: NavController) {
             )
         },
             label = { Text("Settings") }, // TODO еще картинку поменять
-            selected = false,
+            selected = screen == Screen.SETTINGS_SCREEN,
             onClick = {
                 if (navController.currentDestination?.route != Route.Settings) {
                     navController.navigate(Route.Settings) {
