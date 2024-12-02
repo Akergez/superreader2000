@@ -6,7 +6,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import com.example.bottomapp.backend.RenderHelper.NameGenerator
+import com.example.bottomapp.backend.renderHelper.NameGenerator
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
 import com.example.bottomapp.backend.exceptions.StorageNotSetException

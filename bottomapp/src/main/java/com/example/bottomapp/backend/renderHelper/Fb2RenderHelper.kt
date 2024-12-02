@@ -1,6 +1,5 @@
-package com.example.bottomapp.backend.RenderHelper
+package com.example.bottomapp.backend.renderHelper
 
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -8,6 +7,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.FormatType
+import com.example.bottomapp.ui.readerscreens.Fb2BookContent
+import com.example.bottomapp.ui.readerscreens.IBookContent
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.w3c.dom.Node
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
@@ -19,11 +21,12 @@ class Fb2RenderHelper(
     private val fb2File: File
 ) : IRenderHelper {
 
-    public val pages: MutableList<String> = mutableListOf()
+    val pages: MutableList<String> = mutableListOf()
 
     override fun getPageCount(): Int = pages.size
-    override fun openPage(pageIndex: Int): Bitmap {
-        return Bitmap.createBitmap(1,1,Bitmap.Config.ARGB_8888)
+    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
+        //return MutableStateFlow(Fb2BookContent(Bitmap.createBitmap(1,1,Bitmap.Config.ARGB_8888)))
+        TODO("Not yet implemented")
     }
 
     fun Init(){
@@ -61,8 +64,9 @@ class Fb2RenderHelper(
         }
     }
 
-    override fun openPagedText(pageIndex: Int): String {
-        return pages[pageIndex]
+    override fun openPagedText(pageIndex: Int): MutableStateFlow<IBookContent> {
+        val mutableStateFlow = MutableStateFlow<IBookContent>(Fb2BookContent(pages[pageIndex]))
+        return mutableStateFlow
     }
 
     override fun close() {

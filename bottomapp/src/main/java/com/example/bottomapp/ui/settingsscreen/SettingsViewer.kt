@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.bottomapp.BottomNavigationBar
+import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.common.FlipMode

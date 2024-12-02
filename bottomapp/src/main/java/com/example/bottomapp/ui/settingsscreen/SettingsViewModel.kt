@@ -52,7 +52,9 @@ class SettingsViewModel(
     }
 
     fun updateAppThemeMode(appThemeMode: AppThemeMode) {
-        settingsManager.setAppTheme(appThemeMode)
+        uiScope.launch {
+            settingsManager.setAppTheme(appThemeMode)
+        }
         _settingsState.value = _settingsState.value.copy(appThemeMode = appThemeMode)
     }
 }

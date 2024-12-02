@@ -1,4 +1,4 @@
-package com.example.bottomapp.backend.RenderHelper
+package com.example.bottomapp.backend.renderHelper
 
 import com.example.bottomapp.backend.BookMetaInfo
 

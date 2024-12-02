@@ -14,6 +14,9 @@ import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageRepository
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
+import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
+import com.example.bottomapp.ui.mainscreen.MainScreen
+import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.android.inject
@@ -38,6 +41,14 @@ class MainActivity : ComponentActivity() {
             singleOf(::SettingsManager) bind SettingsManager::class
             singleOf(::BookStorageRepository) bind BookStorageRepository::class
             viewModel { SettingsViewModel(get(), get()) }
+            viewModel { HoomeScreenViewModel(get()) }
+            viewModel { parameters ->
+                PdfScreenViewModel(
+                    get(),
+                    parameters.get(),
+                    parameters.get()
+                )
+            }
 
             single {
                 ImageLoader.Builder(androidContext())

@@ -3,6 +3,8 @@ package com.example.bottomapp.backend
 import android.content.Context
 import android.net.Uri
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 
 enum class AppThemeMode {
@@ -21,6 +23,9 @@ class SettingsManager(context: Context) {
     private val appThemeKey = "theme"
     private val docThemeKey = "doc_theme"
     private val pdfFlipModeKey = "pdf_flip_mode"
+    private val _appThemeMode = MutableStateFlow(AppThemeMode.System)
+    val appThemeMode: StateFlow<AppThemeMode> get() = _appThemeMode
+
 
     private fun saveSetting(key: String, value: String) {
         sharedPreferences.edit().putString(key, value).apply()
@@ -30,13 +35,9 @@ class SettingsManager(context: Context) {
         return sharedPreferences.getString(key, null)
     }
 
-    fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
-        val setting = getSetting(appThemeKey) ?: return defaultTheme
-        return AppThemeMode.valueOf(setting)
-    }
-
     fun setAppTheme(theme: AppThemeMode) {
         saveSetting(appThemeKey, theme.name)
+        _appThemeMode.value = theme
     }
 
     fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
