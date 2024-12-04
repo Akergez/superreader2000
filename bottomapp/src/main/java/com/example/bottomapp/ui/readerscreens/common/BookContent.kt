@@ -15,8 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.bottomapp.backend.DocThemeMode
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
-import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
@@ -24,6 +23,7 @@ import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -34,11 +34,12 @@ fun BookContent(
     totalPages: Int,
     mode: ReaderMode,
     flipMode: FlipMode,
-    renderHelper: IRenderHelper,
     onPageChange: (Int) -> Unit,
     onToggleMode: (ReaderMode) -> Unit,
-    settingsManager: SettingsManager,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    getPage: (Int) -> MutableStateFlow<IBookContent>,
+    documentTheme: DocThemeMode,
+    updateDocumentThemeMode: (DocThemeMode) -> Unit,
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
 
@@ -51,10 +52,10 @@ fun BookContent(
         onPageChange(pagerState.current)
         launch(Dispatchers.IO) {
             if (pagerState.current < totalPages - 1) {
-                renderHelper.openPage(pagerState.current + 1)
+                getPage(pagerState.current + 1)
             }
             if (pagerState.current > 0) {
-                renderHelper.openPage(pagerState.current - 1)
+                getPage(pagerState.current - 1)
             }
         }
     }
@@ -91,10 +92,9 @@ fun BookContent(
                     totalPages = totalPages,
                     initialPage = currentPage,
                     onPageChange = onPageChange,
-                    renderHelper = renderHelper,
-                    applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
+                    applyInversion = documentTheme == DocThemeMode.Invert,
                     onApplyInversionToggle = { applyInversion ->
-                        settingsManager.setDocumentsTheme(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
+                        updateDocumentThemeMode(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
                     },
                     modifier = modifier
                         .fillMaxSize()
@@ -104,7 +104,8 @@ fun BookContent(
                                     onToggleMode(ReaderMode.Reading)
                                 }
                             )
-                        }
+                        },
+                    bookContent = getPage
                 )
             }
 
@@ -114,17 +115,15 @@ fun BookContent(
                         count = totalPages,
                         state = pagerState,
                         config = rememberPageCurlConfig(
-                            backPageContentAlpha = 0f,
+                            backPageContentAlpha = 0.5f,
                             backPageColor = MaterialTheme.colorScheme.background
                         ),
                     ) { index ->
                         BookPage(
-                            page = index,
-                            renderHelper = renderHelper,
-                            applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
+                            bookContent = getPage(index),
+                            applyInversion = documentTheme == DocThemeMode.Invert,
                             modifier = modifier
                                 .basePageBoxModifier(),
-                            async = false
                         )
                     }
 
@@ -132,17 +131,16 @@ fun BookContent(
                         totalPages = totalPages,
                         initialPage = currentPage,
                         onPageChange = onPageChange,
-                        renderHelper = renderHelper,
-                        applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert
+                        applyInversion = documentTheme == DocThemeMode.Invert,
+                        getPage = getPage
                     )
                 }
             }
 
             ReaderMode.Zoom -> {
                 BookPage(
-                    page = pagerState.current,
-                    renderHelper = renderHelper,
-                    applyInversion = settingsManager.getDocumentsTheme(DocThemeMode.AsIs) == DocThemeMode.Invert,
+                    bookContent = getPage(currentPage),
+                    applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
                         .basePageBoxModifier(),
                     scale = scale,

@@ -13,17 +13,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun VerticalBookScroll(
     totalPages: Int,
     onPageChange: (Int) -> Unit,
-    renderHelper: IRenderHelper,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
+    getPage: (Int) -> MutableStateFlow<IBookContent>,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
 
@@ -41,9 +42,8 @@ fun VerticalBookScroll(
                             .fillParentMaxHeight()
                     ) {
                         BookPage(
-                            page = page,
-                            renderHelper = renderHelper,
-                            applyInversion = applyInversion
+                            applyInversion = applyInversion,
+                            bookContent = getPage(page)
                         )
                     }
                 }

@@ -29,6 +29,9 @@ interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg users: Book)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(vararg users: Book)
 }
 
 @Database(entities = [Book::class], version = 1)
@@ -56,6 +59,12 @@ class BookStorageRepository(private val dao: UserDao) {
     suspend fun saveBookLinks(bookCache: SnapshotStateList<BookStorageEntry>) {
         withContext(Dispatchers.IO) {
             dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
+        }
+    }
+
+    suspend fun addBook(book: BookStorageEntry) {
+        withContext(Dispatchers.IO) {
+            dao.insert(Book(book.fileName, gson.toJson(book)))
         }
     }
 }

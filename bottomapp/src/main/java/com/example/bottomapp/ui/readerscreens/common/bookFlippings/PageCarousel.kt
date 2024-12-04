@@ -20,14 +20,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun PageCarousel(
+    bookContent: (Int) -> MutableStateFlow<IBookContent>,
     totalPages: Int,
     onPageChange: (Int) -> Unit,
-    renderHelper: IRenderHelper,
     applyInversion: Boolean,
     onApplyInversionToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -52,8 +53,7 @@ fun PageCarousel(
                             .align(Alignment.Center)
                     ) {
                         BookPage(
-                            page = page,
-                            renderHelper = renderHelper,
+                            bookContent = bookContent(page),
                             applyInversion = applyInversion
                         )
                     }
@@ -61,17 +61,14 @@ fun PageCarousel(
             }
         }
 
-        // Emit page change when the page is scrolled
         val firstVisibleItemIndex by remember {
             derivedStateOf { lazyListState.firstVisibleItemIndex }
         }
 
-        // Synchronize the page change
         LaunchedEffect(firstVisibleItemIndex) {
             onPageChange(firstVisibleItemIndex)
         }
 
-        // Page indicator and inversion toggle for the carousel
         Row(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)

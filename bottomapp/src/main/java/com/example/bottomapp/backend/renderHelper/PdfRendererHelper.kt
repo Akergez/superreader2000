@@ -1,0 +1,68 @@
+package com.example.bottomapp.backend.renderHelper
+
+import android.graphics.Bitmap
+import android.graphics.Rect
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
+import com.example.bottomapp.backend.FormatType
+import com.example.bottomapp.ui.readerscreens.IBookContent
+import com.example.bottomapp.ui.readerscreens.PdfBookContent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+
+class PdfRendererHelper(pdfFile: File) : IRenderHelper {
+    private val pdfRenderer: PdfRenderer
+    private val bitmapCache = mutableMapOf<Int, Bitmap>()
+    private val lock = Any()
+
+    init {
+        val parcelFileDescriptor =
+            ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
+        pdfRenderer = PdfRenderer(parcelFileDescriptor)
+    }
+
+    override fun getPageCount(): Int = pdfRenderer.pageCount
+
+    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
+        val bitmapStateFlow = MutableStateFlow<IBookContent>(PdfBookContent(null))
+        bitmapCache[pageIndex]?.let {
+            bitmapStateFlow.value = PdfBookContent(it)
+            return bitmapStateFlow
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            var bitmap: Bitmap?
+            synchronized(lock) {
+                val page = pdfRenderer.openPage(pageIndex)
+                bitmap =
+                    Bitmap.createBitmap(page!!.width * 5, page.height * 5, Bitmap.Config.ARGB_8888)
+                val rect = Rect(0, 0, page.width * 5, page.height * 5)
+                page.render(bitmap!!, rect, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                bitmapCache[pageIndex] = bitmap!!
+            }
+            withContext(Dispatchers.Main) {
+                bitmapStateFlow.value = PdfBookContent(bitmap)
+            }
+        }
+        return bitmapStateFlow
+    }
+
+    override fun openPagedText(pageIndex: Int): MutableStateFlow<IBookContent> {
+        TODO("Not yet implemented")
+    }
+
+    override fun close() {
+        synchronized(lock) {
+            pdfRenderer.close()
+            bitmapCache.clear()
+        }
+    }
+
+    override fun getBookType(): FormatType {
+        return FormatType.PDF
+    }
+}

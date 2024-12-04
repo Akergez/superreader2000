@@ -12,9 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
+import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.RenderHelper.Fb2RenderHelper
+import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
@@ -90,11 +91,12 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 currentPage = currentPage,
                 totalPages = totalPages,
                 mode = mode,
-                renderHelper = fb2RenderHelper.value!!,
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },
-                settingsManager = settingsManager,
                 flipMode = curlMode,
+                getPage = { page -> fb2RenderHelper.value!!.openPagedText(page) },
+                documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
+                updateDocumentThemeMode = { docThemeMode -> settingsManager.setDocumentsTheme(docThemeMode) }
             )
         } else {
             Text("Loading...")

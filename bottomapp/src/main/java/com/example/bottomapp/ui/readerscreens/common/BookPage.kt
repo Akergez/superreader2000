@@ -6,57 +6,52 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.FormatType
-import com.example.bottomapp.backend.RenderHelper.IRenderHelper
+import com.example.bottomapp.ui.readerscreens.Fb2BookContent
+import com.example.bottomapp.ui.readerscreens.IBookContent
+import com.example.bottomapp.ui.readerscreens.PdfBookContent
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
-import com.example.bottomapp.ui.readerscreens.pdfscreen.CurlPdfViewer
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun BookPage(
-    page: Int,
-    renderHelper: IRenderHelper,
+    bookContent: MutableStateFlow<IBookContent>,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
     offsetX: Float = 0f,
-    offsetY: Float = 0f,
-    async: Boolean = true
+    offsetY: Float = 0f
 ) {
+    val content by bookContent.collectAsState()
     Box(
         modifier = modifier
     ) {
-        if (renderHelper.getBookType() == FormatType.PDF) {
-            if (async) {
+        when (content) {
+            is PdfBookContent -> {
+                val pdfContent = content as PdfBookContent
                 PdfViewer(
-                    renderHelper = renderHelper,
-                    pageIndex = page,
-                    applyInversion = applyInversion, // Pass the inversion setting
-                    scale = scale, // Pass the zoom scale,
+                    applyInversion = applyInversion,
+                    scale = scale,
                     offsetX = offsetX,
-                    offsetY = offsetY
+                    offsetY = offsetY,
+                    bitmap = pdfContent.bitmap
                 )
-            } else {
-                CurlPdfViewer(
-                    renderHelper = renderHelper,
-                    pageIndex = page,
-                    applyInversion = applyInversion, // Pass the inversion setting
-                    scale = scale, // Pass the zoom scale,
+            }
+
+            is Fb2BookContent -> {
+                val fb2BookContent = content as Fb2BookContent
+                Fb2Viewer(
+                    text = fb2BookContent.text,
+                    applyInversion = applyInversion,
+                    scale = scale,
                     offsetX = offsetX,
                     offsetY = offsetY
                 )
             }
-        } else {
-            Fb2Viewer(
-                renderHelper = renderHelper,
-                pageIndex = page,
-                applyInversion = applyInversion, // Pass the inversion setting
-                scale = scale, // Pass the zoom scale,
-                offsetX = offsetX,
-                offsetY = offsetY
-            )
         }
     }
 }

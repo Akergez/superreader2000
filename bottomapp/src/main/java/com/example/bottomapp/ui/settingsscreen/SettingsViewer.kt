@@ -4,8 +4,6 @@ package com.example.bottomapp.ui.settingsscreen
 
 import android.app.Activity
 import android.content.Intent
-import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -17,165 +15,29 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
+import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.AppThemeMode
-import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.DocThemeMode
-import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.ui.mainscreen.Screen
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
-
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultSettingsScreen() {
-    SettingsScreen({ theme -> },
-        AppThemeMode.Light,
-        SettingsManager(LocalContext.current)
-    )
-}
-
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingsScreen(
-    updateAppTheme: (AppThemeMode) -> Unit,
-    appTheme: AppThemeMode,
-    settingsManager: SettingsManager = koinInject()
+    settingsViewModel: SettingsViewModel = koinViewModel(),
+    navController: NavController
 ) {
     val context = LocalContext.current
-    var docTheme by remember { mutableStateOf(settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) } // State to control inversion
-    var pdfFlipMode by remember { mutableStateOf(settingsManager.getFlipMode()) }
-    var showSecondComposable by remember { mutableStateOf(false) }
-
-    var storageAddress by remember { mutableStateOf(settingsManager.getStorageUri().toString()) }
-
-
-    if (showSecondComposable) {
-        ChangeStorageAddress(settingsManager = settingsManager,
-            onResult = {
-                status, newStorageAddress ->
-            showSecondComposable = status
-            storageAddress = newStorageAddress
-        })
-    }
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text("App theme", style = MaterialTheme.typography.headlineMedium)
-        Row(Modifier.padding(vertical = 8.dp)) {
-            AppThemeMode.entries.forEach { theme ->
-                RadioButton(selected = appTheme == theme, onClick = { updateAppTheme(theme) })
-                Text(text = when (theme) {
-                    AppThemeMode.Light -> "Light"
-                    AppThemeMode.Dark -> "Dark"
-                    AppThemeMode.System -> "System"
-                },
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .clickable { updateAppTheme(theme) }
-                        .padding(start = 8.dp))
-            }
-        }
-
-        Text("Documents theme", style = MaterialTheme.typography.headlineMedium)
-        Row(Modifier.padding(vertical = 8.dp)) {
-            DocThemeMode.entries.forEach { theme ->
-                RadioButton(
-                    selected = docTheme == theme,
-                    onClick = {
-                        docTheme = theme
-                        settingsManager.setDocumentsTheme(docTheme)
-                    })
-                Text(text = theme.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .clickable {
-                            docTheme = theme
-                            settingsManager.setDocumentsTheme(docTheme)
-                        }
-                        .padding(start = 8.dp))
-            }
-        }
-
-        Row(Modifier.padding(32.dp)) {
-
-        }
-
-        Text("Paging mode", style = MaterialTheme.typography.headlineMedium)
-        Row(Modifier.padding(vertical = 8.dp)) {
-            arrayOf(FlipMode.PagingCurl, FlipMode.VerticalScroll).forEach { mode ->
-                RadioButton(selected = pdfFlipMode == mode, onClick = {
-                    pdfFlipMode = mode
-                    settingsManager.setPdfFlipMode(mode)
-                })
-                Text(
-                    text = when (mode) {
-                        FlipMode.PagingCurl -> "Classic"
-                        FlipMode.VerticalScroll -> "Vertical scroll"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .clickable {
-                            pdfFlipMode = mode
-                            settingsManager.setPdfFlipMode(mode)
-                        }
-                        .padding(start = 8.dp))
-            }
-        }
-
-        Row(Modifier.padding(32.dp)) {
-        }
-
-        Text("Storage address", style = MaterialTheme.typography.headlineMedium)
-        Row(Modifier.padding(vertical = 8.dp)) {
-            Text(
-                text = storageAddress,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .combinedClickable(
-                        onClick = {
-                            showSecondComposable = true
-                            // это вызывает обновление экрана
-                        },
-                        onLongClick = {
-                            val longPressText = "#Trump2024"
-                            Toast
-                                .makeText(context, longPressText, Toast.LENGTH_LONG)
-                                .show()
-                            storageAddress = settingsManager
-                                .getStorageUri()
-                                .toString()
-                        },
-                    )
-                    .padding(start = 8.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun ChangeStorageAddress(
-    settingsManager: SettingsManager,
-    onResult: (Boolean, String) -> Unit,
-    bookStorage: BookStorage = koinInject()
-) {
-    val context = LocalContext.current
+    val settings by settingsViewModel.settingsState.collectAsState()
 
     val directoryLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -185,19 +47,97 @@ fun ChangeStorageAddress(
                         uri,
                         Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     )
-                    settingsManager.saveStorageUri(uri)
-
-
-                    (context as ComponentActivity).lifecycleScope.launch {
-                        bookStorage.refreshBooksLinks()
-                    }
-                    onResult(false, uri.toString())
+                    settingsViewModel.updateStorageAddress(uri)
                 }
             }
         }
 
-    LaunchedEffect("storage") {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-        directoryLauncher.launch(intent)
+
+    Scaffold(bottomBar = { BottomNavigationBar(navController, Screen.SETTINGS_SCREEN) }) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            SettingRow(
+                "App Theme",
+                mapOf(
+                    AppThemeMode.Light to "Light",
+                    AppThemeMode.Dark to "Dark",
+                    AppThemeMode.System to "System"
+                ),
+                settings.appThemeMode
+            ) { mode ->
+                settingsViewModel.updateAppThemeMode(mode)
+            }
+
+            SettingRow(
+                "Documents theme",
+                mapOf(
+                    DocThemeMode.AsIs to "As is",
+                    DocThemeMode.Invert to "Invert",
+                ),
+                settings.docThemeMode
+            ) { mode ->
+                settingsViewModel.updateDocThemeMode(mode)
+            }
+
+            Row(Modifier.padding(32.dp)) {
+
+            }
+
+            SettingRow(
+                "Paging mode",
+                mapOf(
+                    FlipMode.PagingCurl to "Classic",
+                    FlipMode.VerticalScroll to "Vertical scroll",
+                ),
+                settings.flipMode
+            ) { mode ->
+                settingsViewModel.updateFlipMode(mode)
+            }
+
+            Row(Modifier.padding(32.dp)) {
+            }
+
+            Text("Storage address", style = MaterialTheme.typography.headlineMedium)
+            Row(Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = settings.storageAddress,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .combinedClickable(
+                            onClick = {
+                                directoryLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                            }
+                        )
+                        .padding(start = 8.dp)
+                )
+            }
+        }
     }
 }
+
+@Composable
+fun <TEnum> SettingRow(
+    title: String,
+    values: Map<TEnum, String>,
+    selectedValue: TEnum,
+    onValueChange: (TEnum) -> Unit
+) {
+    Text(title, style = MaterialTheme.typography.headlineMedium)
+    Row(Modifier.padding(vertical = 8.dp)) {
+        values.forEach { value ->
+            RadioButton(
+                selected = selectedValue == value.key,
+                onClick = { onValueChange(value.key) })
+            Text(text = value.value,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .clickable { onValueChange(value.key) }
+                    .padding(start = 8.dp))
+        }
+    }
+}
+
+

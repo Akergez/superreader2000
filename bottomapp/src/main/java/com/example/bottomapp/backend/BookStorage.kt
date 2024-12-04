@@ -2,8 +2,13 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.example.bottomapp.constants.FileType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
@@ -56,15 +61,22 @@ class BookStorage(val context: Context,
         bookRepository.saveBookLinks(bookCache)
     }
 
-    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress): Result<Unit> {
-        val storageEntry = storageManager.copyBookToStorage(
+    fun addNewBook(fileUri: Uri, fileName: String, progress: Progress, fileType: FileType): Result<Unit> {
+        storageManager.copyBookToStorage(
             fileUri,
             BookMetaInfo(fileName, fileName, progress),
-            context.contentResolver
+            context.contentResolver,
+            fileType
         ).onSuccess {
             bookCache.add(it)
+            CoroutineScope(Dispatchers.IO).launch {
+                bookRepository.addBook(it)
+            }
             return Result.success(Unit)
         }.onFailure {
+            Toast
+                .makeText(context, "Book already exists", Toast.LENGTH_LONG)
+                .show()
                 return Result.failure(it)
             }
         return Result.success(Unit)
