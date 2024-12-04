@@ -20,7 +20,7 @@ fun TopEditBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(8.dp)
+            .padding(10.dp)
     ) {
         Row(
             modifier = Modifier
@@ -38,13 +38,5 @@ fun TopEditBar(
                 Icon(Icons.Default.Edit, contentDescription = "Edit")
             }
         }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.onBackground)
-                .align(Alignment.BottomCenter)
-        )
     }
 }

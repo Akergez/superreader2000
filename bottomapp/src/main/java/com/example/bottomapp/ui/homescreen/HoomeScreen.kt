@@ -106,6 +106,7 @@ fun HomeScreen(
                     Toast
                         .makeText(context, "Редактирование книги: ${book.fileName}", Toast.LENGTH_SHORT)
                         .show()
+                    selectedBook.value = null
                 }
             )
         }
