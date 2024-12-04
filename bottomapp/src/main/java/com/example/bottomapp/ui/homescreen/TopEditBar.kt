@@ -27,7 +27,8 @@ fun TopEditBar(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
                 .background(MaterialTheme.colorScheme.background),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = onClose) {
                 Icon(Icons.Default.Close, contentDescription = "Close")
