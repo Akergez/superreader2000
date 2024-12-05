@@ -3,6 +3,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -17,9 +18,8 @@ import androidx.core.content.ContextCompat.getString
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
-import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.Dispatchers
@@ -75,7 +75,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             componentWidth = it.size.width
         }) {
         if (isLoaded.value) {
-            val totalPages = remember { fb2RenderHelper.value!!.getPageCount() }
+            val totalPages = fb2RenderHelper.value!!.getPageCount().collectAsState()
             val curlMode = remember { settingsManager.getFlipMode() }
 
            // sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
@@ -92,7 +92,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
             BookContent(
                 currentPage = currentPage,
-                totalPages = totalPages,
+                totalPages = totalPages.value,
                 mode = mode,
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },

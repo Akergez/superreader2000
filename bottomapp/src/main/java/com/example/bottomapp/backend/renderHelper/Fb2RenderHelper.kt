@@ -9,7 +9,10 @@ import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import com.example.bottomapp.ui.readerscreens.IBookContent
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import org.w3c.dom.Node
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
@@ -23,9 +26,10 @@ class Fb2RenderHelper(
 
     private var cachedContent: String? = null
     private val pageCache = mutableMapOf<Int, String>()
+    private var pagesCount = MutableStateFlow(1);
 
-    override fun getPageCount(): Int {
-        return 10;
+    override fun getPageCount(): StateFlow<Int> {
+        return pagesCount
     }
 
     override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
@@ -72,8 +76,16 @@ class Fb2RenderHelper(
                 pageCache[currentPageIndex] = currentPage.toString().trim()
                 currentPageIndex++
 
+                if (pagesCount.value == 1) {
+                    pagesCount.update { words.size / currentPage.split(" ", " ").size }
+                    Log.e("count", pagesCount.toString())
+                }
+
                 // Если достигли нужной страницы, можем остановиться
                 if (currentPageIndex > targetPageIndex) {
+                    if (currentPageIndex >= pagesCount.value) {
+                        pagesCount.update { pagesCount.value + 1 }
+                    }
                     break
                 }
 

@@ -10,6 +10,7 @@ import com.example.bottomapp.ui.readerscreens.PdfBookContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -25,7 +26,7 @@ class PdfRendererHelper(pdfFile: File) : IRenderHelper {
         pdfRenderer = PdfRenderer(parcelFileDescriptor)
     }
 
-    override fun getPageCount(): Int = pdfRenderer.pageCount
+    override fun getPageCount(): StateFlow<Int> = MutableStateFlow(pdfRenderer.pageCount)
 
     override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
         val bitmapStateFlow = MutableStateFlow<IBookContent>(PdfBookContent(null))

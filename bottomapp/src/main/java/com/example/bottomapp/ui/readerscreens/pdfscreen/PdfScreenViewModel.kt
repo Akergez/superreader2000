@@ -24,7 +24,7 @@ class PdfScreenViewModel(
         val pdfFlipMode = settingsManager.getFlipMode()
         _pdfScreenState.value = PdfScreenState(
             pdfBookDomainModel.readProgress().pageIndex,
-            pdfRendererHelper.getPageCount(),
+            pdfRendererHelper.getPageCount().value,
             ReaderMode.Reading,
             pdfFlipMode,
             docThemeMode
