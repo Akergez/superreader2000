@@ -1,7 +1,5 @@
 package com.example.bottomapp.backend.renderHelper
 
-import com.example.bottomapp.backend.BookMetaInfo
-
 object NameGenerator {
     fun jsonMetaFilename(fileName: String): String {
         return "${fileName}_meta.json"

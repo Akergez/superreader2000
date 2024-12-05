@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.example.bottomapp.backend.renderHelper.NameGenerator
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException

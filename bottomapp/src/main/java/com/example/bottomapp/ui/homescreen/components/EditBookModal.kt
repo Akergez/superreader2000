@@ -133,8 +133,7 @@ fun EditBookModal(
                             book.copy(
                                 previewUri = state.previewUri,
                                 bookMetaInfo = book.bookMetaInfo.copy(
-                                    title = state.title,
-                                    fileName = state.title, // TODO когда нибудь добавить валидацию
+                                    title = state.title
                                 )
                             ),
                             state.changed
