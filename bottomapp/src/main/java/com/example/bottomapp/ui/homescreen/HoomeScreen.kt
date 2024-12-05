@@ -34,7 +34,6 @@ import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 @Composable
 fun HomeScreen(
@@ -114,12 +113,12 @@ fun HomeScreen(
 
     state.editingBook?.let { book ->
         EditBookModal(
+            book = book,
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook ->
                 hoomeScreenViewModel.saveEditedBook(book, updatedBook)
                 hoomeScreenViewModel.updateEditingBook(null)
-            },
-            editModalViewModel = koinViewModel(parameters = { parametersOf(book) })
+            }
         )
     }
 }
