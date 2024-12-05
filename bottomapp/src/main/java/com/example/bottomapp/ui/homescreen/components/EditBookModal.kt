@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,13 +60,11 @@ fun EditBookModal(
                     detectTapGestures { /* Оставляем пустым, чтобы игнорировать клики */ }
                 }
         ) {
-            // Заголовок
             Text(
                 text = "Редактировать книгу",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-
 
             // Поле загрузки обложки
             Row(
@@ -76,10 +72,11 @@ fun EditBookModal(
                     .fillMaxWidth()
                     .padding(top = 16.dp)
             ) {
-                Box(
+                AsyncImage(
+                    uri = book.previewUri,
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Gray, shape = RoundedCornerShape(8.dp))
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .clickable {
                             // Логика выбора изображения (placeholder для примера)
 //                            coverUri.value = null
@@ -100,7 +97,6 @@ fun EditBookModal(
                 }
             }
 
-            // Кнопки
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -114,27 +110,26 @@ fun EditBookModal(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-//                    colors = ButtonDefaults.buttonColors(
-//                        containerColor = MaterialTheme.colorScheme.surface,
-//                        contentColor = MaterialTheme.colorScheme.primary
-//                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 4.dp, // Стандартная высота тени
-                        pressedElevation = 8.dp, // Высота при нажатии
-                    )
                 ) {
                     Text("Сохранить")
                 }
-                TextButton(
-                    onClick = onClose,
+                Button(
+                    onClick = {
+//                        onSave(book.copy(bookMetaInfo = book.bookMetaInfo.copy(title = title, author = author)))
+                    },
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
                         .padding(top = 8.dp)
                         .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(16.dp)
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
                     ),
                 ) {
                     Text("Отмена")
