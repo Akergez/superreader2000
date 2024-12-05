@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
@@ -53,6 +54,10 @@ class HoomeScreenViewModel(
                 ).show()
             }
         }
+    }
+
+    fun updateSelectedBook(book: BookStorageEntry?) {
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(selectedBook = book)
     }
 }
 

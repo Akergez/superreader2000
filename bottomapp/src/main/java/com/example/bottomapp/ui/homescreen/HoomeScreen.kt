@@ -22,8 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -45,7 +43,6 @@ fun HomeScreen(
 
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
     val lazyListState = rememberLazyListState()
-    val selectedBook = remember { mutableStateOf<BookStorageEntry?>(null) }
     val context = LocalContext.current
     Log.d("color", "HomeScreen: ${MaterialTheme.colorScheme.background}")
     val launcher =
@@ -92,21 +89,21 @@ fun HomeScreen(
             items(state.books, key = { it.fileName }) { bookLink ->
                 BookItem(
                     book = bookLink,
-                    isSelected = selectedBook.value == bookLink,
+                    isSelected = state.selectedBook == bookLink,
                     onItemClick = onItemClick,
-                    onLongClick = { selectedBook.value = bookLink }
+                    onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
                 )
             }
         }
 
-        selectedBook.value?.let { book ->
+        state.selectedBook?.let { book ->
             TopEditBar(
-                onClose = { selectedBook.value = null },
+                onClose = { hoomeScreenViewModel.updateSelectedBook(null) },
                 onEdit = {
                     Toast
                         .makeText(context, "Редактирование книги: ${book.fileName}", Toast.LENGTH_SHORT)
                         .show()
-                    selectedBook.value = null
+                    hoomeScreenViewModel.updateSelectedBook(null)
                 }
             )
         }
