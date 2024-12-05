@@ -1,0 +1,30 @@
+package com.example.bottomapp.ui.homescreen.components
+
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.ui.homescreen.HoomeScreenState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class EditModalViewModel: ViewModel() {
+    private val _editModalState = MutableStateFlow(EditModalState())
+    val editModalState: StateFlow<EditModalState> = _editModalState.asStateFlow()
+
+    fun initState(book: BookStorageEntry) {
+        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
+    }
+
+    fun updateUri(previewUri: Uri) {
+        _editModalState.value = _editModalState.value.copy(previewUri = previewUri)
+    }
+
+    fun updateTitle(title: String) {
+        _editModalState.value = _editModalState.value.copy(title = title)
+    }
+
+    fun updateAuthor(author: String) {
+        _editModalState.value = _editModalState.value.copy(author = author)
+    }
+}

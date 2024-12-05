@@ -116,7 +116,7 @@ fun HomeScreen(
             book = book,
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook ->
-//                    hoomeScreenViewModel.saveEditedBook(updatedBook)
+                hoomeScreenViewModel.saveEditedBook(book, updatedBook)
                 hoomeScreenViewModel.updateEditingBook(null)
             }
         )

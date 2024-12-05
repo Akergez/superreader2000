@@ -23,11 +23,11 @@ class HoomeScreenViewModel(
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
     val hoomeScreenState: StateFlow<HoomeScreenState> = _hoomeScreenState.asStateFlow()
+    private val bookCache = bookStorage.bookCache
 
     init {
         viewModelScope.launch {
-            val books = bookStorage.bookCache
-            _hoomeScreenState.value = HoomeScreenState(books = books)
+            _hoomeScreenState.value = HoomeScreenState(books = bookCache)
             bookStorage.saveBooksLinksToStorage()
         }
     }
@@ -66,6 +66,21 @@ class HoomeScreenViewModel(
 
     fun clearTemporaryState() {
         _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
+    }
+
+    fun saveEditedBook(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
+//        val updatedBookList = _hoomeScreenState.value.books.map {
+//            if (it.fileName == newBook.fileName) {
+//                newBook
+//            } else {
+//                it
+//            }
+//        }
+//
+//        _hoomeScreenState.value = _hoomeScreenState.value.copy(books = updatedBookList)
+
+        bookCache.remove(oldBook)
+        bookCache.add(newBook)
     }
 }
 

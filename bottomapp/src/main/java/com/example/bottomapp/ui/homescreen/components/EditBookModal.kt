@@ -16,8 +16,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,16 +30,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.BookStorageEntry
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun EditBookModal(
     book: BookStorageEntry,
     onClose: () -> Unit,
-    onSave: (BookStorageEntry) -> Unit
+    onSave: (newBook: BookStorageEntry) -> Unit,
+    editModalViewModel: EditModalViewModel = koinViewModel()
 ) {
-    var title = remember { mutableStateOf(null) }
-    var author = remember { mutableStateOf(book.bookMetaInfo) }
-    var coverUri = remember { mutableStateOf(book.previewUri) }
+    val state by editModalViewModel.editModalState.collectAsState()
+    editModalViewModel.initState(book)
 
     Box(
         modifier = Modifier
@@ -49,7 +53,6 @@ fun EditBookModal(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(400.dp)
                 .align(Alignment.BottomCenter)
                 .background(
                     MaterialTheme.colorScheme.surface,
@@ -66,6 +69,22 @@ fun EditBookModal(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+            OutlinedTextField(
+                value = state.title,
+                onValueChange = { editModalViewModel.updateTitle(it) },
+                label = { Text("Название книги") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = state.author,
+                onValueChange = { editModalViewModel.updateAuthor(it) },
+                label = { Text("Автор книги") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            )
+
             // Поле загрузки обложки
             Row(
                 modifier = Modifier
@@ -73,7 +92,7 @@ fun EditBookModal(
                     .padding(top = 16.dp)
             ) {
                 AsyncImage(
-                    uri = book.previewUri,
+                    uri = state.previewUri,
                     modifier = Modifier
                         .size(100.dp)
                         .clip(RoundedCornerShape(8.dp))
@@ -85,22 +104,24 @@ fun EditBookModal(
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     Text(text = "Обложка", style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = "по умолчанию - из файла",
+                        text = "По умолчанию - из файла",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
                     Text(
-                        text = "форматы - jpg, png",
+                        text = "Форматы - jpg, png",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
                 }
             }
 
+
+            // Кнопки
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(top = 24.dp)
             ) {
                 Button(
                     onClick = {
@@ -113,10 +134,9 @@ fun EditBookModal(
                 ) {
                     Text("Сохранить")
                 }
+
                 Button(
-                    onClick = {
-//                        onSave(book.copy(bookMetaInfo = book.bookMetaInfo.copy(title = title, author = author)))
-                    },
+                    onClick = onClose,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
