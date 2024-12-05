@@ -12,6 +12,8 @@ import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,11 +25,10 @@ class HoomeScreenViewModel(
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
     val hoomeScreenState: StateFlow<HoomeScreenState> = _hoomeScreenState.asStateFlow()
-    private val bookCache = bookStorage.bookCache
 
     init {
         viewModelScope.launch {
-            _hoomeScreenState.value = HoomeScreenState(books = bookCache)
+            _hoomeScreenState.value = HoomeScreenState(bookStorage.bookCache)
             bookStorage.saveBooksLinksToStorage()
         }
     }
@@ -69,18 +70,17 @@ class HoomeScreenViewModel(
     }
 
     fun saveEditedBook(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
-//        val updatedBookList = _hoomeScreenState.value.books.map {
-//            if (it.fileName == newBook.fileName) {
-//                newBook
-//            } else {
-//                it
-//            }
-//        }
-//
-//        _hoomeScreenState.value = _hoomeScreenState.value.copy(books = updatedBookList)
-
-        bookCache.remove(oldBook)
-        bookCache.add(newBook)
+        // Если поменялось имя файла, то поменялся путь => нужно удалить старую Entity из бд
+        // На изменения автора / превью, другое поведение
+        if (oldBook.fileName != newBook.fileName) {
+            CoroutineScope(Dispatchers.IO).launch {
+                bookStorage.renameBookLink(oldBook, newBook)
+            }
+        } else {
+            CoroutineScope(Dispatchers.IO).launch {
+                bookStorage.updateBook(newBook)
+            }
+        }
     }
 }
 

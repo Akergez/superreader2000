@@ -122,13 +122,10 @@ fun EditBookModal(
                 Button(
                     onClick = {
                         onSave(
-                            BookStorageEntry(
-                                book.fileName,
-                                book.previewUri,
-                                BookMetaInfo(
-                                    book.bookMetaInfo.fileName,
-                                    state.title,
-                                    book.bookMetaInfo.progress
+                            book.copy(
+                                previewUri = state.previewUri,
+                                bookMetaInfo = book.bookMetaInfo.copy(
+                                    title = state.title
                                 )
                             ),
                             state.changed
