@@ -34,13 +34,11 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun EditBookModal(
-    book: BookStorageEntry,
     onClose: () -> Unit,
     onSave: (newBook: BookStorageEntry) -> Unit,
     editModalViewModel: EditModalViewModel = koinViewModel()
 ) {
     val state by editModalViewModel.editModalState.collectAsState()
-    editModalViewModel.initState(book)
 
     Box(
         modifier = Modifier

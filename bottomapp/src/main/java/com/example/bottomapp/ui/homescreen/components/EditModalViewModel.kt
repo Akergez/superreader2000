@@ -7,9 +7,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class EditModalViewModel: ViewModel() {
+class EditModalViewModel(book: BookStorageEntry): ViewModel() {
     private val _editModalState = MutableStateFlow(EditModalState())
     val editModalState: StateFlow<EditModalState> = _editModalState.asStateFlow()
+
+    init {
+        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
+    }
 
     fun initState(book: BookStorageEntry) {
         _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
