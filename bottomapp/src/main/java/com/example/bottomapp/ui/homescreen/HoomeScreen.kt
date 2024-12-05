@@ -1,13 +1,10 @@
 package com.example.bottomapp.ui.homescreen
 
-import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +30,7 @@ import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.EditBookModal
+import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
