@@ -11,6 +11,7 @@ import com.example.bottomapp.backend.BookStorageRepository
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
+import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
 import org.koin.android.ext.koin.androidContext
@@ -29,6 +30,7 @@ class ReaderApp : Application() {
             singleOf(::BookStorage) bind BookStorage::class
             singleOf(::SettingsManager) bind SettingsManager::class
             singleOf(::BookStorageRepository) bind BookStorageRepository::class
+            viewModel { EditModalViewModel() }
             viewModel { SettingsViewModel(get(), get()) }
             viewModel { HoomeScreenViewModel(get()) }
             viewModel { parameters ->

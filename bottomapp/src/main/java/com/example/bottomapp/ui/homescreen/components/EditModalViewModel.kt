@@ -3,7 +3,6 @@ package com.example.bottomapp.ui.homescreen.components
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.bottomapp.backend.BookStorageEntry
-import com.example.bottomapp.ui.homescreen.HoomeScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
