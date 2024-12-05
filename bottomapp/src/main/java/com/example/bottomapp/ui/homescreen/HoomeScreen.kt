@@ -118,12 +118,11 @@ fun HomeScreen(
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook, changed ->
                 if (changed) {
-                    val newStorageEntityBook = 
-                    hoomeScreenViewModel.saveEditedBook(book, updatedBook)
+                    val newStorageEntityBook = hoomeScreenViewModel.saveEditedBook(book, updatedBook)
                 }
                 hoomeScreenViewModel.updateEditingBook(null)
             },
-            editModalViewModel = koinViewModel(parameters = { parametersOf(book) })
+            editModalViewModel = koinViewModel(key = book.fileName, parameters = { parametersOf(book) })
         )
     }
 }

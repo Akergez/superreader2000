@@ -31,14 +31,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.backend.BookMetaInfo
 import com.example.bottomapp.backend.BookStorageEntry
+import org.koin.compose.koinInject
 
 @Composable
 fun EditBookModal(
     onClose: () -> Unit,
     onSave: (newBook: BookStorageEntry, changed: Boolean) -> Unit,
-    editModalViewModel: EditModalViewModel
+    editModalViewModel: EditModalViewModel = koinInject()
 ) {
     val state by editModalViewModel.editModalState.collectAsState()
+    val book = editModalViewModel.book
 
     Box(
         modifier = Modifier
