@@ -31,11 +31,11 @@ import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.EditBookModal
+import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 @Composable
 fun HomeScreen(
@@ -125,7 +125,7 @@ fun HomeScreen(
                 }
                 hoomeScreenViewModel.updateEditingBook(null)
             },
-            editModalViewModel = koinViewModel(parameters = { parametersOf(book) })
+            editModalViewModel = EditModalViewModel(book)
         )
     }
 }
