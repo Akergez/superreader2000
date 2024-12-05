@@ -31,6 +31,7 @@ import com.example.bottomapp.R
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.ui.homescreen.components.BookItem
+import com.example.bottomapp.ui.homescreen.components.EditBookModal
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
@@ -91,7 +92,10 @@ fun HomeScreen(
                 BookItem(
                     book = bookLink,
                     isSelected = state.selectedBook == bookLink,
-                    onItemClick = onItemClick,
+                    onItemClick = { book ->
+                        onItemClick(book)
+                        hoomeScreenViewModel.clearTemporaryState()
+                    },
                     onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
                 )
             }
@@ -101,10 +105,19 @@ fun HomeScreen(
             TopEditBar(
                 onClose = { hoomeScreenViewModel.updateSelectedBook(null) },
                 onEdit = {
-                    Toast
-                        .makeText(context, "Редактирование книги: ${book.fileName}", Toast.LENGTH_SHORT)
-                        .show()
                     hoomeScreenViewModel.updateSelectedBook(null)
+                    hoomeScreenViewModel.updateEditingBook(book)
+                }
+            )
+        }
+
+        state.editingBook?.let { book ->
+            EditBookModal(
+                book = book,
+                onClose = { hoomeScreenViewModel.updateEditingBook(null) },
+                onSave = { updatedBook ->
+//                    hoomeScreenViewModel.saveEditedBook(updatedBook)
+                    hoomeScreenViewModel.updateEditingBook(null)
                 }
             )
         }

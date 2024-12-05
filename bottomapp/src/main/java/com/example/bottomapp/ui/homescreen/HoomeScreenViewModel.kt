@@ -59,6 +59,14 @@ class HoomeScreenViewModel(
     fun updateSelectedBook(book: BookStorageEntry?) {
         _hoomeScreenState.value = _hoomeScreenState.value.copy(selectedBook = book)
     }
+
+    fun updateEditingBook(book: BookStorageEntry?) {
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = book)
+    }
+
+    fun clearTemporaryState() {
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
+    }
 }
 
 private fun getFileName(context: Context, uri: Uri): String {
