@@ -21,19 +21,35 @@ class Fb2RenderHelper(
     private val fb2File: File
 ) : IRenderHelper {
 
-    val pages: MutableList<String> = mutableListOf()
+    private var cachedContent: String? = null
+    private val pageCache = mutableMapOf<Int, String>()
 
-    override fun getPageCount(): Int = pages.size
-    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
-        //return MutableStateFlow(Fb2BookContent(Bitmap.createBitmap(1,1,Bitmap.Config.ARGB_8888)))
-        TODO("Not yet implemented")
+    override fun getPageCount(): Int {
+        return 10;
     }
 
-    fun Init(){
-        val cachedContent = parseFb2Content(fb2File)
+    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
+        // Ленивая генерация страниц по требованию
+        generatePagesUpTo(pageIndex)
 
-        val words = cachedContent.split(" ", " ")
+        val pageText = pageCache[pageIndex] ?: ""
+        return MutableStateFlow(Fb2BookContent(pageText))
+    }
+
+    private fun generatePagesUpTo(targetPageIndex: Int) {
+        // Если контент еще не загружен, загружаем
+        if (cachedContent == null) {
+            cachedContent = parseFb2Content(fb2File)
+        }
+
+        // Если страницы уже сгенерированы до нужного индекса, выходим
+        if (pageCache.containsKey(targetPageIndex)) {
+            return
+        }
+
+        val words = cachedContent?.split(" ", " ") ?: return
         var currentPage = StringBuilder()
+        var currentPageIndex = 0
 
         for (word in words) {
             val testLine = if (currentPage.isEmpty()) word else "$currentPage $word"
@@ -53,24 +69,28 @@ class Fb2RenderHelper(
             if (!result.didOverflowHeight) {
                 currentPage.append(if (currentPage.isEmpty()) word else " $word")
             } else {
-                pages.add(currentPage.toString().trim())
+                pageCache[currentPageIndex] = currentPage.toString().trim()
+                currentPageIndex++
+
+                // Если достигли нужной страницы, можем остановиться
+                if (currentPageIndex > targetPageIndex) {
+                    break
+                }
+
                 currentPage = StringBuilder()
                 currentPage.append(word)
             }
         }
 
-        if (currentPage.isNotEmpty()) {
-            pages.add(currentPage.toString().trim())
+        // Добавляем последнюю страницу, если она не пустая
+        if (currentPage.isNotEmpty() && currentPageIndex <= targetPageIndex) {
+            pageCache[currentPageIndex] = currentPage.toString().trim()
         }
     }
 
-    override fun openPagedText(pageIndex: Int): MutableStateFlow<IBookContent> {
-        val mutableStateFlow = MutableStateFlow<IBookContent>(Fb2BookContent(pages[pageIndex]))
-        return mutableStateFlow
-    }
-
     override fun close() {
-        // No-op for now, but you could add any necessary cleanup code here
+        pageCache.clear()
+        cachedContent = null
     }
 
     override fun getBookType(): FormatType {
@@ -105,7 +125,7 @@ class Fb2RenderHelper(
         } catch (e: Exception) {
             Log.e("FB2Parser", "Error parsing FB2: ${e.message}")
             e.printStackTrace()
-            return "Ошибка при парсинге книги: ${e .message}"
+            return "Ошибка при парсинге книги: ${e.message}"
         }
     }
 
