@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import com.example.bottomapp.ui.readerscreens.IBookContent
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -26,7 +25,8 @@ class Fb2RenderHelper(
 
     private var cachedContent: String? = null
     private val pageCache = mutableMapOf<Int, String>()
-    private var pagesCount = MutableStateFlow(1);
+    private var pagesCount = MutableStateFlow(1)
+    private var isAllPageSliced = false
 
     override fun getPageCount(): StateFlow<Int> {
         return pagesCount
@@ -36,7 +36,12 @@ class Fb2RenderHelper(
         // Ленивая генерация страниц по требованию
         generatePagesUpTo(pageIndex)
 
-        val pageText = pageCache[pageIndex] ?: ""
+        val pageText = pageCache[pageIndex]
+
+        if (pageText == null && isAllPageSliced) {
+            return MutableStateFlow(Fb2BookContent(null))
+        }
+
         return MutableStateFlow(Fb2BookContent(pageText))
     }
 
@@ -77,8 +82,8 @@ class Fb2RenderHelper(
                 currentPageIndex++
 
                 if (pagesCount.value == 1) {
+                    // примерно считаем, сколько страниц будет в книге
                     pagesCount.update { words.size / currentPage.split(" ", " ").size }
-                    Log.e("count", pagesCount.toString())
                 }
 
                 // Если достигли нужной страницы, можем остановиться
@@ -97,6 +102,7 @@ class Fb2RenderHelper(
         // Добавляем последнюю страницу, если она не пустая
         if (currentPage.isNotEmpty() && currentPageIndex <= targetPageIndex) {
             pageCache[currentPageIndex] = currentPage.toString().trim()
+            isAllPageSliced = true
         }
     }
 
