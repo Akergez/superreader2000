@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 interface IRenderHelper {
     fun getPageCount(): Int
     fun openPage(pageIndex: Int): MutableStateFlow<IBookContent>
-    fun openPagedText(pageIndex: Int): MutableStateFlow<IBookContent>
     fun close()
     fun getBookType(): FormatType
 }

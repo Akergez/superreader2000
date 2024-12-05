@@ -51,10 +51,6 @@ class PdfRendererHelper(pdfFile: File) : IRenderHelper {
         return bitmapStateFlow
     }
 
-    override fun openPagedText(pageIndex: Int): MutableStateFlow<IBookContent> {
-        TODO("Not yet implemented")
-    }
-
     override fun close() {
         synchronized(lock) {
             pdfRenderer.close()
