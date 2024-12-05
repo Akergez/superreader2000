@@ -27,18 +27,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.backend.BookMetaInfo
 import com.example.bottomapp.backend.BookStorageEntry
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun EditBookModal(
-    book: BookStorageEntry,
     onClose: () -> Unit,
-    onSave: (newBook: BookStorageEntry) -> Unit,
+    onSave: (newBook: BookStorageEntry, changed: Boolean) -> Unit,
     editModalViewModel: EditModalViewModel = koinViewModel()
 ) {
     val state by editModalViewModel.editModalState.collectAsState()
-    editModalViewModel.initState(book)
+    val book = editModalViewModel.book
 
     Box(
         modifier = Modifier
@@ -122,7 +122,18 @@ fun EditBookModal(
             ) {
                 Button(
                     onClick = {
-//                        onSave(book.copy(bookMetaInfo = book.bookMetaInfo.copy(title = title, author = author)))
+                        onSave(
+                            BookStorageEntry(
+                                book.fileName,
+                                book.previewUri,
+                                BookMetaInfo(
+                                    book.bookMetaInfo.fileName,
+                                    state.title,
+                                    book.bookMetaInfo.progress
+                                )
+                            ),
+                            state.changed
+                        )
                     },
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier

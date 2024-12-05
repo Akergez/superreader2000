@@ -3,6 +3,7 @@ package com.example.bottomapp.ui.homescreen
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun HomeScreen(
@@ -113,12 +115,17 @@ fun HomeScreen(
 
     state.editingBook?.let { book ->
         EditBookModal(
-            book = book,
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
-            onSave = { updatedBook ->
-                hoomeScreenViewModel.saveEditedBook(book, updatedBook)
+            onSave = { updatedBook, changed ->
+                if (changed) {
+//                    hoomeScreenViewModel.saveEditedBook(book, updatedBook)
+                    Toast.makeText(context, "Изменено ${updatedBook.bookMetaInfo.title}", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Нет", Toast.LENGTH_LONG).show()
+                }
                 hoomeScreenViewModel.updateEditingBook(null)
-            }
+            },
+            editModalViewModel = koinViewModel(parameters = { parametersOf(book) })
         )
     }
 }

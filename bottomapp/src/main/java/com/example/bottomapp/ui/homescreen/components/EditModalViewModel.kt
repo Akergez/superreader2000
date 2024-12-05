@@ -7,23 +7,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class EditModalViewModel: ViewModel() {
+class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
     private val _editModalState = MutableStateFlow(EditModalState())
     val editModalState: StateFlow<EditModalState> = _editModalState.asStateFlow()
+
+    init {
+        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
+    }
 
     fun initState(book: BookStorageEntry) {
         _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
     }
 
     fun updateUri(previewUri: Uri) {
-        _editModalState.value = _editModalState.value.copy(previewUri = previewUri)
+        _editModalState.value = _editModalState.value.copy(previewUri = previewUri, changed = true)
     }
 
     fun updateTitle(title: String) {
-        _editModalState.value = _editModalState.value.copy(title = title)
+        _editModalState.value = _editModalState.value.copy(title = title, changed = true)
     }
 
     fun updateAuthor(author: String) {
-        _editModalState.value = _editModalState.value.copy(author = author)
+        _editModalState.value = _editModalState.value.copy(author = author, changed = true)
     }
 }
