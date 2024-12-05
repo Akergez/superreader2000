@@ -1,6 +1,6 @@
 package com.example.bottomapp.ui.homescreen
 
-import TopEditBar
+import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
@@ -30,6 +30,7 @@ import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel

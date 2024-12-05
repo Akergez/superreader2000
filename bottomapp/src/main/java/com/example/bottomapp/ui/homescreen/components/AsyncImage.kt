@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.homescreen
+package com.example.bottomapp.ui.homescreen.components
 
 import android.net.Uri
 import androidx.compose.runtime.Composable

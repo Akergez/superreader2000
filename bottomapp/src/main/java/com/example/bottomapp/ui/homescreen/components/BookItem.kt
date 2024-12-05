@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.homescreen
+package com.example.bottomapp.ui.homescreen.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
