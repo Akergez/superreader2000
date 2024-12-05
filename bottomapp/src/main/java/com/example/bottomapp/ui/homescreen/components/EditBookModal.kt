@@ -29,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.BookMetaInfo
 import com.example.bottomapp.backend.BookStorageEntry
 import org.koin.compose.koinInject
 
@@ -129,7 +128,8 @@ fun EditBookModal(
                             book.copy(
                                 previewUri = state.previewUri,
                                 bookMetaInfo = book.bookMetaInfo.copy(
-                                    title = state.title
+                                    title = state.title,
+                                    fileName = state.title // TODO когда нибудь добавить валидацию
                                 )
                             ),
                             state.changed

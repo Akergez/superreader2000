@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.EditBookModal
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
@@ -35,12 +36,14 @@ import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
 @Composable
 fun HomeScreen(
     onItemClick: (BookStorageEntry) -> Unit,
     hoomeScreenViewModel: HoomeScreenViewModel = koinViewModel(),
+    storageManager: StorageManager = koinInject(),
     navController: NavController
 ) {
 
@@ -118,7 +121,8 @@ fun HomeScreen(
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook, changed ->
                 if (changed) {
-                    val newStorageEntityBook = hoomeScreenViewModel.saveEditedBook(book, updatedBook)
+                    val newStorageEntityBook = storageManager.renameBook(book, updatedBook)
+                    hoomeScreenViewModel.saveEditedBook(book, newStorageEntityBook)
                 }
                 hoomeScreenViewModel.updateEditingBook(null)
             },
