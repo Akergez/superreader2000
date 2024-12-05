@@ -5,7 +5,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.example.bottomapp.backend.renderHelper.NameGenerator
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
@@ -138,33 +137,43 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         }
     }
 
-    fun renameBook(old: BookStorageEntry, new: BookStorageEntry): BookStorageEntry {
+    fun renameBook(old: BookStorageEntry,
+                   new: BookStorageEntry,
+                   contentResolver: ContentResolver,
+                   ): BookStorageEntry {
         val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
         val storageDir = DocumentFile.fromTreeUri(context, storageUri)
             ?: throw Exception("Invalid storage directory")
 
-        val newJsonPath = NameGenerator.jsonMetaFilename(new.bookMetaInfo.fileName)
         val oldJsonPath = NameGenerator.jsonMetaFilename(old.bookMetaInfo.fileName)
         val newImagePath = NameGenerator.previewFilename(new.bookMetaInfo.fileName)
         val oldImagePath = NameGenerator.previewFilename(old.bookMetaInfo.fileName)
 
         storageDir.findFile(oldImagePath)
-        val oldJson = storageDir.findFile(oldJsonPath)
+        storageDir.findFile(oldJsonPath)?.delete()
+
         val oldImage = storageDir.findFile(oldImagePath)
         val oldBook = storageDir.findFile(old.bookMetaInfo.fileName)
 
-        var success = oldJson?.renameTo(newJsonPath)
-        success = oldImage?.renameTo(newImagePath)
+        var success = oldImage?.renameTo(newImagePath)
         success = oldBook?.renameTo(new.bookMetaInfo.fileName)
 
 
         val newImage = storageDir.findFile(newImagePath)
         val newBook = storageDir.findFile(new.bookMetaInfo.fileName)
 
-        return new.copy(
+        val updatedBook = new.copy(
             fileName = newBook.toString(),
             previewUri = newImage?.uri,
         )
+        createJsonMetaFile(
+            storageDir,
+            updatedBook.bookMetaInfo,
+            contentResolver,
+            NameGenerator.jsonMetaFilename(new.bookMetaInfo.fileName)
+        )
+
+        return updatedBook
     }
 
     private fun getPreviewUri(fileName: String): Result<Uri?> {

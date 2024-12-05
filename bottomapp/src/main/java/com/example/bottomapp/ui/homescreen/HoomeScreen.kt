@@ -121,7 +121,7 @@ fun HomeScreen(
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook, changed ->
                 if (changed) {
-                    val newStorageEntityBook = storageManager.renameBook(book, updatedBook)
+                    val newStorageEntityBook = storageManager.renameBook(book, updatedBook, context.contentResolver)
                     hoomeScreenViewModel.saveEditedBook(book, newStorageEntityBook)
                 }
                 hoomeScreenViewModel.updateEditingBook(null)
