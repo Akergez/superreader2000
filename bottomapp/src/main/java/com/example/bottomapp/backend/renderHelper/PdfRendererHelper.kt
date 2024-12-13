@@ -16,7 +16,7 @@ import java.io.File
 
 class PdfRendererHelper(pdfFile: File) : IRenderHelper {
     private val pdfRenderer: PdfRenderer
-    private val bitmapCache = mutableMapOf<Int, Bitmap>()
+    private val bitmapCache = mutableMapOf<Int, MutableStateFlow<IBookContent>>()
     private val lock = Any()
 
     init {
@@ -28,11 +28,11 @@ class PdfRendererHelper(pdfFile: File) : IRenderHelper {
     override fun getPageCount(): Int = pdfRenderer.pageCount
 
     override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
-        val bitmapStateFlow = MutableStateFlow<IBookContent>(PdfBookContent(null))
         bitmapCache[pageIndex]?.let {
-            bitmapStateFlow.value = PdfBookContent(it)
-            return bitmapStateFlow
+            return it
         }
+        val bitmapStateFlow = MutableStateFlow<IBookContent>(PdfBookContent(null))
+        bitmapCache[pageIndex] = bitmapStateFlow
         CoroutineScope(Dispatchers.IO).launch {
             var bitmap: Bitmap?
             synchronized(lock) {
@@ -42,7 +42,6 @@ class PdfRendererHelper(pdfFile: File) : IRenderHelper {
                 val rect = Rect(0, 0, page.width * 5, page.height * 5)
                 page.render(bitmap!!, rect, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
-                bitmapCache[pageIndex] = bitmap!!
             }
             withContext(Dispatchers.Main) {
                 bitmapStateFlow.value = PdfBookContent(bitmap)

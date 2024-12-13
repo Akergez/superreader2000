@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -22,9 +21,7 @@ import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurl
 import eu.wewox.pagecurl.page.rememberPageCurlState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -48,18 +45,6 @@ fun BookContent(
     var offsetY by remember { mutableFloatStateOf(0f) }
 
     // Preload next and previous pages
-    LaunchedEffect(pagerState.current) {
-        onPageChange(pagerState.current)
-        launch(Dispatchers.IO) {
-            if (pagerState.current < totalPages - 1) {
-                getPage(pagerState.current + 1)
-            }
-            if (pagerState.current > 0) {
-                getPage(pagerState.current - 1)
-            }
-        }
-    }
-
     val transformGesturesHandler = { _: Offset, pan: Offset, zoom: Float, _: Float ->
         val newScale = zoom * scale
 
