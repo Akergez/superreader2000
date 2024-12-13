@@ -23,7 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
+import com.example.bottomapp.R
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.ui.mainscreen.Screen
@@ -63,7 +65,7 @@ fun HomeScreen(
                 }
             )
             {
-                Icon(Icons.Filled.Add, contentDescription = "Add book")
+                Icon(Icons.Filled.Add, contentDescription = getString(LocalContext.current, R.string.add_book))
             }
         },
         bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) }
@@ -76,7 +78,7 @@ fun HomeScreen(
         ) {
             item {
                 Text(
-                    text = "My Books",
+                    text = getString(LocalContext.current, R.string.my_books),
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.headlineMedium
                 )

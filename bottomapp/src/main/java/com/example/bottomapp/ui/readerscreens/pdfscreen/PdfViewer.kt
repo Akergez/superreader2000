@@ -10,6 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat.getString
+import com.example.bottomapp.R
 
 @Composable
 fun PdfViewer(
@@ -39,7 +42,7 @@ fun PdfViewer(
                 .background(backgroundColor),
             contentAlignment = Alignment.Center
         ) {
-            Text("Loading...", color = if (applyInversion) Color.White else Color.Black)
+            Text(getString(LocalContext.current, R.string.loading), color = if (applyInversion) Color.White else Color.Black)
         }
     }
 }
