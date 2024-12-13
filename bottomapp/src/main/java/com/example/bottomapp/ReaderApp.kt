@@ -6,7 +6,7 @@ import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorageRepository
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageManager
@@ -27,7 +27,7 @@ class ReaderApp : Application() {
         super.onCreate()
         val appModule = module {
             singleOf(::StorageManager) bind StorageManager::class
-            singleOf(::BookStorage) bind BookStorage::class
+            singleOf(::BookManager) bind BookManager::class
             singleOf(::SettingsManager) bind SettingsManager::class
             singleOf(::BookStorageRepository) bind BookStorageRepository::class
             viewModel { parameters -> EditModalViewModel(parameters.get()) }

@@ -1,7 +1,6 @@
 package com.example.bottomapp.backend
 
 import android.net.Uri
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -14,8 +13,13 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 @Entity
 data class Book(
@@ -27,6 +31,9 @@ data class Book(
 interface UserDao {
     @Query("SELECT * FROM book")
     suspend fun getAll(): List<Book>
+
+    @Query("SELECT * FROM book")
+    fun getFlow(): Flow<List<Book>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg users: Book)
@@ -54,28 +61,41 @@ class BookStorageRepository(private val dao: UserDao) {
         .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
         .create()
 
-    suspend fun getBookLinks(): List<BookStorageEntry> {
-        return withContext(Dispatchers.IO) {
-            dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
+    private val _bookFlow = MutableStateFlow(emptyList<BookStorageEntry>())
+    val bookFlow: StateFlow<List<BookStorageEntry>> = _bookFlow
+
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            dao.getFlow().map {
+                it.map {
+                    gson.fromJson(it.payload, BookStorageEntry::class.java)
+                }
+            }.collect { value ->
+                _bookFlow.value = value
+            }
         }
     }
 
-    suspend fun saveBookLinks(bookCache: SnapshotStateList<BookStorageEntry>) {
-        withContext(Dispatchers.IO) {
-            dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
-        }
+    suspend fun saveBookLinks(bookCache: List<BookStorageEntry>) {
+        dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
     }
 
     suspend fun renameBookLink(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
-        withContext(Dispatchers.IO) {
-            dao.delete(Book(oldBook.fileName, gson.toJson(oldBook)))
-            dao.insert(Book(newBook.fileName, gson.toJson(newBook)))
-        }
+        dao.delete(Book(oldBook.fileName, gson.toJson(oldBook)))
+        dao.insert(Book(newBook.fileName, gson.toJson(newBook)))
+
     }
 
     suspend fun addBook(book: BookStorageEntry) {
-        withContext(Dispatchers.IO) {
-            dao.insert(Book(book.fileName, gson.toJson(book)))
-        }
+        dao.insert(Book(book.fileName, gson.toJson(book)))
+    }
+
+    suspend fun updateBook(book: BookStorageEntry) {
+        dao.insert(Book(book.fileName, gson.toJson(book)))
+    }
+
+    suspend fun findBook(fileName: String): BookStorageEntry? {
+        return dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
+            .find { it.fileName == fileName }
     }
 }

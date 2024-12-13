@@ -3,7 +3,7 @@ package com.example.bottomapp.ui.settingsscreen
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.bottomapp.backend.AppThemeMode
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val settingsManager: SettingsManager,
-    private val bookStorage: BookStorage
+    private val bookManager: BookManager
 ) : ViewModel() {
     private val _settingsState = MutableStateFlow(SettingsScreenState())
     val settingsState: StateFlow<SettingsScreenState> = _settingsState.asStateFlow()
@@ -46,7 +46,7 @@ class SettingsViewModel(
     fun updateStorageAddress(storageAddress: Uri) {
         settingsManager.saveStorageUri(storageAddress)
         uiScope.launch {
-            bookStorage.refreshBooksLinks()
+            bookManager.refreshBooksLinks()
         }
         _settingsState.value = _settingsState.value.copy(storageAddress = storageAddress.toString())
     }

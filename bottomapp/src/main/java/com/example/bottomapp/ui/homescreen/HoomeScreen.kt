@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
-import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.ui.homescreen.components.BookItem
@@ -58,6 +57,7 @@ fun HomeScreen(
                 }
             }
         }
+    val books by hoomeScreenViewModel.books.collectAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -91,7 +91,7 @@ fun HomeScreen(
                     style = MaterialTheme.typography.headlineMedium
                 )
             }
-            items(state.books, key = { it.fileName }) { bookLink ->
+            items(books, key = { it.fileName }) { bookLink ->
                 BookItem(
                     book = bookLink,
                     isSelected = state.selectedBook == bookLink,

@@ -33,7 +33,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfBookDomainModel
@@ -47,6 +47,8 @@ import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -59,7 +61,7 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun MainScreen(
     storageManager: StorageManager = koinInject(),
-    bookStorage: BookStorage = koinInject(),
+    bookManager: BookManager = koinInject(),
     settingsManager: SettingsManager = koinInject()
 ) {
     val context = LocalContext.current
@@ -75,7 +77,7 @@ fun MainScreen(
                     )
                     settingsManager.saveStorageUri(uri)
                     (context as ComponentActivity).lifecycleScope.launch {
-                        bookStorage.refreshBooksLinks()
+                        bookManager.refreshBooksLinks()
                     }
                 }
             }
@@ -137,7 +139,7 @@ fun MainScreen(
                     )
                 }
                 fileName?.let {
-                    val bookLink = bookStorage.bookCache.find { it.fileName == fileName }
+                    val bookLink = bookManager.bookFlow.value.find { it.fileName == fileName }
                     if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
                         bookLink.let {
                             val pdfBookDomainModel = PdfBookDomainModel(
@@ -145,7 +147,9 @@ fun MainScreen(
                                 context,
                                 storageManager = storageManager,
                                 updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        bookManager.updateProgress(updatedBookLink)
+                                    }
                                 }
                             )
 
@@ -166,7 +170,9 @@ fun MainScreen(
                                 context,
                                 storageManager = storageManager,
                                 updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        bookManager.updateProgress(updatedBookLink)
+                                    }
                                 }
                             )
                             Fb2ReaderScreen(book)

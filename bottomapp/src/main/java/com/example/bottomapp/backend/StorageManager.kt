@@ -22,7 +22,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
-class StorageManager(val context: Context, val settingsManager: SettingsManager) {
+class StorageManager(val context: Context, private val settingsManager: SettingsManager) {
 
     private val progressAdapterFactory = RuntimeTypeAdapterFactory
         .of(Progress::class.java, "type")
@@ -158,8 +158,8 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         val oldImage = storageDir.findFile(oldImagePath)
         val oldBook = storageDir.findFile(old.bookMetaInfo.fileName)
 
-        var success = oldImage?.renameTo(newImagePath)
-        success = oldBook?.renameTo(new.bookMetaInfo.fileName)
+        oldImage?.renameTo(newImagePath)
+        oldBook?.renameTo(new.bookMetaInfo.fileName)
 
 
         val newImage = storageDir.findFile(newImagePath)
@@ -190,7 +190,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
         return Result.success(previewFile.uri)
     }
 
-    fun updateProgressData(meta: BookMetaInfo): Result<Unit> {
+   fun updateProgressData(meta: BookMetaInfo): Result<Unit> {
         val storageUri: Uri =
             settingsManager.getStorageUri() ?: return Result.failure(StorageNotSetException())
         val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return Result.failure(

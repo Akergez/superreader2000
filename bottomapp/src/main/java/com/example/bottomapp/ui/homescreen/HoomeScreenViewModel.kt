@@ -6,7 +6,7 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
@@ -21,17 +21,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val bookStorage: BookStorage,
     private val storageManager: StorageManager,
+    private val bookManager: BookManager
 ) : ViewModel() {
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
     val hoomeScreenState: StateFlow<HoomeScreenState> = _hoomeScreenState.asStateFlow()
+    private val _books = MutableStateFlow(emptyList<BookStorageEntry>())
+    val books = _books
 
     init {
         viewModelScope.launch {
-            _hoomeScreenState.value = HoomeScreenState(bookStorage.bookCache)
-            bookStorage.saveBooksLinksToStorage()
+            _hoomeScreenState.value = HoomeScreenState()
+            bookManager.saveBookLinks()
+            bookManager.bookFlow.collect{
+                _books.value = it
+            }
         }
     }
 
@@ -40,12 +45,12 @@ class HoomeScreenViewModel(
         when (val fileType = getFileType(fileName)) {
             FileType.fb2 -> {
                 val bookLink = Fb2Progress(0)
-                bookStorage.addNewBook(uri, fileName, bookLink, fileType)
+                bookManager.addNewBook(uri, fileName, bookLink, fileType)
             }
 
             FileType.pdf -> {
                 val bookLink = PdfProgress(0)
-                bookStorage.addNewBook(uri, fileName, bookLink, fileType)
+                bookManager.addNewBook(uri, fileName, bookLink, fileType)
                     .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
             }
 
@@ -68,7 +73,8 @@ class HoomeScreenViewModel(
     }
 
     fun clearTemporaryState() {
-        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
+        _hoomeScreenState.value =
+            _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
     }
 
     fun saveEditedBook(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
@@ -76,11 +82,11 @@ class HoomeScreenViewModel(
         // На изменения автора / превью, другое поведение
         if (oldBook.fileName != newBook.fileName) {
             CoroutineScope(Dispatchers.IO).launch {
-                bookStorage.renameBookLink(oldBook, newBook)
+                bookManager.renameBookLink(oldBook, newBook)
             }
         } else {
             CoroutineScope(Dispatchers.IO).launch {
-                bookStorage.updateBook(newBook)
+                bookManager.updateBook(newBook)
             }
         }
     }
