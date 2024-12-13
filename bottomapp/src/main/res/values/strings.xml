@@ -3,4 +3,19 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="title_settings">Settings</string>
+    <string name="add_book">Add book</string>
+    <string name="my_books">My Books</string>
+    <string name="title_storage_address">Storage address</string>
+    <string name="paging_mode">Paging mode</string>
+    <string name="app_theme">App Theme</string>
+    <string name="documents_theme">Documents theme</string>
+    <string name="documents_theme_as_is">As is</string>
+    <string name="documents_theme_invert">Invert</string>
+    <string name="app_theme_system">System</string>
+    <string name="app_theme_light">Light</string>
+    <string name="app_theme_dark">Dark</string>
+    <string name="paging_mode_classic">Classic</string>
+    <string name="paging_mode_vertical">Vertical scroll</string>
+    <string name="loading">Loading...</string>
 </resources>

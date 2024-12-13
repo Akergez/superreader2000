@@ -10,8 +10,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.core.content.ContextCompat.getString
+import com.example.bottomapp.R
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
@@ -99,7 +102,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 updateDocumentThemeMode = { docThemeMode -> settingsManager.setDocumentsTheme(docThemeMode) }
             )
         } else {
-            Text("Loading...")
+            Text(getString(LocalContext.current, R.string.loading))
         }
     }
 

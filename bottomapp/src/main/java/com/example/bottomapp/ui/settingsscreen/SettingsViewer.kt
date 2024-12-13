@@ -23,7 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
+import com.example.bottomapp.R
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
@@ -60,11 +62,11 @@ fun SettingsScreen(
                 .padding(innerPadding)
         ) {
             SettingRow(
-                "App Theme",
+                getString(LocalContext.current, R.string.app_theme),
                 mapOf(
-                    AppThemeMode.Light to "Light",
-                    AppThemeMode.Dark to "Dark",
-                    AppThemeMode.System to "System"
+                    AppThemeMode.Light to getString(LocalContext.current, R.string.app_theme_light),
+                    AppThemeMode.Dark to getString(LocalContext.current, R.string.app_theme_dark),
+                    AppThemeMode.System to getString(LocalContext.current, R.string.app_theme_system)
                 ),
                 settings.appThemeMode
             ) { mode ->
@@ -72,10 +74,10 @@ fun SettingsScreen(
             }
 
             SettingRow(
-                "Documents theme",
+                getString(LocalContext.current, R.string.documents_theme),
                 mapOf(
-                    DocThemeMode.AsIs to "As is",
-                    DocThemeMode.Invert to "Invert",
+                    DocThemeMode.AsIs to getString(LocalContext.current, R.string.documents_theme_as_is),
+                    DocThemeMode.Invert to getString(LocalContext.current, R.string.documents_theme_invert),
                 ),
                 settings.docThemeMode
             ) { mode ->
@@ -87,10 +89,10 @@ fun SettingsScreen(
             }
 
             SettingRow(
-                "Paging mode",
+                getString(LocalContext.current, R.string.paging_mode),
                 mapOf(
-                    FlipMode.PagingCurl to "Classic",
-                    FlipMode.VerticalScroll to "Vertical scroll",
+                    FlipMode.PagingCurl to getString(LocalContext.current, R.string.paging_mode_classic),
+                    FlipMode.VerticalScroll to getString(LocalContext.current, R.string.paging_mode_vertical),
                 ),
                 settings.flipMode
             ) { mode ->
@@ -100,7 +102,7 @@ fun SettingsScreen(
             Row(Modifier.padding(32.dp)) {
             }
 
-            Text("Storage address", style = MaterialTheme.typography.headlineMedium)
+            Text(getString(LocalContext.current, R.string.title_storage_address), style = MaterialTheme.typography.headlineMedium)
             Row(Modifier.padding(vertical = 8.dp)) {
                 Text(
                     text = settings.storageAddress,

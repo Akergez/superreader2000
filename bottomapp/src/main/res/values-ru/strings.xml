@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Супер Читалка 2000</string>
+    <string name="title_home">Дом</string>
+    <string name="title_dashboard">Хз что</string>
+    <string name="title_notifications">Уведомления</string>
+    <string name="title_settings">Настройки</string>
+    <string name="add_book">Добавить книгу</string>
+    <string name="my_books">Мои книги</string>
+    <string name="title_storage_address">Адрес ранилища</string>
+    <string name="paging_mode">Режим листания</string>
+    <string name="app_theme">Тема приложения</string>
+    <string name="documents_theme">Тема документов</string>
+    <string name="documents_theme_as_is">Оригинал</string>
+    <string name="documents_theme_invert">Негатив</string>
+    <string name="app_theme_system">Системная</string>
+    <string name="app_theme_light">Светлая</string>
+    <string name="app_theme_dark">Темная</string>
+    <string name="paging_mode_classic">Классический</string>
+    <string name="paging_mode_vertical">Вертикальный</string>
+    <string name="loading">Загрузка, подождите немного</string>
+
+</resources>

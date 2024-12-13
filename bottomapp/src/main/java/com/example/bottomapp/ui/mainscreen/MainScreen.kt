@@ -25,11 +25,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat.getString
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.Fb2BookDomainModel
@@ -191,7 +193,7 @@ fun BottomNavigationBar(
 ) {
     NavigationBar {
         NavigationBarItem(icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-            label = { Text("Home") },
+            label = { Text(getString(LocalContext.current, R.string.title_home)) },
             selected = screen == Screen.HOME_SCREEN,
             onClick = {
                 if (navController.currentDestination?.route != Route.Main) {
@@ -208,7 +210,7 @@ fun BottomNavigationBar(
                 Icons.Filled.Settings, contentDescription = null
             )
         },
-            label = { Text("Settings") }, // TODO еще картинку поменять
+            label = { Text(getString(LocalContext.current, R.string.title_settings)) }, // TODO еще картинку поменять
             selected = screen == Screen.SETTINGS_SCREEN,
             onClick = {
                 if (navController.currentDestination?.route != Route.Settings) {
