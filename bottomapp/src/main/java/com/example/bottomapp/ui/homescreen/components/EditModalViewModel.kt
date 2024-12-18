@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.homescreen.components
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.bottomapp.backend.BookStorageEntry
@@ -29,5 +30,9 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
 
     fun updateAuthor(author: String) {
         _editModalState.value = _editModalState.value.copy(author = author, changed = true)
+    }
+
+    fun uploadImage(uri: Uri) {
+
     }
 }

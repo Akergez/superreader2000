@@ -1,6 +1,10 @@
 package com.example.bottomapp.ui.homescreen.components
 
+import android.app.Activity
+import android.content.Intent
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +49,15 @@ fun EditBookModal(
 ) {
     val state by editModalViewModel.editModalState.collectAsState()
     val book = editModalViewModel.book
+
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { uri ->
+                    editModalViewModel.uploadImage(uri)
+                }
+            }
+        }
 
     Box(
         modifier = Modifier
@@ -101,7 +114,11 @@ fun EditBookModal(
                         .size(100.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
-                            Log.i("BEB", "ES")
+                            val intent = Intent(Intent.ACTION_PICK).apply {
+                                type = "image/*"
+                                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+                            }
+                            launcher.launch(intent)
                         }
                         .background(
                             color = MaterialTheme.colorScheme.surface,
