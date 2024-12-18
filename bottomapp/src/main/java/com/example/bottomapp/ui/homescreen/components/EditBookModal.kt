@@ -21,14 +21,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getString
+import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
 import org.koin.compose.koinInject
 
@@ -63,7 +64,7 @@ fun EditBookModal(
                 }
         ) {
             Text(
-                text = "Редактировать книгу",
+                text = getString(LocalContext.current, R.string.edit_book),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(bottom = 16.dp),
                 color = MaterialTheme.colorScheme.onSurface
@@ -72,14 +73,14 @@ fun EditBookModal(
             OutlinedTextField(
                 value = state.title,
                 onValueChange = { editModalViewModel.updateTitle(it) },
-                label = { Text("Название книги") },
+                label = { Text(getString(LocalContext.current, R.string.book_name)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = state.author,
                 onValueChange = { editModalViewModel.updateAuthor(it) },
-                label = { Text("Автор книги") },
+                label = { Text(getString(LocalContext.current, R.string.book_author)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
@@ -103,23 +104,22 @@ fun EditBookModal(
                 )
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     Text(
-                        text = "Обложка",
+                        text = getString(LocalContext.current, R.string.book_cover),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                         )
                     Text(
-                        text = "По умолчанию - из файла",
+                        text = getString(LocalContext.current, R.string.book_cover_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Форматы - jpg, png",
+                        text = getString(LocalContext.current, R.string.book_cover_formats),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-
 
             // Кнопки
             Column(
@@ -145,7 +145,7 @@ fun EditBookModal(
                         .fillMaxWidth()
                         .height(50.dp),
                 ) {
-                    Text("Сохранить")
+                    Text(getString(LocalContext.current, R.string.save))
                 }
 
                 Button(
@@ -165,7 +165,7 @@ fun EditBookModal(
                         contentColor = MaterialTheme.colorScheme.primary
                     ),
                 ) {
-                    Text("Отмена")
+                    Text(getString(LocalContext.current, R.string.cancel))
                 }
             }
         }

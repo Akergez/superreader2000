@@ -19,4 +19,15 @@
     <string name="paging_mode_vertical">Вертикальный</string>
     <string name="loading">Загрузка, подождите немного</string>
 
+    <!-- Commons-->
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+
+    <!--    Edit book modal-->
+    <string name="edit_book">Редактировать книгу</string>
+    <string name="book_name">Название книги</string>
+    <string name="book_author">Автор</string>
+    <string name="book_cover">Обложка</string>
+    <string name="book_cover_hint">По умолчанию - из файла</string>
+    <string name="book_cover_formats">Форматы - jpg, png</string>
 </resources>
