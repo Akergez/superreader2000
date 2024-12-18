@@ -73,6 +73,26 @@ class StorageManager(val context: Context, private val settingsManager: Settings
         return Result.success(previewFile)
     }
 
+    fun uploadCustomImage(customImageUri: Uri, book: BookStorageEntry): Result<Uri> {
+        val storageUri: Uri = settingsManager.getStorageUri()
+            ?: return Result.failure(Exception("Storage not set"))
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri)
+            ?: return Result.failure(Exception("Invalid storage directory"))
+
+        val fileName = NameGenerator.previewFilename(book.bookMetaInfo.fileName)
+
+        val existingFile = storageDir.findFile(fileName)
+            ?: storageDir.createFile("image/jpeg", fileName)
+            ?: return Result.failure(Exception("Failed to create preview file"))
+
+        context.contentResolver.openInputStream(customImageUri)?.use { inputStream ->
+            context.contentResolver.openOutputStream(existingFile.uri)?.use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+        return Result.success(existingFile.uri)
+    }
+
     private fun createNewBook(
         storageDir: DocumentFile,
         file: Uri,
@@ -152,17 +172,19 @@ class StorageManager(val context: Context, private val settingsManager: Settings
         val newImagePath = NameGenerator.previewFilename(new.bookMetaInfo.fileName)
         val oldImagePath = NameGenerator.previewFilename(old.bookMetaInfo.fileName)
 
-        storageDir.findFile(oldImagePath)
         storageDir.findFile(oldJsonPath)?.delete()
 
-        val oldImage = storageDir.findFile(oldImagePath)
-        val oldBook = storageDir.findFile(old.bookMetaInfo.fileName)
-
-        oldImage?.renameTo(newImagePath)
-        oldBook?.renameTo(new.bookMetaInfo.fileName)
-
-
+        if (newImagePath != oldImagePath) {
+            storageDir.findFile(oldImagePath)
+            val oldImage = storageDir.findFile(oldImagePath)
+            oldImage?.renameTo(newImagePath)
+        }
         val newImage = storageDir.findFile(newImagePath)
+
+        if (old.bookMetaInfo.fileName != new.bookMetaInfo.fileName) {
+            val oldBook = storageDir.findFile(old.bookMetaInfo.fileName)
+            oldBook?.renameTo(new.bookMetaInfo.fileName)
+        }
         val newBook = storageDir.findFile(new.bookMetaInfo.fileName)
 
         val updatedBook = new.copy(

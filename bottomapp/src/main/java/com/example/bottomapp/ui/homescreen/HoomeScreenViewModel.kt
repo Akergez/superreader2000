@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookManager
@@ -91,9 +92,20 @@ class HoomeScreenViewModel(
         }
     }
 
-    fun onSaveEditModal(oldBook: BookStorageEntry, newBook: BookStorageEntry, changed: Boolean, context: Context) {
+    fun onSaveEditModal(oldBook: BookStorageEntry,
+                        newBook: BookStorageEntry,
+                        changed: Boolean,
+                        previewChanged: Boolean,
+                        context: Context) {
         if (changed) {
-            storageManager.renameBook(oldBook, newBook, context.contentResolver)
+            var updatedBook = newBook
+            if (previewChanged) {
+                storageManager.uploadCustomImage(newBook.previewUri!!, newBook)
+                    .onSuccess {
+                        updatedBook = newBook.copy(previewUri = it)
+                }
+            }
+            storageManager.renameBook(oldBook, updatedBook, context.contentResolver)
                 .onSuccess {
                     saveEditedBook(oldBook, it)
                 }

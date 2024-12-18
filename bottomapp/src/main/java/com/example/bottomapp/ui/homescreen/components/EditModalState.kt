@@ -8,5 +8,6 @@ data class EditModalState (
     val previewUri: Uri? = null,
     val title: String = "",
     val author: String = NotSupportedMessage,
-    val changed: Boolean = false
+    val changed: Boolean = false,
+    val previewChanged: Boolean = false,
 )

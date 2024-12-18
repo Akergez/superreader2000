@@ -3,7 +3,6 @@ package com.example.bottomapp.ui.homescreen
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,8 +117,8 @@ fun HomeScreen(
     state.editingBook?.let { book ->
         EditBookModal(
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
-            onSave = { updatedBook, changed ->
-                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, context)
+            onSave = { updatedBook, changed, previewChanged ->
+                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
             },
             editModalViewModel = koinViewModel(key = book.fileName, parameters = { parametersOf(book) })
         )

@@ -2,7 +2,6 @@ package com.example.bottomapp.ui.homescreen.components
 
 import android.app.Activity
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -44,7 +43,7 @@ import org.koin.compose.koinInject
 @Composable
 fun EditBookModal(
     onClose: () -> Unit,
-    onSave: (newBook: BookStorageEntry, changed: Boolean) -> Unit,
+    onSave: (newBook: BookStorageEntry, changed: Boolean, previewChanged: Boolean) -> Unit,
     editModalViewModel: EditModalViewModel = koinInject()
 ) {
     val state by editModalViewModel.editModalState.collectAsState()
@@ -172,7 +171,8 @@ fun EditBookModal(
                                     title = state.title
                                 )
                             ),
-                            state.changed
+                            state.changed,
+                            state.previewChanged
                         )
                     },
                     shape = RoundedCornerShape(16.dp),

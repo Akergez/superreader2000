@@ -1,6 +1,5 @@
 package com.example.bottomapp.ui.homescreen.components
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.bottomapp.backend.BookStorageEntry
@@ -20,8 +19,8 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
         _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, NotSupportedMessage)
     }
 
-    fun updateUri(previewUri: Uri) {
-        _editModalState.value = _editModalState.value.copy(previewUri = previewUri, changed = true)
+    fun resetState(book: BookStorageEntry) {
+        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Not supported")
     }
 
     fun updateTitle(title: String) {
@@ -33,6 +32,6 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
     }
 
     fun uploadImage(uri: Uri) {
-
+        _editModalState.value = _editModalState.value.copy(previewUri = uri, previewChanged = true, changed = true)
     }
 }
