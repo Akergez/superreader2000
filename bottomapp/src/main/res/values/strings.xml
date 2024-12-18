@@ -30,4 +30,9 @@
     <string name="book_cover">Book cover</string>
     <string name="book_cover_hint">Default - from a file</string>
     <string name="book_cover_formats">Formats - jpg, png</string>
+
+    <!-- Error messages-->
+    <string name="error_book_already_exists">Book already exists</string>
+    <string name="error_invalid_storage_directory">Invalid storage directory</string>
+    <string name="error_storage_not_set">Storage not set</string>
 </resources>

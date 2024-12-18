@@ -128,7 +128,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
                 return when {
                     previewFile.isSuccess -> Result.success(BookStorageEntry(meta.fileName, previewFile.getOrNull()!!.uri, meta))
-                    else -> Result.failure<BookStorageEntry>(previewFile.exceptionOrNull()!!)
+                    else -> Result.failure(previewFile.exceptionOrNull()!!)
                 }
             }
             return Result.failure(Exception("Book already exists"))
@@ -140,10 +140,12 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
     fun renameBook(old: BookStorageEntry,
                    new: BookStorageEntry,
                    contentResolver: ContentResolver,
-                   ): BookStorageEntry {
-        val storageUri: Uri = settingsManager.getStorageUri() ?: throw Exception("Storage not set")
+                   ): Result<BookStorageEntry> {
+        val storageUri: Uri = settingsManager.getStorageUri()
+            ?: return Result.failure(Exception("Invalid storage directory"))
+
         val storageDir = DocumentFile.fromTreeUri(context, storageUri)
-            ?: throw Exception("Invalid storage directory")
+            ?:  return Result.failure(Exception("Invalid storage directory"))
 
         val oldJsonPath = NameGenerator.jsonMetaFilename(old.bookMetaInfo.fileName)
         val newImagePath = NameGenerator.previewFilename(new.bookMetaInfo.fileName)
@@ -173,7 +175,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             NameGenerator.jsonMetaFilename(new.bookMetaInfo.fileName)
         )
 
-        return updatedBook
+        return Result.success(updatedBook)
     }
 
     private fun getPreviewUri(fileName: String): Result<Uri?> {

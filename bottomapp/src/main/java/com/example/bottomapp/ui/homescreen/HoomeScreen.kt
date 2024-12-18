@@ -3,6 +3,7 @@ package com.example.bottomapp.ui.homescreen
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -121,8 +122,15 @@ fun HomeScreen(
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook, changed ->
                 if (changed) {
-                    val newStorageEntityBook = storageManager.renameBook(book, updatedBook, context.contentResolver)
-                    hoomeScreenViewModel.saveEditedBook(book, newStorageEntityBook)
+                    storageManager.renameBook(book, updatedBook, context.contentResolver)
+                        .onSuccess {
+                            hoomeScreenViewModel.saveEditedBook(book, it)
+                        }
+                        .onFailure {
+                            Toast
+                                .makeText(context, it.message, Toast.LENGTH_LONG)
+                                .show()
+                        }
                 }
                 hoomeScreenViewModel.updateEditingBook(null)
             },
