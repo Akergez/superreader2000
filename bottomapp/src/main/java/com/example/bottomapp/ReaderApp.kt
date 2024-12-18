@@ -32,7 +32,7 @@ class ReaderApp : Application() {
             singleOf(::BookStorageRepository) bind BookStorageRepository::class
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
             viewModel { SettingsViewModel(get(), get()) }
-            viewModel { HoomeScreenViewModel(get()) }
+            viewModel { HoomeScreenViewModel(get(), get()) }
             viewModel { parameters ->
                 PdfScreenViewModel(
                     get(),

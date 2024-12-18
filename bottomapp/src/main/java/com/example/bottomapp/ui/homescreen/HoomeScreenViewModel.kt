@@ -10,6 +10,7 @@ import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
+import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val bookStorage: BookStorage
+    private val bookStorage: BookStorage,
+    private val storageManager: StorageManager,
 ) : ViewModel() {
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
@@ -81,6 +83,21 @@ class HoomeScreenViewModel(
                 bookStorage.updateBook(newBook)
             }
         }
+    }
+
+    fun onSaveEditModal(oldBook: BookStorageEntry, newBook: BookStorageEntry, changed: Boolean, context: Context) {
+        if (changed) {
+            storageManager.renameBook(oldBook, newBook, context.contentResolver)
+                .onSuccess {
+                    saveEditedBook(oldBook, it)
+                }
+                .onFailure {
+                    Toast
+                        .makeText(context, it.message, Toast.LENGTH_LONG)
+                        .show()
+                }
+        }
+        updateEditingBook(null)
     }
 }
 
