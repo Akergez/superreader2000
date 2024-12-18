@@ -65,7 +65,8 @@ fun EditBookModal(
             Text(
                 text = "Редактировать книгу",
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             OutlinedTextField(
@@ -101,16 +102,20 @@ fun EditBookModal(
                         }
                 )
                 Column(modifier = Modifier.padding(start = 16.dp)) {
-                    Text(text = "Обложка", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = "Обложка",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                        )
                     Text(
                         text = "По умолчанию - из файла",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "Форматы - jpg, png",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
