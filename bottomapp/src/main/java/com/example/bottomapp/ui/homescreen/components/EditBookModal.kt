@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.homescreen.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,8 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -92,16 +96,31 @@ fun EditBookModal(
                     .fillMaxWidth()
                     .padding(top = 16.dp)
             ) {
-                AsyncImage(
-                    uri = state.previewUri,
+                Box(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
-                            // Логика выбора изображения (placeholder для примера)
-//                            coverUri.value = null
+                            Log.i("BEB", "ES")
                         }
-                )
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                        )
+                ) {
+                    AsyncImage(
+                        uri = state.previewUri,
+                        modifier = Modifier.fillMaxSize(),
+                        alpha = 0.5f // Степень затемнения
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Icon",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     Text(
                         text = getString(LocalContext.current, R.string.book_cover),
