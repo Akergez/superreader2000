@@ -4,23 +4,25 @@ import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.constants.toMimeType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-data class BookMetaInfo(val fileName: String, val title: String, val progress: Progress)
+data class BookMetaInfo(val title: String, val progress: Progress)
 
 data class BookStorageEntry(
-    val fileName: String,
+    val title: String,
     val previewUri: Uri?,
+    val bundleName: String,
     val bookMetaInfo: BookMetaInfo
 )
 
 
 class BookManager(
     val context: Context,
-    private val storageManager: StorageManager,
+    private val storageManager: BookStorage,
     private val bookCache: BookStorageRepository
 ) {
     private val _bookLinks = MutableStateFlow<List<BookStorageEntry>>(emptyList())
@@ -38,17 +40,21 @@ class BookManager(
         }
     }
 
-    private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
-        return storageManager.listAllBooks()
+    private fun getBooksLinksFromStorage(): List<BookStorageEntry> {
+        return storageManager.listAllBundles()
+            .map {
+                BookStorageEntry(
+                    it?.meta?.title!!,
+                    it.previewUri,
+                    it.bundleName,
+                    it.meta
+                )
+            }
     }
 
     suspend fun refreshBooksLinks() {
         val list = getBooksLinksFromStorage()
         cacheBooksLinks(list)
-    }
-
-    suspend fun renameBookLink(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
-        bookCache.renameBookLink(oldBook, newBook)
     }
 
     private suspend fun cacheBooksLinks(bookLinks: List<BookStorageEntry>) {
@@ -57,12 +63,8 @@ class BookManager(
 
     fun saveBookLinks() {
         bookFlow.value.map {
-            storageManager.updateProgressData(it.bookMetaInfo)
+            storageManager.updateBundleMeta(it.bundleName, it.bookMetaInfo)
         }
-    }
-
-    suspend fun updateBook(book: BookStorageEntry) {
-        bookCache.addBook(book)
     }
 
     fun addNewBook(
@@ -71,14 +73,22 @@ class BookManager(
         progress: Progress,
         fileType: FileType
     ): Result<Unit> {
-        storageManager.copyBookToStorage(
+        storageManager.createBundle(
+            fileName,
             fileUri,
-            BookMetaInfo(fileName, fileName, progress),
+            BookMetaInfo(fileName, progress),
             context.contentResolver,
-            fileType
+            fileType.toMimeType()
         ).onSuccess {
             CoroutineScope(Dispatchers.IO).launch {
-                bookCache.addBook(it)
+                bookCache.addBook(
+                    BookStorageEntry(
+                        fileName,
+                        it.previewUri,
+                        fileName,
+                        it.meta
+                    )
+                )
             }
             return Result.success(Unit)
         }.onFailure {
@@ -90,12 +100,13 @@ class BookManager(
         return Result.success(Unit)
     }
 
-    suspend fun updateProgress(bookMetaInfo: BookMetaInfo) {
-        val book = bookCache.findBook(bookMetaInfo.fileName)
+    suspend fun updateProgress(bundleName: String, bookMetaInfo: BookMetaInfo) {
+        val book = bookCache.findBook(bookMetaInfo.title)
         bookCache.updateBook(
             BookStorageEntry(
-                bookMetaInfo.fileName,
+                bookMetaInfo.title,
                 book?.previewUri,
+                bundleName,
                 bookMetaInfo
             )
         )

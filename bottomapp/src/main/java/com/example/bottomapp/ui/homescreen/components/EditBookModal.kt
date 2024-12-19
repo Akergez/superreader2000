@@ -166,6 +166,7 @@ fun EditBookModal(
                     onClick = {
                         onSave(
                             book.copy(
+                                bundleName = state.title,
                                 previewUri = state.previewUri,
                                 bookMetaInfo = book.bookMetaInfo.copy(
                                     title = state.title

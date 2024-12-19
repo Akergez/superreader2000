@@ -4,25 +4,22 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookManager
+import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
-import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val storageManager: StorageManager,
+    private val storageManager: BookStorage,
     private val bookManager: BookManager
 ) : ViewModel() {
 
@@ -35,7 +32,7 @@ class HoomeScreenViewModel(
         viewModelScope.launch {
             _hoomeScreenState.value = HoomeScreenState()
             bookManager.saveBookLinks()
-            bookManager.bookFlow.collect{
+            bookManager.bookFlow.collect {
                 _books.value = it
             }
         }
@@ -78,42 +75,38 @@ class HoomeScreenViewModel(
             _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
     }
 
-    fun saveEditedBook(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
-        // Если поменялось имя файла, то поменялся путь => нужно удалить старую Entity из бд
-        // На изменения автора / превью, другое поведение
-        if (oldBook.fileName != newBook.fileName) {
-            CoroutineScope(Dispatchers.IO).launch {
-                bookManager.renameBookLink(oldBook, newBook)
-            }
-        } else {
-            CoroutineScope(Dispatchers.IO).launch {
-                bookManager.updateBook(newBook)
-            }
-        }
-    }
-
-    fun onSaveEditModal(oldBook: BookStorageEntry,
-                        newBook: BookStorageEntry,
-                        changed: Boolean,
-                        previewChanged: Boolean,
-                        context: Context) {
+    fun onSaveEditModal(
+        oldBook: BookStorageEntry,
+        newBook: BookStorageEntry,
+        changed: Boolean,
+        previewChanged: Boolean,
+        context: Context
+    ) {
         if (changed) {
             var updatedBook = newBook
             if (previewChanged) {
-                storageManager.uploadCustomImage(newBook.previewUri!!, newBook)
+                storageManager.updateBundlePreview(newBook.previewUri!!, oldBook.bundleName)
                     .onSuccess {
                         updatedBook = newBook.copy(previewUri = it)
-                }
+                        viewModelScope.launch { bookManager.refreshBooksLinks() }
+                    }
             }
-            storageManager.renameBook(oldBook, updatedBook, context.contentResolver)
-                .onSuccess {
-                    saveEditedBook(oldBook, it)
-                }
-                .onFailure {
-                    Toast
-                        .makeText(context, it.message, Toast.LENGTH_LONG)
-                        .show()
-                }
+            if(newBook.bundleName != oldBook.bundleName) {
+                storageManager.renameBundle(
+                    oldBook.bundleName,
+                    updatedBook.bundleName,
+                    oldBook.bookMetaInfo
+                )
+                    .onSuccess {
+                        storageManager.updateBundleMeta(newBook.bundleName, newBook.bookMetaInfo)
+                            .onSuccess { viewModelScope.launch { bookManager.refreshBooksLinks() } }
+                    }
+                    .onFailure {
+                        Toast
+                            .makeText(context, it.message, Toast.LENGTH_LONG)
+                            .show()
+                    }
+            }
         }
         updateEditingBook(null)
     }

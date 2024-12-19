@@ -38,6 +38,9 @@ interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vararg users: Book)
 
+    @Query("DELETE FROM book")
+    suspend fun deleteAll()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(vararg users: Book)
 
@@ -77,25 +80,20 @@ class BookStorageRepository(private val dao: UserDao) {
     }
 
     suspend fun saveBookLinks(bookCache: List<BookStorageEntry>) {
-        dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
-    }
-
-    suspend fun renameBookLink(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
-        dao.delete(Book(oldBook.fileName, gson.toJson(oldBook)))
-        dao.insert(Book(newBook.fileName, gson.toJson(newBook)))
-
+        dao.deleteAll()
+        dao.insertAll(*bookCache.map { Book(it.bundleName, gson.toJson(it)) }.toTypedArray())
     }
 
     suspend fun addBook(book: BookStorageEntry) {
-        dao.insert(Book(book.fileName, gson.toJson(book)))
+        dao.insert(Book(book.bundleName, gson.toJson(book)))
     }
 
     suspend fun updateBook(book: BookStorageEntry) {
-        dao.insert(Book(book.fileName, gson.toJson(book)))
+        dao.insert(Book(book.bundleName, gson.toJson(book)))
     }
 
-    suspend fun findBook(fileName: String): BookStorageEntry? {
+    suspend fun findBook(bundleName: String): BookStorageEntry? {
         return dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
-            .find { it.fileName == fileName }
+            .find { it.bundleName == bundleName }
     }
 }
