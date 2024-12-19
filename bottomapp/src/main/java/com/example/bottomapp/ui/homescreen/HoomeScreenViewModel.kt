@@ -49,13 +49,17 @@ class HoomeScreenViewModel(
         when (val fileType = getFileType(fileName)) {
             FileType.fb2 -> {
                 val bookLink = Fb2Progress(0)
-                bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                viewModelScope.launch {
+                    bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                }
             }
 
             FileType.pdf -> {
                 val bookLink = PdfProgress(0)
-                bookManager.addNewBook(uri, fileName, bookLink, fileType)
-                    .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
+                viewModelScope.launch {
+                    bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                        .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
+                }
             }
 
             FileType.unknown -> {
@@ -91,27 +95,34 @@ class HoomeScreenViewModel(
         if (changed) {
             var updatedBook = newBook
             if (previewChanged) {
-                storageManager.updateBundlePreview(newBook.previewUri!!, oldBook.bundleName)
-                    .onSuccess {
-                        updatedBook = newBook.copy(previewUri = it)
-                        viewModelScope.launch { bookManager.refreshBooksLinks() }
-                    }
+                viewModelScope.launch {
+                    storageManager.updateBundlePreview(newBook.previewUri!!, oldBook.bundleName)
+                        .onSuccess {
+                            updatedBook = newBook.copy(previewUri = it)
+                            viewModelScope.launch { bookManager.refreshBooksLinks() }
+                        }
+                }
             }
-            if(newBook.bundleName != oldBook.bundleName) {
-                storageManager.renameBundle(
-                    oldBook.bundleName,
-                    updatedBook.bundleName,
-                    oldBook.bookMetaInfo
-                )
-                    .onSuccess {
-                        storageManager.updateBundleMeta(newBook.bundleName, newBook.bookMetaInfo)
-                            .onSuccess { viewModelScope.launch { bookManager.refreshBooksLinks() } }
-                    }
-                    .onFailure {
-                        Toast
-                            .makeText(context, it.message, Toast.LENGTH_LONG)
-                            .show()
-                    }
+            if (newBook.bundleName != oldBook.bundleName) {
+                viewModelScope.launch {
+                    storageManager.renameBundle(
+                        oldBook.bundleName,
+                        updatedBook.bundleName,
+                        oldBook.bookMetaInfo
+                    )
+                        .onSuccess {
+                            storageManager.updateBundleMeta(
+                                newBook.bundleName,
+                                newBook.bookMetaInfo
+                            )
+                                .onSuccess { viewModelScope.launch { bookManager.refreshBooksLinks() } }
+                        }
+                        .onFailure {
+                            Toast
+                                .makeText(context, it.message, Toast.LENGTH_LONG)
+                                .show()
+                        }
+                }
             }
         }
         updateEditingBook(null)

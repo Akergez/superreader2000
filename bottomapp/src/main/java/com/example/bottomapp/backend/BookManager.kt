@@ -2,6 +2,7 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toMimeType
@@ -41,7 +42,7 @@ class BookManager(
         }
     }
 
-    private fun getBooksLinksFromStorage(): List<BookStorageEntry> {
+    private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
         return storageManager.listAllBundles()
             .map {
                 BookStorageEntry(
@@ -62,7 +63,8 @@ class BookManager(
         bookCache.saveBookLinks(bookLinks)
     }
 
-    fun saveBookLinks() {
+    suspend fun saveBookLinks() {
+        Log.i("BookManager", "saveBookLinks")
         bookFlow.value.map {
             if (_pendingBooksToSave.contains(it.bundleName)) {
                 _pendingBooksToSave.remove(it.bundleName)
@@ -71,7 +73,7 @@ class BookManager(
         }
     }
 
-    fun addNewBook(
+    suspend fun addNewBook(
         fileUri: Uri,
         fileName: String,
         progress: Progress,

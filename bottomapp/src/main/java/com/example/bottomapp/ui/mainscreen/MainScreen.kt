@@ -51,6 +51,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import java.net.URLDecoder
@@ -86,105 +87,109 @@ fun MainScreen(
     val navController = rememberNavController()
     val currentTheme by settingsManager.appThemeMode.collectAsState(AppThemeMode.System)
 
-    PDFReaderJetpackComposeTheme(
-        darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme())
-                || currentTheme == AppThemeMode.Dark)
-    ) {
-        NavHost(
-            navController = navController,
-            startDestination = Route.Main,
-
-            enterTransition = { fadeIn(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(300)) }
+    KoinContext() {
+        PDFReaderJetpackComposeTheme(
+            darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme())
+                    || currentTheme == AppThemeMode.Dark)
         ) {
-            composable(Route.Main) {
-                HomeScreen(
-                    onItemClick = { bookLink ->
-                        val encodedFileName = URLEncoder.encode(
-                            bookLink.bundleName,
-                            StandardCharsets.UTF_8.toString()
-                        )
-                        navController.navigate("bookReader/$encodedFileName")
-                    },
-                    navController = navController
-                )
-            }
-            composable(Route.Settings) {
-                SettingsScreen(
-                    navController = navController
-                )
-            }
-            composable(
-                "bookReader/{fileName}",
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-            ) { backStackEntry ->
-                val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    URLDecoder.decode(
-                        backStackEntry.arguments?.getString("fileName"),
-                        StandardCharsets.UTF_8
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    URLDecoder.decode(
-                        backStackEntry.arguments?.getString("fileName")
+            NavHost(
+                navController = navController,
+                startDestination = Route.Main,
+
+                enterTransition = { fadeIn(animationSpec = tween(300)) },
+                exitTransition = { fadeOut(animationSpec = tween(300)) }
+            ) {
+                composable(Route.Main) {
+                    HomeScreen(
+                        onItemClick = { bookLink ->
+                            val encodedFileName = URLEncoder.encode(
+                                bookLink.bundleName,
+                                StandardCharsets.UTF_8.toString()
+                            )
+                            navController.navigate("bookReader/$encodedFileName")
+                        },
+                        navController = navController
                     )
                 }
-                fileName?.let {
-                    val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
-                    if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
-                        bookLink.let {
-                            val pdfBookDomainModel = PdfBookDomainModel(
-                                updateProgress = { updatedBookLink ->
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        bookManager.updateProgress(
-                                            bookLink.bundleName,
-                                            updatedBookLink
-                                        )
+                composable(Route.Settings) {
+                    SettingsScreen(
+                        navController = navController
+                    )
+                }
+                composable(
+                    "bookReader/{fileName}",
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                ) { backStackEntry ->
+                    val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        URLDecoder.decode(
+                            backStackEntry.arguments?.getString("fileName"),
+                            StandardCharsets.UTF_8
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        URLDecoder.decode(
+                            backStackEntry.arguments?.getString("fileName")
+                        )
+                    }
+                    fileName?.let {
+                        val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
+                        if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
+                            bookLink.let {
+                                val pdfBookDomainModel = PdfBookDomainModel(
+                                    updateProgress = { updatedBookLink ->
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            bookManager.updateProgress(
+                                                bookLink.bundleName,
+                                                updatedBookLink
+                                            )
+                                        }
+                                    },
+                                    bookMetaInfo = it.bookMetaInfo,
+                                    getFileFromStorage = {
+                                        storageManager.getBookFile(it.bundleName, it.bookMetaInfo)
+                                            .getOrThrow()
                                     }
-                                },
-                                bookMetaInfo = it.bookMetaInfo,
-                                getFileFromStorage = {
-                                    storageManager.getBookFile(it.bundleName, it.bookMetaInfo).getOrThrow()
-                                }
-                            )
+                                )
 
-                            PdfReaderScreen(
-                                pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
-                                    parameters = {
-                                        parametersOf(
-                                            pdfBookDomainModel,
-                                            PdfRendererHelper(pdfBookDomainModel.getFile())
-                                        )
-                                    })
-                            )
-                        }
-                    } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
-                        bookLink.let {
-                            val book = Fb2BookDomainModel(
-                                it.bookMetaInfo,
-                                updateProgress = { updatedBookLink ->
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        bookManager.updateProgress(
-                                            bookLink.bundleName,
-                                            updatedBookLink
-                                        )
+                                PdfReaderScreen(
+                                    pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
+                                        parameters = {
+                                            parametersOf(
+                                                pdfBookDomainModel,
+                                                PdfRendererHelper(pdfBookDomainModel.getFile())
+                                            )
+                                        })
+                                )
+                            }
+                        } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
+                            bookLink.let {
+                                val book = Fb2BookDomainModel(
+                                    it.bookMetaInfo,
+                                    updateProgress = { updatedBookLink ->
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            bookManager.updateProgress(
+                                                bookLink.bundleName,
+                                                updatedBookLink
+                                            )
+                                        }
+                                    },
+                                    getFileFromStorage = {
+                                        storageManager.getBookFile(it.bundleName, it.bookMetaInfo)
+                                            .getOrThrow()
                                     }
-                                },
-                                getFileFromStorage = {
-                                    storageManager.getBookFile(it.bundleName, it.bookMetaInfo).getOrThrow()
-                                }
-                            )
-                            Fb2ReaderScreen(book)
+                                )
+                                Fb2ReaderScreen(book)
 
+                            }
                         }
                     }
                 }

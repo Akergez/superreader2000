@@ -1,6 +1,7 @@
 package com.example.bottomapp.backend
 
 import android.net.Uri
+import android.util.Log
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -80,19 +81,23 @@ class BookStorageRepository(private val dao: UserDao) {
     }
 
     suspend fun saveBookLinks(bookCache: List<BookStorageEntry>) {
+        Log.i("BookStorageRepository", "saveBookLinks: $bookCache")
         dao.deleteAll()
         dao.insertAll(*bookCache.map { Book(it.bundleName, gson.toJson(it)) }.toTypedArray())
     }
 
     suspend fun addBook(book: BookStorageEntry) {
+        Log.i("BookStorageRepository", "addBook: $book")
         dao.insert(Book(book.bundleName, gson.toJson(book)))
     }
 
     suspend fun updateBook(book: BookStorageEntry) {
+        Log.i("BookStorageRepository", "updateBook: $book")
         dao.insert(Book(book.bundleName, gson.toJson(book)))
     }
 
     suspend fun findBook(bundleName: String): BookStorageEntry? {
+        Log.i("BookStorageRepository", "findBook: $bundleName")
         return dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
             .find { it.bundleName == bundleName }
     }
