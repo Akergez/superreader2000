@@ -7,17 +7,22 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
+import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val bookStorage: BookStorage
+    private val bookStorage: BookStorage,
+    private val storageManager: StorageManager,
 ) : ViewModel() {
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
@@ -25,8 +30,7 @@ class HoomeScreenViewModel(
 
     init {
         viewModelScope.launch {
-            val books = bookStorage.bookCache
-            _hoomeScreenState.value = HoomeScreenState(books = books)
+            _hoomeScreenState.value = HoomeScreenState(bookStorage.bookCache)
             bookStorage.saveBooksLinksToStorage()
         }
     }
@@ -53,6 +57,47 @@ class HoomeScreenViewModel(
                 ).show()
             }
         }
+    }
+
+    fun updateSelectedBook(book: BookStorageEntry?) {
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(selectedBook = book)
+    }
+
+    fun updateEditingBook(book: BookStorageEntry?) {
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = book)
+    }
+
+    fun clearTemporaryState() {
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
+    }
+
+    fun saveEditedBook(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
+        // Если поменялось имя файла, то поменялся путь => нужно удалить старую Entity из бд
+        // На изменения автора / превью, другое поведение
+        if (oldBook.fileName != newBook.fileName) {
+            CoroutineScope(Dispatchers.IO).launch {
+                bookStorage.renameBookLink(oldBook, newBook)
+            }
+        } else {
+            CoroutineScope(Dispatchers.IO).launch {
+                bookStorage.updateBook(newBook)
+            }
+        }
+    }
+
+    fun onSaveEditModal(oldBook: BookStorageEntry, newBook: BookStorageEntry, changed: Boolean, context: Context) {
+        if (changed) {
+            storageManager.renameBook(oldBook, newBook, context.contentResolver)
+                .onSuccess {
+                    saveEditedBook(oldBook, it)
+                }
+                .onFailure {
+                    Toast
+                        .makeText(context, it.message, Toast.LENGTH_LONG)
+                        .show()
+                }
+        }
+        updateEditingBook(null)
     }
 }
 

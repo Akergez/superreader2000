@@ -57,8 +57,18 @@ class BookStorage(val context: Context,
         cacheBooksLinks()
     }
 
+    suspend fun renameBookLink(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
+        bookCache.remove(oldBook)
+        bookCache.add(newBook)
+        bookRepository.renameBookLink(oldBook, newBook)
+    }
+
     private suspend fun cacheBooksLinks() {
         bookRepository.saveBookLinks(bookCache)
+    }
+
+    suspend fun updateBook(book: BookStorageEntry) {
+        bookRepository.addBook(book)
     }
 
     fun addNewBook(fileUri: Uri, fileName: String, progress: Progress, fileType: FileType): Result<Unit> {

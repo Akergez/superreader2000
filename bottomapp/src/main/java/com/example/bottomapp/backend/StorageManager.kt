@@ -88,12 +88,12 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
             }
         }
 
-        createJsonMetaFile(storageDir, meta, contentResolver, NameGenerator.jsonMetaFilename(meta))
+        createJsonMetaFile(storageDir, meta, contentResolver, NameGenerator.jsonMetaFilename(meta.fileName))
         val previewFile = createPreviewFile(
             storageDir,
             meta,
             contentResolver,
-            NameGenerator.previewFilename(meta)
+            NameGenerator.previewFilename(meta.fileName)
         )
 
         return when {
@@ -115,7 +115,7 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
 
         val existingFile = storageDir.findFile(meta.fileName)
         if (existingFile != null) {
-            val jsonMetaFilename = NameGenerator.jsonMetaFilename(meta)
+            val jsonMetaFilename = NameGenerator.jsonMetaFilename(meta.fileName)
             val existingJsonFile = storageDir.findFile(jsonMetaFilename)
             if (existingJsonFile == null) {
                 createJsonMetaFile(storageDir, meta, contentResolver, jsonMetaFilename)
@@ -123,18 +123,59 @@ class StorageManager(val context: Context, val settingsManager: SettingsManager)
                     storageDir,
                     meta,
                     contentResolver,
-                    NameGenerator.previewFilename(meta)
+                    NameGenerator.previewFilename(meta.fileName)
                 )
 
                 return when {
                     previewFile.isSuccess -> Result.success(BookStorageEntry(meta.fileName, previewFile.getOrNull()!!.uri, meta))
-                    else -> Result.failure<BookStorageEntry>(previewFile.exceptionOrNull()!!)
+                    else -> Result.failure(previewFile.exceptionOrNull()!!)
                 }
             }
             return Result.failure(Exception("Book already exists"))
         } else {
             return createNewBook(storageDir, file, mimeType, meta, contentResolver)
         }
+    }
+
+    fun renameBook(old: BookStorageEntry,
+                   new: BookStorageEntry,
+                   contentResolver: ContentResolver,
+                   ): Result<BookStorageEntry> {
+        val storageUri: Uri = settingsManager.getStorageUri()
+            ?: return Result.failure(Exception("Invalid storage directory"))
+
+        val storageDir = DocumentFile.fromTreeUri(context, storageUri)
+            ?:  return Result.failure(Exception("Invalid storage directory"))
+
+        val oldJsonPath = NameGenerator.jsonMetaFilename(old.bookMetaInfo.fileName)
+        val newImagePath = NameGenerator.previewFilename(new.bookMetaInfo.fileName)
+        val oldImagePath = NameGenerator.previewFilename(old.bookMetaInfo.fileName)
+
+        storageDir.findFile(oldImagePath)
+        storageDir.findFile(oldJsonPath)?.delete()
+
+        val oldImage = storageDir.findFile(oldImagePath)
+        val oldBook = storageDir.findFile(old.bookMetaInfo.fileName)
+
+        var success = oldImage?.renameTo(newImagePath)
+        success = oldBook?.renameTo(new.bookMetaInfo.fileName)
+
+
+        val newImage = storageDir.findFile(newImagePath)
+        val newBook = storageDir.findFile(new.bookMetaInfo.fileName)
+
+        val updatedBook = new.copy(
+            fileName = newBook.toString(),
+            previewUri = newImage?.uri,
+        )
+        createJsonMetaFile(
+            storageDir,
+            updatedBook.bookMetaInfo,
+            contentResolver,
+            NameGenerator.jsonMetaFilename(new.bookMetaInfo.fileName)
+        )
+
+        return Result.success(updatedBook)
     }
 
     private fun getPreviewUri(fileName: String): Result<Uri?> {

@@ -5,6 +5,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
+import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -32,6 +33,9 @@ interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(vararg users: Book)
+
+    @Delete
+    suspend fun delete(book: Book)
 }
 
 @Database(entities = [Book::class], version = 1)
@@ -59,6 +63,13 @@ class BookStorageRepository(private val dao: UserDao) {
     suspend fun saveBookLinks(bookCache: SnapshotStateList<BookStorageEntry>) {
         withContext(Dispatchers.IO) {
             dao.insertAll(*bookCache.map { Book(it.fileName, gson.toJson(it)) }.toTypedArray())
+        }
+    }
+
+    suspend fun renameBookLink(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
+        withContext(Dispatchers.IO) {
+            dao.delete(Book(oldBook.fileName, gson.toJson(oldBook)))
+            dao.insert(Book(newBook.fileName, gson.toJson(newBook)))
         }
     }
 

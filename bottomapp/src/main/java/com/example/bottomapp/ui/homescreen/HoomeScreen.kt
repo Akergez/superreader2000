@@ -3,6 +3,7 @@ package com.example.bottomapp.ui.homescreen
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,8 +29,12 @@ import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.ui.homescreen.components.BookItem
+import com.example.bottomapp.ui.homescreen.components.EditBookModal
+import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun HomeScreen(
@@ -84,8 +89,36 @@ fun HomeScreen(
                 )
             }
             items(state.books, key = { it.fileName }) { bookLink ->
-                BookItem(bookLink, onItemClick)
+                BookItem(
+                    book = bookLink,
+                    isSelected = state.selectedBook == bookLink,
+                    onItemClick = { book ->
+                        onItemClick(book)
+                        hoomeScreenViewModel.clearTemporaryState()
+                    },
+                    onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
+                )
             }
         }
+
+        state.selectedBook?.let { book ->
+            TopEditBar(
+                onClose = { hoomeScreenViewModel.updateSelectedBook(null) },
+                onEdit = {
+                    hoomeScreenViewModel.updateSelectedBook(null)
+                    hoomeScreenViewModel.updateEditingBook(book)
+                }
+            )
+        }
+    }
+
+    state.editingBook?.let { book ->
+        EditBookModal(
+            onClose = { hoomeScreenViewModel.updateEditingBook(null) },
+            onSave = { updatedBook, changed ->
+                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, context)
+            },
+            editModalViewModel = koinViewModel(key = book.fileName, parameters = { parametersOf(book) })
+        )
     }
 }
