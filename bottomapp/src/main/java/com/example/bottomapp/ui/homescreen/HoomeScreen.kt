@@ -44,7 +44,7 @@ fun HomeScreen(
     hoomeScreenViewModel: HoomeScreenViewModel = koinViewModel(),
     navController: NavController
 ) {
-
+    hoomeScreenViewModel.dumpBooks()
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current

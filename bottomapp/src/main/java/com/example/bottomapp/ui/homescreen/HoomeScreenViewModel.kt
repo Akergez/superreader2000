@@ -38,6 +38,12 @@ class HoomeScreenViewModel(
         }
     }
 
+    fun dumpBooks() {
+        viewModelScope.launch {
+            bookManager.saveBookLinks()
+        }
+    }
+
     fun addBook(uri: Uri, context: Context) {
         val fileName = getFileName(context, uri)
         when (val fileType = getFileType(fileName)) {

@@ -27,6 +27,7 @@ class BookManager(
 ) {
     private val _bookLinks = MutableStateFlow<List<BookStorageEntry>>(emptyList())
     val bookFlow = _bookLinks
+    private val _pendingBooksToSave = HashSet<String>(emptyList())
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
@@ -63,7 +64,10 @@ class BookManager(
 
     fun saveBookLinks() {
         bookFlow.value.map {
-            storageManager.updateBundleMeta(it.bundleName, it.bookMetaInfo)
+            if (_pendingBooksToSave.contains(it.bundleName)) {
+                _pendingBooksToSave.remove(it.bundleName)
+                storageManager.updateBundleMeta(it.bundleName, it.bookMetaInfo)
+            }
         }
     }
 
@@ -110,5 +114,6 @@ class BookManager(
                 bookMetaInfo
             )
         )
+        _pendingBooksToSave.add(bundleName)
     }
 }
