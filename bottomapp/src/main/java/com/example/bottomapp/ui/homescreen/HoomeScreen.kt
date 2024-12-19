@@ -52,8 +52,20 @@ fun HomeScreen(
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.also { uri ->
-                    hoomeScreenViewModel.addBook(uri, context)
+                val type = getFileType(result.data?.data.toString());
+                when (type) {
+                    "pdf", "fb2" -> {
+                        result.data?.data?.also { uri ->
+                            hoomeScreenViewModel.addBook(uri, context)
+                        }
+                    }
+                    else -> {
+                        Toast.makeText(
+                            context,
+                            "Только файлы формата PDF и FB2 поддерживаются приложением",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
         }
@@ -61,17 +73,7 @@ fun HomeScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = "*/*"
-                        val mimeTypes = arrayOf("application/pdf", "application/fb2")
-                        putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
-                    }
-                    launcher.launch(intent)
-                }
-            )
+            FloatingActionButton(onClick = { launcher.launch(openFilePicker()) })
             {
                 Icon(Icons.Filled.Add, contentDescription = getString(LocalContext.current, R.string.add_book))
             }
@@ -123,5 +125,18 @@ fun HomeScreen(
             },
             editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
         )
+    }
+
+}
+
+private fun getFileType(fileName: String): String {
+    return fileName.substringAfterLast('.', "").lowercase()
+}
+
+
+private fun openFilePicker(): Intent {
+    return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+        addCategory(Intent.CATEGORY_OPENABLE)
+        type = "*/*"
     }
 }

@@ -3,6 +3,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +61,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                     textMeasurer,
                     fb2File.value!!
                 )
-                fb2RenderHelper.value!!.Init()
+                //fb2RenderHelper.value!!.Init()
                 isLoaded.value = true
             }
         }
@@ -69,9 +70,9 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val onPageChange = { newPage: Int ->
         if (sums.isNotEmpty() && newPage > 0) {
             currentPage = newPage
-            CoroutineScope(Dispatchers.IO).launch {
+/*            CoroutineScope(Dispatchers.IO).launch {
                 book.saveProgress(Fb2Progress(sums[newPage]))
-            }
+            }*/
         }
         if (newPage == 0) {
             currentPage = 0
@@ -87,7 +88,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
         if (isLoaded.value) {
             val curlMode = remember { settingsManager.getFlipMode() }
 
-            sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
+           // sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
             val offset = book.readProgress().wordOffset
 
             if (offset > 0) {
@@ -106,7 +107,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },
                 flipMode = curlMode,
-                getPage = { page -> fb2RenderHelper.value!!.openPagedText(page) },
+                getPage = { page -> fb2RenderHelper.value!!.openPage(page) },
                 documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { docThemeMode -> settingsManager.setDocumentsTheme(docThemeMode) }
             )
