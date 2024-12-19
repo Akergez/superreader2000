@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,9 @@ fun BookContent(
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
+    LaunchedEffect(pagerState.current) {
+        onPageChange(pagerState.current)
+    }
 
     var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
     var offsetX by remember { mutableFloatStateOf(0f) }
