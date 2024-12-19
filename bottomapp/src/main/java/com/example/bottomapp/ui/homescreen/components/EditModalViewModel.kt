@@ -12,11 +12,11 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
     val editModalState: StateFlow<EditModalState> = _editModalState.asStateFlow()
 
     init {
-        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
+        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, NotSupportedMessage)
     }
 
     fun initState(book: BookStorageEntry) {
-        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Не поддерживается")
+        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, NotSupportedMessage)
     }
 
     fun updateUri(previewUri: Uri) {
