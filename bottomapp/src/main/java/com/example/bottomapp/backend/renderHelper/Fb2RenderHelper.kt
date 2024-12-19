@@ -100,8 +100,6 @@ class Fb2RenderHelper(
             pageCache[currentPageIndex] = currentPage.toString().trim()
             isAllPageSliced = true
         }
-
-        pagesCount.value = pages.size
     }
 
     override fun close() {
