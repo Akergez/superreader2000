@@ -22,8 +22,8 @@ class Fb2RenderHelper(
 ) : IRenderHelper {
 
     val pages: MutableList<String> = mutableListOf()
+    val pagesCount = MutableStateFlow<Int>(0)
 
-    override fun getPageCount(): Int = pages.size
     override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
         //return MutableStateFlow(Fb2BookContent(Bitmap.createBitmap(1,1,Bitmap.Config.ARGB_8888)))
         TODO("Not yet implemented")
@@ -62,6 +62,8 @@ class Fb2RenderHelper(
         if (currentPage.isNotEmpty()) {
             pages.add(currentPage.toString().trim())
         }
+
+        pagesCount.value = pages.size
     }
 
     override fun openPagedText(pageIndex: Int): MutableStateFlow<IBookContent> {

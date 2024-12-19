@@ -7,8 +7,8 @@ data class PdfProgress(val pageIndex: Int) : Progress(FormatType.PDF)
 
 class PdfBookDomainModel(
     bookMetaInfo: BookMetaInfo,
-    val updateProgress: (BookMetaInfo) -> Unit,
-    private val getFileFromStorage: () -> File,
+    val updateProgress: suspend (BookMetaInfo) -> Unit,
+    private val getFileFromStorage: suspend () -> File,
 ) :
     BookDomainModel<PdfProgress> {
     val title: String = bookMetaInfo.title
@@ -18,11 +18,11 @@ class PdfBookDomainModel(
         return progress
     }
 
-    override fun getFile(): File {
+    override suspend fun getFile(): File {
         return getFileFromStorage()
     }
 
-    override fun saveProgress(progress: PdfProgress) {
+    override suspend fun saveProgress(progress: PdfProgress) {
         this.progress = progress
         updateProgress(BookMetaInfo(title, progress))
     }

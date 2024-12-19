@@ -7,8 +7,8 @@ data class Fb2Progress(val wordOffset: Int) : Progress(FormatType.FB2)
 
 class Fb2BookDomainModel(
     bookLink: BookMetaInfo,
-    val updateProgress: (BookMetaInfo) -> Unit,
-    private val getFileFromStorage: () -> File,
+    val updateProgress: suspend (BookMetaInfo) -> Unit,
+    private val getFileFromStorage: suspend () -> File,
 ) :
     BookDomainModel<Fb2Progress> {
     val title: String = bookLink.title
@@ -18,11 +18,11 @@ class Fb2BookDomainModel(
         return progress
     }
 
-    override fun getFile(): File {
+    override suspend fun getFile(): File {
         return getFileFromStorage()
     }
 
-    override fun saveProgress(progress: Fb2Progress) {
+    override suspend fun saveProgress(progress: Fb2Progress) {
         this.progress = progress
         updateProgress(BookMetaInfo(title, progress))
     }

@@ -34,13 +34,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
-import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
 import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
@@ -61,7 +60,6 @@ import java.nio.charset.StandardCharsets
 
 @Composable
 fun MainScreen(
-    storageManager: BookStorage = koinInject(),
     bookManager: BookManager = koinInject(),
     settingsManager: SettingsManager = koinInject()
 ) {
@@ -146,16 +144,14 @@ fun MainScreen(
                             bookLink.let {
                                 val pdfBookDomainModel = PdfBookDomainModel(
                                     updateProgress = { updatedBookLink ->
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            bookManager.updateProgress(
-                                                bookLink.bundleName,
-                                                updatedBookLink
-                                            )
-                                        }
+                                        bookManager.updateProgress(
+                                            bookLink.bundleName,
+                                            updatedBookLink
+                                        )
                                     },
                                     bookMetaInfo = it.bookMetaInfo,
                                     getFileFromStorage = {
-                                        storageManager.getBookFile(it.bundleName, it.bookMetaInfo)
+                                        bookManager.getBookFile(it.bundleName)
                                             .getOrThrow()
                                     }
                                 )
@@ -165,7 +161,7 @@ fun MainScreen(
                                         parameters = {
                                             parametersOf(
                                                 pdfBookDomainModel,
-                                                PdfRendererHelper(pdfBookDomainModel.getFile())
+                                                PdfRendererHelper { pdfBookDomainModel.getFile() }
                                             )
                                         })
                                 )
@@ -183,7 +179,7 @@ fun MainScreen(
                                         }
                                     },
                                     getFileFromStorage = {
-                                        storageManager.getBookFile(it.bundleName, it.bookMetaInfo)
+                                        bookManager.getBookFile(it.bundleName)
                                             .getOrThrow()
                                     }
                                 )

@@ -4,7 +4,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,8 +18,6 @@ import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
-import eu.wewox.pagecurl.config.rememberPageCurlConfig
-import eu.wewox.pagecurl.page.PageCurl
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.abs
@@ -29,7 +26,7 @@ import kotlin.math.abs
 @Composable
 fun BookContent(
     currentPage: Int,
-    totalPages: Int,
+    totalPages: MutableStateFlow<Int>,
     mode: ReaderMode,
     flipMode: FlipMode,
     onPageChange: (Int) -> Unit,
@@ -100,21 +97,13 @@ fun BookContent(
 
             ReaderMode.Reading -> {
                 when (flipMode) {
-                    FlipMode.PagingCurl -> PageCurl(
-                        count = totalPages,
-                        state = pagerState,
-                        config = rememberPageCurlConfig(
-                            backPageContentAlpha = 0.5f,
-                            backPageColor = MaterialTheme.colorScheme.background
-                        ),
-                    ) { index ->
-                        BookPage(
-                            bookContent = getPage(index),
-                            applyInversion = documentTheme == DocThemeMode.Invert,
-                            modifier = modifier
-                                .basePageBoxModifier(),
-                        )
-                    }
+                    FlipMode.PagingCurl -> com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl(
+                        totalPages = totalPages,
+                        currentPage = currentPage,
+                        getPage = getPage,
+                        documentTheme = documentTheme,
+                        modifier = modifier
+                    )
 
                     FlipMode.VerticalScroll -> VerticalBookScroll(
                         totalPages = totalPages,

@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
@@ -19,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val storageManager: BookStorage,
     private val bookManager: BookManager
 ) : ViewModel() {
 
@@ -93,39 +91,35 @@ class HoomeScreenViewModel(
         context: Context
     ) {
         if (changed) {
-            var updatedBook = newBook
-            if (previewChanged) {
-                viewModelScope.launch {
-                    storageManager.updateBundlePreview(newBook.previewUri!!, oldBook.bundleName)
-                        .onSuccess {
-                            updatedBook = newBook.copy(previewUri = it)
-                            viewModelScope.launch { bookManager.refreshBooksLinks() }
-                        }
-                }
-            }
-            if (newBook.bundleName != oldBook.bundleName) {
-                viewModelScope.launch {
-                    storageManager.renameBundle(
-                        oldBook.bundleName,
-                        updatedBook.bundleName,
-                        oldBook.bookMetaInfo
-                    )
-                        .onSuccess {
-                            storageManager.updateBundleMeta(
-                                newBook.bundleName,
-                                newBook.bookMetaInfo
-                            )
-                                .onSuccess { viewModelScope.launch { bookManager.refreshBooksLinks() } }
-                        }
-                        .onFailure {
-                            Toast
-                                .makeText(context, it.message, Toast.LENGTH_LONG)
-                                .show()
-                        }
+            handleBookUpdate(oldBook, newBook, previewChanged, context)
+        }
+        updateEditingBook(null)
+    }
+
+    private fun handleBookUpdate(
+        oldBook: BookStorageEntry,
+        newBook: BookStorageEntry,
+        previewChanged: Boolean,
+        context: Context
+    ) {
+        var updatedBook = newBook
+        if (previewChanged) {
+            viewModelScope.launch {
+                bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!).onSuccess {
+                    updatedBook = newBook.copy(previewUri = it)
                 }
             }
         }
-        updateEditingBook(null)
+        if (newBook.bundleName == oldBook.bundleName) {
+            return
+        }
+        viewModelScope.launch {
+            bookManager.renameBook(
+                oldBook.bundleName, updatedBook.bundleName
+            ).onFailure {
+                Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }
 

@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -27,7 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 fun PageCarousel(
     bookContent: (Int) -> MutableStateFlow<IBookContent>,
-    totalPages: Int,
+    totalPages: MutableStateFlow<Int>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     onApplyInversionToggle: (Boolean) -> Unit,
@@ -35,13 +36,14 @@ fun PageCarousel(
     initialPage: Int = 0,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
+    val totalPagesState by totalPages.collectAsState()
 
     Column(modifier = modifier) {
         LazyRow(
             modifier = Modifier.weight(0.9f),
             state = lazyListState,
         ) {
-            items(totalPages, key = { it }) { page ->
+            items(totalPagesState, key = { it }) { page ->
                 Box(
                     Modifier
                         .fillParentMaxWidth()

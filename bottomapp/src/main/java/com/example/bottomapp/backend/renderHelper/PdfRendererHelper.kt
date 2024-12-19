@@ -14,18 +14,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class PdfRendererHelper(pdfFile: File) : IRenderHelper {
-    private val pdfRenderer: PdfRenderer
+class PdfRendererHelper(pdfFile: suspend () -> File) : IRenderHelper {
+    val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
+    val pagesCount = MutableStateFlow(0)
     private val bitmapCache = mutableMapOf<Int, MutableStateFlow<IBookContent>>()
     private val lock = Any()
 
     init {
-        val parcelFileDescriptor =
-            ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY)
-        pdfRenderer = PdfRenderer(parcelFileDescriptor)
+        CoroutineScope(Dispatchers.IO).launch {
+            val parcelFileDescriptor =
+                ParcelFileDescriptor.open(pdfFile(), ParcelFileDescriptor.MODE_READ_ONLY)
+            pdfRenderer.value = PdfRenderer(parcelFileDescriptor)
+            pagesCount.value = pdfRenderer.value!!.pageCount
+        }
     }
-
-    override fun getPageCount(): Int = pdfRenderer.pageCount
 
     override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
         bitmapCache[pageIndex]?.let {
@@ -36,7 +38,7 @@ class PdfRendererHelper(pdfFile: File) : IRenderHelper {
         CoroutineScope(Dispatchers.IO).launch {
             var bitmap: Bitmap?
             synchronized(lock) {
-                val page = pdfRenderer.openPage(pageIndex)
+                val page = pdfRenderer.value?.openPage(pageIndex)
                 bitmap =
                     Bitmap.createBitmap(page!!.width * 5, page.height * 5, Bitmap.Config.ARGB_8888)
                 val rect = Rect(0, 0, page.width * 5, page.height * 5)
@@ -56,7 +58,7 @@ class PdfRendererHelper(pdfFile: File) : IRenderHelper {
 
     override fun close() {
         synchronized(lock) {
-            pdfRenderer.close()
+            pdfRenderer.value?.close()
             bitmapCache.clear()
         }
     }

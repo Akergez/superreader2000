@@ -18,20 +18,22 @@ import com.example.bottomapp.R
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import java.io.File
 
 
 @Composable
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
     var mode by remember { mutableStateOf(ReaderMode.Reading) }
-    val fb2File = remember { book.getFile() }
+    val fb2File = remember { mutableStateOf<File?>(null) }
     var sums by remember { mutableStateOf(listOf<Int>()) }
     val textMeasurer = rememberTextMeasurer()
 
@@ -43,14 +45,20 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
     val isLoaded = remember { mutableStateOf(false) }
 
-    LaunchedEffect(componentHeight) {
+    LaunchedEffect(componentHeight, fb2File) {
+        CoroutineScope(Dispatchers.IO).launch {
+            fb2File.value = book.getFile()
+        }
+        if(fb2File.value == null) {
+            return@LaunchedEffect
+        }
         launch(Dispatchers.IO) {
             if (componentHeight != 0) {
                 fb2RenderHelper.value = Fb2RenderHelper(
                     componentWidth - (density.density * 16).toInt(),
                     componentHeight - (density.density * 16).toInt(),
                     textMeasurer,
-                    fb2File
+                    fb2File.value!!
                 )
                 fb2RenderHelper.value!!.Init()
                 isLoaded.value = true
@@ -61,7 +69,9 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val onPageChange = { newPage: Int ->
         if (sums.isNotEmpty() && newPage > 0) {
             currentPage = newPage
-            book.saveProgress(Fb2Progress(sums[newPage]))
+            CoroutineScope(Dispatchers.IO).launch {
+                book.saveProgress(Fb2Progress(sums[newPage]))
+            }
         }
         if (newPage == 0) {
             currentPage = 0
@@ -75,7 +85,6 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             componentWidth = it.size.width
         }) {
         if (isLoaded.value) {
-            val totalPages = remember { fb2RenderHelper.value!!.getPageCount() }
             val curlMode = remember { settingsManager.getFlipMode() }
 
             sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
@@ -92,7 +101,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
             BookContent(
                 currentPage = currentPage,
-                totalPages = totalPages,
+                totalPages = fb2RenderHelper.value!!.pagesCount,
                 mode = mode,
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },
