@@ -165,7 +165,7 @@ open class StorageManager<T>(
 
     suspend fun deleteBundle(bundleName: String): Result<Unit> =
         withContext(Dispatchers.IO) {
-            Log.i("StorageManager", "Updating metadata for $bundleName")
+            Log.i("StorageManager", "Deleting bundle $bundleName")
             val storageUri = settingsManager.getStorageUri()
                 ?: return@withContext Result.failure(Exception("Storage directory not set"))
             val storageDir =

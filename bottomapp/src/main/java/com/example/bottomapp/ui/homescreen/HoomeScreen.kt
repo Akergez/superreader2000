@@ -33,6 +33,7 @@ import com.example.bottomapp.ui.homescreen.components.EditBookModal
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
+import kotlinx.coroutines.flow.firstOrNull
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.ExperimentalUuidApi
@@ -71,6 +72,7 @@ fun HomeScreen(
             }
         }
     val books by hoomeScreenViewModel.books.collectAsState()
+    val selectedBooks by hoomeScreenViewModel.selectedBooks.collectAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -95,23 +97,30 @@ fun HomeScreen(
                 )
             }
             items(books, key = { it.bundleName }) { bookLink ->
+                val isSelected = bookLink in selectedBooks
+                val isSelectedAny = selectedBooks.isNotEmpty()
                 BookItem(
                     book = bookLink,
-                    isSelected = state.selectedBook == bookLink,
+                    isSelected = isSelected,
                     onItemClick = { book ->
-                        onItemClick(book)
-                        hoomeScreenViewModel.clearTemporaryState()
+                        if (isSelectedAny) {
+                            hoomeScreenViewModel.updateSelectedBook(bookLink)
+                        } else{
+                            onItemClick(book)
+                            hoomeScreenViewModel.clearTemporaryState()
+                        }
                     },
                     onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
                 )
             }
         }
 
-        state.selectedBook?.let { book ->
+        if (selectedBooks.isNotEmpty()) {
+            val book = selectedBooks[0]
             TopEditBar(
-                onClose = { hoomeScreenViewModel.updateSelectedBook(null) },
+                onClose = { hoomeScreenViewModel.clearSelectedBooks() },
                 onEdit = {
-                    hoomeScreenViewModel.updateSelectedBook(null)
+                    hoomeScreenViewModel.updateSelectedBook(book)
                     hoomeScreenViewModel.updateEditingBook(book)
                 },
                 onDelete = {
