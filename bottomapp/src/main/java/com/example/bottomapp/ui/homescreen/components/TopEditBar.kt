@@ -6,14 +6,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getString
+import com.example.bottomapp.R
 
 @Composable
 fun TopEditBar(
@@ -22,6 +22,31 @@ fun TopEditBar(
     onDelete: () -> Unit,
     selectedCount: Int
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(text = getString(LocalContext.current, R.string.confirm_deletion)) },
+            text = { Text(text = getString(LocalContext.current, R.string.confirm_deletion_hint)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDialog = false
+                        onDelete()
+                    }
+                ) {
+                    Text(text = getString(LocalContext.current, R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(text = getString(LocalContext.current, R.string.cancel))
+                }
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -36,7 +61,7 @@ fun TopEditBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row (
+            Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 IconButton(onClick = onClose) {
@@ -56,7 +81,7 @@ fun TopEditBar(
                     }
                 }
 
-                IconButton(onClick = onDelete) {
+                IconButton(onClick = { showDialog = true }) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete")
                 }
             }
