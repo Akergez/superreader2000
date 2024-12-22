@@ -50,8 +50,10 @@ fun TopEditBar(
             }
 
             Row {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                if (selectedCount == 1) {
+                    IconButton(onClick = onEdit) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    }
                 }
 
                 IconButton(onClick = onDelete) {

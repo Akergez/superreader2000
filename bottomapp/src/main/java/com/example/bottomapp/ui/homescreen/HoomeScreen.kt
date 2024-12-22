@@ -116,15 +116,14 @@ fun HomeScreen(
         }
 
         if (selectedBooks.isNotEmpty()) {
-            val book = selectedBooks[0]
             TopEditBar(
                 onClose = { hoomeScreenViewModel.clearSelectedBooks() },
                 onEdit = {
-                    hoomeScreenViewModel.updateSelectedBook(book)
-                    hoomeScreenViewModel.updateEditingBook(book)
+                    hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
+                    hoomeScreenViewModel.clearSelectedBooks()
                 },
                 onDelete = {
-                    hoomeScreenViewModel.onDeleteBooks(book, context)
+                    hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
                 },
                 selectedCount = selectedBooks.size
             )

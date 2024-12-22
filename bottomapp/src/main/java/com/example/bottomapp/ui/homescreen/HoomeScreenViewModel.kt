@@ -139,16 +139,18 @@ class HoomeScreenViewModel(
     }
 
     fun onDeleteBooks(
-        book: BookStorageEntry,
+        books: List<BookStorageEntry>,
         context: Context
     ) {
         viewModelScope.launch {
-            bookManager.deleteBook(book.bundleName)
-                .onFailure {
-                    Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
-                }
+            books.map { book ->
+                bookManager.deleteBook(book.bundleName)
+                    .onFailure {
+                        Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                    }
+            }
         }
-        updateSelectedBook(book)
+        clearSelectedBooks()
     }
 }
 
