@@ -1,5 +1,9 @@
 package com.example.bottomapp.ui.homescreen.components
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,8 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,11 +43,20 @@ import org.koin.compose.koinInject
 @Composable
 fun EditBookModal(
     onClose: () -> Unit,
-    onSave: (newBook: BookStorageEntry, changed: Boolean) -> Unit,
+    onSave: (newBook: BookStorageEntry, changed: Boolean, previewChanged: Boolean) -> Unit,
     editModalViewModel: EditModalViewModel = koinInject()
 ) {
     val state by editModalViewModel.editModalState.collectAsState()
     val book = editModalViewModel.book
+
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { uri ->
+                    editModalViewModel.uploadImage(uri)
+                }
+            }
+        }
 
     Box(
         modifier = Modifier
@@ -92,16 +108,35 @@ fun EditBookModal(
                     .fillMaxWidth()
                     .padding(top = 16.dp)
             ) {
-                AsyncImage(
-                    uri = state.previewUri,
+                Box(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable {
-                            // Логика выбора изображения (placeholder для примера)
-//                            coverUri.value = null
+                            val intent = Intent(Intent.ACTION_PICK).apply {
+                                type = "image/*"
+                                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+                            }
+                            launcher.launch(intent)
                         }
-                )
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
+                        )
+                ) {
+                    AsyncImage(
+                        uri = state.previewUri,
+                        modifier = Modifier.fillMaxSize(),
+                        alpha = 0.5f // Степень затемнения
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Icon",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Column(modifier = Modifier.padding(start = 16.dp)) {
                     Text(
                         text = getString(LocalContext.current, R.string.book_cover),
@@ -131,13 +166,14 @@ fun EditBookModal(
                     onClick = {
                         onSave(
                             book.copy(
+                                bundleName = state.title,
                                 previewUri = state.previewUri,
                                 bookMetaInfo = book.bookMetaInfo.copy(
-                                    title = state.title,
-                                    fileName = state.title, // TODO когда нибудь добавить валидацию
+                                    title = state.title
                                 )
                             ),
-                            state.changed
+                            state.changed,
+                            state.previewChanged
                         )
                     },
                     shape = RoundedCornerShape(16.dp),

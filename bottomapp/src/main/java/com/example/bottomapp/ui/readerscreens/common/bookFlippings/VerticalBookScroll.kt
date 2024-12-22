@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -19,7 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun VerticalBookScroll(
-    totalPages: Int,
+    totalPages: MutableStateFlow<Int>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
@@ -27,12 +28,13 @@ fun VerticalBookScroll(
     getPage: (Int) -> MutableStateFlow<IBookContent>,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
+    val totalPagesState by totalPages.collectAsState()
 
     Column(modifier = modifier) {
         LazyColumn(
             state = lazyListState,
         ) {
-            items(totalPages, key = { it }) { page ->
+            items(totalPagesState, key = { it }) { page ->
                 Box(
                     Modifier
                         .padding(vertical = 5.dp)

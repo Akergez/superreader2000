@@ -6,10 +6,11 @@ import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorage
 import com.example.bottomapp.backend.BookStorageRepository
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.backend.StorageManager
+import com.example.bottomapp.backend.StorageAdapter
 import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
@@ -26,13 +27,14 @@ class ReaderApp : Application() {
     override fun onCreate() {
         super.onCreate()
         val appModule = module {
-            singleOf(::StorageManager) bind StorageManager::class
+            singleOf(::StorageAdapter) bind StorageAdapter::class
             singleOf(::BookStorage) bind BookStorage::class
+            singleOf(::BookManager) bind BookManager::class
             singleOf(::SettingsManager) bind SettingsManager::class
             singleOf(::BookStorageRepository) bind BookStorageRepository::class
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
             viewModel { SettingsViewModel(get(), get()) }
-            viewModel { HoomeScreenViewModel(get(), get()) }
+            viewModel { HoomeScreenViewModel(get()) }
             viewModel { parameters ->
                 PdfScreenViewModel(
                     get(),

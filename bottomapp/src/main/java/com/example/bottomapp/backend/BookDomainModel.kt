@@ -12,6 +12,6 @@ open class Progress(val formatType: FormatType)
 
 interface BookDomainModel<T> where T : Progress{
     fun readProgress(): T
-    fun saveProgress(progress: T)
-    fun getFile(): File
+    suspend fun saveProgress(progress: T)
+    suspend fun getFile(): File
 }

@@ -6,32 +6,39 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
-import com.example.bottomapp.backend.StorageManager
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val bookStorage: BookStorage,
-    private val storageManager: StorageManager,
+    private val bookManager: BookManager
 ) : ViewModel() {
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
     val hoomeScreenState: StateFlow<HoomeScreenState> = _hoomeScreenState.asStateFlow()
+    private val _books = MutableStateFlow(emptyList<BookStorageEntry>())
+    val books = _books
 
     init {
         viewModelScope.launch {
-            _hoomeScreenState.value = HoomeScreenState(bookStorage.bookCache)
-            bookStorage.saveBooksLinksToStorage()
+            _hoomeScreenState.value = HoomeScreenState()
+            bookManager.saveBookLinks()
+            bookManager.bookFlow.collect {
+                _books.value = it
+            }
+        }
+    }
+
+    fun dumpBooks() {
+        viewModelScope.launch {
+            bookManager.saveBookLinks()
         }
     }
 
@@ -40,13 +47,17 @@ class HoomeScreenViewModel(
         when (val fileType = getFileType(fileName)) {
             FileType.fb2 -> {
                 val bookLink = Fb2Progress(0)
-                bookStorage.addNewBook(uri, fileName, bookLink, fileType)
+                viewModelScope.launch {
+                    bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                }
             }
 
             FileType.pdf -> {
                 val bookLink = PdfProgress(0)
-                bookStorage.addNewBook(uri, fileName, bookLink, fileType)
-                    .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
+                viewModelScope.launch {
+                    bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                        .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
+                }
             }
 
             FileType.unknown -> {
@@ -68,36 +79,47 @@ class HoomeScreenViewModel(
     }
 
     fun clearTemporaryState() {
-        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
+        _hoomeScreenState.value =
+            _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
     }
 
-    fun saveEditedBook(oldBook: BookStorageEntry, newBook: BookStorageEntry) {
-        // Если поменялось имя файла, то поменялся путь => нужно удалить старую Entity из бд
-        // На изменения автора / превью, другое поведение
-        if (oldBook.fileName != newBook.fileName) {
-            CoroutineScope(Dispatchers.IO).launch {
-                bookStorage.renameBookLink(oldBook, newBook)
-            }
-        } else {
-            CoroutineScope(Dispatchers.IO).launch {
-                bookStorage.updateBook(newBook)
-            }
-        }
-    }
-
-    fun onSaveEditModal(oldBook: BookStorageEntry, newBook: BookStorageEntry, changed: Boolean, context: Context) {
+    fun onSaveEditModal(
+        oldBook: BookStorageEntry,
+        newBook: BookStorageEntry,
+        changed: Boolean,
+        previewChanged: Boolean,
+        context: Context
+    ) {
         if (changed) {
-            storageManager.renameBook(oldBook, newBook, context.contentResolver)
-                .onSuccess {
-                    saveEditedBook(oldBook, it)
-                }
-                .onFailure {
-                    Toast
-                        .makeText(context, it.message, Toast.LENGTH_LONG)
-                        .show()
-                }
+            handleBookUpdate(oldBook, newBook, previewChanged, context)
         }
         updateEditingBook(null)
+    }
+
+    private fun handleBookUpdate(
+        oldBook: BookStorageEntry,
+        newBook: BookStorageEntry,
+        previewChanged: Boolean,
+        context: Context
+    ) {
+        var updatedBook = newBook
+        if (previewChanged) {
+            viewModelScope.launch {
+                bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!).onSuccess {
+                    updatedBook = newBook.copy(previewUri = it)
+                }
+            }
+        }
+        if (newBook.bundleName == oldBook.bundleName) {
+            return
+        }
+        viewModelScope.launch {
+            bookManager.renameBook(
+                oldBook.bundleName, updatedBook.bundleName
+            ).onFailure {
+                Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 }
 

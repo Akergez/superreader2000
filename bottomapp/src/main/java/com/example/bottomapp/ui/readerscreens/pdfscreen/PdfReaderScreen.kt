@@ -16,7 +16,7 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
     Scaffold { innerPadding ->
         BookContent(
             currentPage = state.currentPage,
-            totalPages = state.totalPages,
+            totalPages = pdfScreenViewModel.pdfRendererHelper.pagesCount,
             mode = state.mode,
             onPageChange = { pdfScreenViewModel.changePage(it) },
             onToggleMode = { pdfScreenViewModel.switchReaderMode(it) },

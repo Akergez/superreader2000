@@ -33,22 +33,24 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
-import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.backend.StorageManager
+import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
 import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import java.net.URLDecoder
@@ -58,8 +60,7 @@ import java.nio.charset.StandardCharsets
 
 @Composable
 fun MainScreen(
-    storageManager: StorageManager = koinInject(),
-    bookStorage: BookStorage = koinInject(),
+    bookManager: BookManager = koinInject(),
     settingsManager: SettingsManager = koinInject()
 ) {
     val context = LocalContext.current
@@ -75,7 +76,7 @@ fun MainScreen(
                     )
                     settingsManager.saveStorageUri(uri)
                     (context as ComponentActivity).lifecycleScope.launch {
-                        bookStorage.refreshBooksLinks()
+                        bookManager.refreshBooksLinks()
                     }
                 }
             }
@@ -84,93 +85,107 @@ fun MainScreen(
     val navController = rememberNavController()
     val currentTheme by settingsManager.appThemeMode.collectAsState(AppThemeMode.System)
 
-    PDFReaderJetpackComposeTheme(
-        darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme())
-                || currentTheme == AppThemeMode.Dark)
-    ) {
-        NavHost(
-            navController = navController,
-            startDestination = Route.Main,
-
-            enterTransition = { fadeIn(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(300)) }
+    KoinContext() {
+        PDFReaderJetpackComposeTheme(
+            darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme())
+                    || currentTheme == AppThemeMode.Dark)
         ) {
-            composable(Route.Main) {
-                HomeScreen(
-                    onItemClick = { bookLink ->
-                        val encodedFileName = URLEncoder.encode(
-                            bookLink.fileName,
-                            StandardCharsets.UTF_8.toString()
-                        )
-                        navController.navigate("bookReader/$encodedFileName")
-                    },
-                    navController = navController
-                )
-            }
-            composable(Route.Settings) {
-                SettingsScreen(
-                    navController = navController
-                )
-            }
-            composable(
-                "bookReader/{fileName}",
-                enterTransition = {
-                    slideInHorizontally(
-                        initialOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-                exitTransition = {
-                    slideOutHorizontally(
-                        targetOffsetX = { fullWidth -> fullWidth }
-                    )
-                },
-            ) { backStackEntry ->
-                val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    URLDecoder.decode(
-                        backStackEntry.arguments?.getString("fileName"),
-                        StandardCharsets.UTF_8
-                    )
-                } else {
-                    @Suppress("DEPRECATION")
-                    URLDecoder.decode(
-                        backStackEntry.arguments?.getString("fileName")
+            NavHost(
+                navController = navController,
+                startDestination = Route.Main,
+
+                enterTransition = { fadeIn(animationSpec = tween(300)) },
+                exitTransition = { fadeOut(animationSpec = tween(300)) }
+            ) {
+                composable(Route.Main) {
+                    HomeScreen(
+                        onItemClick = { bookLink ->
+                            val encodedFileName = URLEncoder.encode(
+                                bookLink.bundleName,
+                                StandardCharsets.UTF_8.toString()
+                            )
+                            navController.navigate("bookReader/$encodedFileName")
+                        },
+                        navController = navController
                     )
                 }
-                fileName?.let {
-                    val bookLink = bookStorage.bookCache.find { it.fileName == fileName }
-                    if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
-                        bookLink.let {
-                            val pdfBookDomainModel = PdfBookDomainModel(
-                                it.bookMetaInfo,
-                                context,
-                                storageManager = storageManager,
-                                updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
-                                }
-                            )
-
-                            PdfReaderScreen(
-                                pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
-                                    parameters = {
-                                        parametersOf(
-                                            pdfBookDomainModel,
-                                            PdfRendererHelper(pdfBookDomainModel.getFile())
+                composable(Route.Settings) {
+                    SettingsScreen(
+                        navController = navController
+                    )
+                }
+                composable(
+                    "bookReader/{fileName}",
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth }
+                        )
+                    },
+                ) { backStackEntry ->
+                    val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        URLDecoder.decode(
+                            backStackEntry.arguments?.getString("fileName"),
+                            StandardCharsets.UTF_8
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        URLDecoder.decode(
+                            backStackEntry.arguments?.getString("fileName")
+                        )
+                    }
+                    fileName?.let {
+                        val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
+                        if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
+                            bookLink.let {
+                                val pdfBookDomainModel = PdfBookDomainModel(
+                                    updateProgress = { updatedBookLink ->
+                                        bookManager.updateProgress(
+                                            bookLink.bundleName,
+                                            updatedBookLink
                                         )
-                                    })
-                            )
-                        }
-                    } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
-                        bookLink.let {
-                            val book = Fb2BookDomainModel(
-                                it.bookMetaInfo,
-                                context,
-                                storageManager = storageManager,
-                                updateProgress = { updatedBookLink ->
-                                    bookStorage.updateProgress(updatedBookLink)
-                                }
-                            )
-                            Fb2ReaderScreen(book)
+                                    },
+                                    bookMetaInfo = it.bookMetaInfo,
+                                    getFileFromStorage = {
+                                        bookManager.getBookFile(it.bundleName)
+                                            .getOrThrow()
+                                    }
+                                )
 
+                                PdfReaderScreen(
+                                    pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
+                                        parameters = {
+                                            parametersOf(
+                                                pdfBookDomainModel,
+                                                PdfRendererHelper { pdfBookDomainModel.getFile() }
+                                            )
+                                        })
+                                )
+                            }
+                        } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
+                            bookLink.let {
+                                val book = Fb2BookDomainModel(
+                                    it.bookMetaInfo,
+                                    updateProgress = { updatedBookLink ->
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            bookManager.updateProgress(
+                                                bookLink.bundleName,
+                                                updatedBookLink
+                                            )
+                                        }
+                                    },
+                                    getFileFromStorage = {
+                                        bookManager.getBookFile(it.bundleName)
+                                            .getOrThrow()
+                                    }
+                                )
+                                Fb2ReaderScreen(book)
+
+                            }
                         }
                     }
                 }
@@ -210,7 +225,14 @@ fun BottomNavigationBar(
                 Icons.Filled.Settings, contentDescription = null
             )
         },
-            label = { Text(getString(LocalContext.current, R.string.title_settings)) }, // TODO еще картинку поменять
+            label = {
+                Text(
+                    getString(
+                        LocalContext.current,
+                        R.string.title_settings
+                    )
+                )
+            }, // TODO еще картинку поменять
             selected = screen == Screen.SETTINGS_SCREEN,
             onClick = {
                 if (navController.currentDestination?.route != Route.Settings) {

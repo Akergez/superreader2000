@@ -1,6 +1,7 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
@@ -10,6 +11,7 @@ import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class PdfScreenViewModel(
     private val settingsManager: SettingsManager,
@@ -24,7 +26,6 @@ class PdfScreenViewModel(
         val pdfFlipMode = settingsManager.getFlipMode()
         _pdfScreenState.value = PdfScreenState(
             pdfBookDomainModel.readProgress().pageIndex,
-            pdfRendererHelper.getPageCount(),
             ReaderMode.Reading,
             pdfFlipMode,
             docThemeMode
@@ -39,7 +40,7 @@ class PdfScreenViewModel(
         _pdfScreenState.value = _pdfScreenState.value.copy(
             currentPage = newPage,
         )
-        pdfBookDomainModel.saveProgress(PdfProgress(newPage))
+        viewModelScope.launch { pdfBookDomainModel.saveProgress(PdfProgress(newPage)) }
     }
 
     fun updateDocumentThemeMode(docThemeMode: DocThemeMode) {
