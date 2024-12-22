@@ -125,7 +125,8 @@ fun HomeScreen(
                 },
                 onDelete = {
                     hoomeScreenViewModel.onDeleteBooks(book, context)
-                }
+                },
+                selectedCount = selectedBooks.size
             )
         }
     }
@@ -145,7 +146,6 @@ fun HomeScreen(
 private fun getFileType(fileName: String): String {
     return fileName.substringAfterLast('.', "").lowercase()
 }
-
 
 private fun openFilePicker(): Intent {
     return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
