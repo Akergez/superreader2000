@@ -121,6 +121,19 @@ class HoomeScreenViewModel(
             }
         }
     }
+
+    fun onDeleteBooks(
+        book: BookStorageEntry,
+        context: Context
+    ) {
+        viewModelScope.launch {
+            bookManager.deleteBook(book.bundleName)
+                .onFailure {
+                    Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                }
+        }
+        updateSelectedBook(null)
+    }
 }
 
 private fun getFileName(context: Context, uri: Uri): String {

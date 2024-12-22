@@ -113,6 +113,9 @@ fun HomeScreen(
                 onEdit = {
                     hoomeScreenViewModel.updateSelectedBook(null)
                     hoomeScreenViewModel.updateEditingBook(book)
+                },
+                onDelete = {
+                    hoomeScreenViewModel.onDeleteBooks(book, context)
                 }
             )
         }
