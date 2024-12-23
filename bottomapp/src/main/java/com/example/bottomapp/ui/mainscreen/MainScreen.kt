@@ -24,6 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat.getString
 import androidx.lifecycle.lifecycleScope
@@ -64,23 +68,6 @@ fun MainScreen(
     settingsManager: SettingsManager = koinInject()
 ) {
     val context = LocalContext.current
-
-
-    val directoryLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.also { uri ->
-                    context.contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    )
-                    settingsManager.saveStorageUri(uri)
-                    (context as ComponentActivity).lifecycleScope.launch {
-                        bookManager.refreshBooksLinks()
-                    }
-                }
-            }
-        }
 
     val navController = rememberNavController()
     val currentTheme by settingsManager.appThemeMode.collectAsState(AppThemeMode.System)
@@ -192,8 +179,30 @@ fun MainScreen(
             }
         }
     }
+
+    var triggerEffect by remember { mutableIntStateOf(1) }
+
+    val directoryLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { uri ->
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                    settingsManager.saveStorageUri(uri)
+                    (context as ComponentActivity).lifecycleScope.launch {
+                        bookManager.refreshBooksLinks()
+                    }
+                }
+            } else {
+                triggerEffect += 1;
+            }
+        }
+
+
     if (settingsManager.getStorageUri() == null) {
-        LaunchedEffect("storage") {
+        LaunchedEffect("storage_$triggerEffect") {
             // Trigger directory picker in MainActivity
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             directoryLauncher.launch(intent)
