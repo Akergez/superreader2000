@@ -36,6 +36,7 @@
 
     <!--    Settings modal-->
     <string name="apply_inversion">Inverse theme</string>
+    <string name="vertical_scroll">Vertical scroll</string>
 
     <!-- Error messages-->
     <string name="error_book_already_exists">Book already exists</string>

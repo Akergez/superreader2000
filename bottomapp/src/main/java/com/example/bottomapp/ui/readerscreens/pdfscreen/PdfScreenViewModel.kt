@@ -7,6 +7,7 @@ import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
+import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,5 +47,10 @@ class PdfScreenViewModel(
     fun updateDocumentThemeMode(docThemeMode: DocThemeMode) {
         settingsManager.setDocumentsTheme(docThemeMode)
         _pdfScreenState.value = _pdfScreenState.value.copy(docThemeMode = docThemeMode)
+    }
+
+    fun updateFlipMode(flipMode: FlipMode) {
+        settingsManager.setPdfFlipMode(flipMode)
+        _pdfScreenState.value = _pdfScreenState.value.copy(curlMode = flipMode)
     }
 }

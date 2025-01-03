@@ -24,7 +24,8 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
             modifier = Modifier.padding(innerPadding),
             getPage = { pdfScreenViewModel.pdfRendererHelper.openPage(it) },
             documentTheme = state.docThemeMode,
-            updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) }
+            updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
+            updateFlipMode = { pdfScreenViewModel.updateFlipMode(it)}
         )
     }
 }

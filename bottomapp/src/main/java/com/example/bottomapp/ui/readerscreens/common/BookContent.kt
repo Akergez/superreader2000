@@ -42,6 +42,7 @@ fun BookContent(
     getPage: (Int) -> MutableStateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
+    updateFlipMode: (FlipMode) -> Unit
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
     LaunchedEffect(pagerState.current) {
@@ -84,7 +85,7 @@ fun BookContent(
     })
     {
         when (mode) {
-            ReaderMode.Reading -> {
+            ReaderMode.Carousel -> {
                 PageCarousel(
                     totalPages = totalPages,
                     initialPage = currentPage,
@@ -110,12 +111,15 @@ fun BookContent(
                     onApplyInversionToggle = { applyInversion ->
                         updateDocumentThemeMode(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
                     },
-                    applyInversion = documentTheme == DocThemeMode.Invert
+                    applyInversion = documentTheme == DocThemeMode.Invert,
+                    onVerticalScroll = {
+                        updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
+                    },
+                    scrollMode = flipMode
                     )
-
             }
 
-            ReaderMode.Carousel -> {
+            ReaderMode.Reading -> {
                 when (flipMode) {
                     FlipMode.PagingCurl -> com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl(
                         totalPages = totalPages,
