@@ -15,6 +15,7 @@ import com.example.bottomapp.constants.FileType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
@@ -24,6 +25,7 @@ class HoomeScreenViewModel(
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
     val hoomeScreenState: StateFlow<HoomeScreenState> = _hoomeScreenState.asStateFlow()
     private val _books = MutableStateFlow(emptyList<BookStorageEntry>())
+    val selectedBooks = MutableStateFlow(emptyList<BookStorageEntry>())
     val books = _books
 
     init {
@@ -70,8 +72,21 @@ class HoomeScreenViewModel(
         }
     }
 
-    fun updateSelectedBook(book: BookStorageEntry?) {
-        _hoomeScreenState.value = _hoomeScreenState.value.copy(selectedBook = book)
+    fun updateSelectedBook(book: BookStorageEntry) {
+        if (book in selectedBooks.value) {
+            selectedBooks.value = selectedBooks.value.filter { x -> x != book }
+        } else {
+            selectedBooks.value = selectedBooks.value
+            selectedBooks.update { currentList ->
+                currentList.toMutableList().apply {
+                    add(book)
+                }
+            }
+        }
+    }
+
+    fun clearSelectedBooks() {
+        selectedBooks.value = emptyList()
     }
 
     fun updateEditingBook(book: BookStorageEntry?) {
@@ -80,7 +95,8 @@ class HoomeScreenViewModel(
 
     fun clearTemporaryState() {
         _hoomeScreenState.value =
-            _hoomeScreenState.value.copy(editingBook = null, selectedBook = null)
+            _hoomeScreenState.value.copy(editingBook = null)
+        clearSelectedBooks()
     }
 
     fun onSaveEditModal(
@@ -120,6 +136,21 @@ class HoomeScreenViewModel(
                 Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    fun onDeleteBooks(
+        books: List<BookStorageEntry>,
+        context: Context
+    ) {
+        viewModelScope.launch {
+            books.map { book ->
+                bookManager.deleteBook(book.bundleName)
+                    .onFailure {
+                        Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                    }
+            }
+        }
+        clearSelectedBooks()
     }
 }
 

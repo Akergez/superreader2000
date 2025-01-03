@@ -163,6 +163,25 @@ open class StorageManager<T>(
         )
     }
 
+    suspend fun deleteBundle(bundleName: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            Log.i("StorageManager", "Deleting bundle $bundleName")
+            val storageUri = settingsManager.getStorageUri()
+                ?: return@withContext Result.failure(Exception("Storage directory not set"))
+            val storageDir =
+                DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
+                    InvalidStorageDirectoryException()
+                )
+
+            val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
+                Exception("Bundle not found")
+            )
+
+            bundleDir.delete()
+
+            return@withContext Result.success(Unit)
+        }
+
     private fun getPreviewUri(bundleName: String): Result<Uri?> {
         Log.i("StorageManager", "Getting preview for $bundleName")
         val storageUri = settingsManager.getStorageUri()

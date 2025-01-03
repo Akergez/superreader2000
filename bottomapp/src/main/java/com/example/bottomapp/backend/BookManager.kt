@@ -89,6 +89,17 @@ class BookManager(
         _pendingBooksToSave.add(bundleName)
     }
 
+    suspend fun deleteBook(bundleName: String): Result<Unit> {
+        storageManager.deleteBundle(bundleName)
+            .onSuccess {
+                refreshBooksLinks()
+                Result.success(Unit)
+            }.onFailure {
+                Result.failure<Unit>(it.cause!!)
+            }
+        return Result.success(Unit)
+    }
+
     suspend fun renameBook(bundleName: String, newNameForBundle: String): Result<Unit> {
         val meta = bookCache.findBook(bundleName)
             ?: return Result.failure(Exception("Book not found"))
