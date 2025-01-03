@@ -59,7 +59,7 @@ fun SettingsModal(
                         colors = SwitchDefaults.colors()
                     )
                 }
-
+                
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()

@@ -110,7 +110,8 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 getPage = { page -> fb2RenderHelper.value!!.openPage(page) },
                 documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { docThemeMode -> settingsManager.setDocumentsTheme(docThemeMode) },
-                updateFlipMode = { flipMode -> settingsManager.setPdfFlipMode(flipMode)}
+                updateFlipMode = { flipMode -> settingsManager.setPdfFlipMode(flipMode)},
+                onCarouselBack = { mode = ReaderMode.Reading }
             )
         } else {
             Text(getString(LocalContext.current, R.string.loading))

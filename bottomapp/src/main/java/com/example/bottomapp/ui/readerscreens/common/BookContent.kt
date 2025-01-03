@@ -38,6 +38,7 @@ fun BookContent(
     flipMode: FlipMode,
     onPageChange: (Int) -> Unit,
     onToggleMode: (ReaderMode) -> Unit,
+    onCarouselBack: () -> Unit,
     modifier: Modifier = Modifier,
     getPage: (Int) -> MutableStateFlow<IBookContent>,
     documentTheme: DocThemeMode,
@@ -90,6 +91,7 @@ fun BookContent(
                     totalPages = totalPages,
                     initialPage = currentPage,
                     onPageChange = onPageChange,
+                    onBack = { onCarouselBack() },
                     onSettingsClick = {
                         coroutineScope.launch { sheetState.show() }
                     },

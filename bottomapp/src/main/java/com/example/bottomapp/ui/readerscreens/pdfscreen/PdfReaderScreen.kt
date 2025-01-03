@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.example.bottomapp.ui.readerscreens.common.BookContent
+import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 
 @Composable
 fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
@@ -25,7 +26,8 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
             getPage = { pdfScreenViewModel.pdfRendererHelper.openPage(it) },
             documentTheme = state.docThemeMode,
             updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
-            updateFlipMode = { pdfScreenViewModel.updateFlipMode(it)}
+            updateFlipMode = { pdfScreenViewModel.updateFlipMode(it)},
+            onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading)}
         )
     }
 }

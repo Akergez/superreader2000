@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -40,6 +41,7 @@ fun PageCarousel(
     totalPages: MutableStateFlow<Int>,
     onPageChange: (Int) -> Unit,
     onSettingsClick: () -> Job,
+    onBack: () -> Unit,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
@@ -48,6 +50,12 @@ fun PageCarousel(
     val totalPagesState by totalPages.collectAsState()
 
     Column(modifier = modifier) {
+        Row {
+            IconButton(onClick = { onBack() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+        }
+        Spacer(modifier = Modifier.width(8.dp))
         LazyRow(
             modifier = Modifier.weight(0.9f),
             state = lazyListState,
