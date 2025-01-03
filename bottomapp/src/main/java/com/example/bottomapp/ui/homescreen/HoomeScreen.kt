@@ -139,9 +139,10 @@ fun HomeScreen(
         coroutineScope.launch { sheetState.show() }
         EditBookModal(
             onClose = {
-                coroutineScope.launch { sheetState.hide() }
-                hoomeScreenViewModel.updateEditingBook(null)
-                      },
+                coroutineScope.launch {
+                    sheetState.hide()
+                    hoomeScreenViewModel.updateEditingBook(null)
+                } },
             onSave = { updatedBook, changed, previewChanged ->
                 hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
             },
