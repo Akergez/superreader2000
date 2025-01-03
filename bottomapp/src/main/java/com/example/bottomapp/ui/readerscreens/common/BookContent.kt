@@ -33,6 +33,7 @@ import kotlin.math.abs
 @Composable
 fun BookContent(
     currentPage: Int,
+    title: String,
     totalPages: MutableStateFlow<Int>,
     mode: ReaderMode,
     flipMode: FlipMode,
@@ -106,7 +107,8 @@ fun BookContent(
                                 }
                             )
                         },
-                    bookContent = getPage
+                    bookContent = getPage,
+                    title = title
                 )
                 SettingsModal(
                     sheetState = sheetState,

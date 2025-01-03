@@ -37,6 +37,10 @@ class PdfScreenViewModel(
         _pdfScreenState.value = _pdfScreenState.value.copy(mode = newMode)
     }
 
+    fun getTitle():String {
+        return pdfBookDomainModel.title
+    }
+
     fun changePage(newPage: Int) {
         _pdfScreenState.value = _pdfScreenState.value.copy(
             currentPage = newPage,

@@ -1,11 +1,9 @@
 package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -13,7 +11,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -45,15 +42,18 @@ fun PageCarousel(
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
+    title: String
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
 
     Column(modifier = modifier) {
-        Row {
+        Row (verticalAlignment = Alignment.CenterVertically){
             IconButton(onClick = { onBack() }) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(title, style = MaterialTheme.typography.bodyLarge)
         }
         Spacer(modifier = Modifier.width(8.dp))
         LazyRow(
