@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -22,16 +24,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
+import com.example.bottomapp.backend.BookMetaInfo
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.backend.FormatType
+import com.example.bottomapp.backend.Progress
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
@@ -53,6 +58,7 @@ fun HomeScreen(
 ) {
     hoomeScreenViewModel.dumpBooks()
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current
@@ -89,66 +95,85 @@ fun HomeScreen(
         },
         bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            state = lazyListState
-        ) {
-            item {
-                Text(
-                    text = getString(LocalContext.current, R.string.my_books),
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.headlineMedium
-                )
+        var book = BookStorageEntry("", null, "", BookMetaInfo("", Progress(FormatType.PDF)))
+        state.editingBook?.let { b ->
+            book = b
+            coroutineScope.launch {
+                sheetState.show()
             }
-            items(books, key = { it.bundleName }) { bookLink ->
-                val isSelected = bookLink in selectedBooks
-                val isSelectedAny = selectedBooks.isNotEmpty()
-                BookItem(
-                    book = bookLink,
-                    isSelected = isSelected,
-                    onItemClick = { book ->
-                        if (isSelectedAny) {
-                            hoomeScreenViewModel.updateSelectedBook(bookLink)
-                        } else{
-                            onItemClick(book)
-                            hoomeScreenViewModel.clearTemporaryState()
-                        }
+        }
+        ModalBottomSheetLayout(
+            sheetState = sheetState,
+            sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            sheetBackgroundColor = MaterialTheme.colorScheme.surface,
+            sheetContent = {
+                EditBookModal(
+                    onClose = {
+                        coroutineScope.launch { sheetState.hide() }
+                        hoomeScreenViewModel.updateEditingBook(null)
                     },
-                    onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
+                    onSave = { updatedBook, changed, previewChanged ->
+                        hoomeScreenViewModel.onSaveEditModal(
+                            book,
+                            updatedBook,
+                            changed,
+                            previewChanged,
+                            context
+                        )
+                    },
+                    editModalViewModel = koinViewModel(
+                        key = Uuid.random().toString(),
+                        parameters = { parametersOf(book) })
+                )
+            }) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                state = lazyListState
+            ) {
+                item {
+                    Text(
+                        text = getString(LocalContext.current, R.string.my_books),
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+                items(books, key = { it.bundleName }) { bookLink ->
+                    val isSelected = bookLink in selectedBooks
+                    val isSelectedAny = selectedBooks.isNotEmpty()
+                    BookItem(
+                        book = bookLink,
+                        isSelected = isSelected,
+                        onItemClick = { book ->
+                            if (isSelectedAny) {
+                                hoomeScreenViewModel.updateSelectedBook(bookLink)
+                            } else{
+                                onItemClick(book)
+                                hoomeScreenViewModel.clearTemporaryState()
+                            }
+                        },
+                        onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
+                    )
+                }
+            }
+
+            if (selectedBooks.isNotEmpty()) {
+                TopEditBar(
+                    onClose = { hoomeScreenViewModel.clearSelectedBooks() },
+                    onEdit = {
+                        hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
+                        hoomeScreenViewModel.clearSelectedBooks()
+                    },
+                    onDelete = {
+                        hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
+                    },
+                    selectedCount = selectedBooks.size
                 )
             }
-        }
 
-        if (selectedBooks.isNotEmpty()) {
-            TopEditBar(
-                onClose = { hoomeScreenViewModel.clearSelectedBooks() },
-                onEdit = {
-                    hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
-                    hoomeScreenViewModel.clearSelectedBooks()
-                },
-                onDelete = {
-                    hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
-                },
-                selectedCount = selectedBooks.size
-            )
         }
     }
-
-    state.editingBook?.let { book ->
-        CoroutineScope(Dispatchers.Default).launch {
-            sheetState.show()
-        }
-        EditBookModal(
-            onClose = { hoomeScreenViewModel.updateEditingBook(null) },
-            onSave = { updatedBook, changed, previewChanged ->
-                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
-            },
-            editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
-        )
-    }
-
 }
 
 private fun getFileType(fileName: String): String {

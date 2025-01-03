@@ -62,148 +62,139 @@ fun EditBookModal(
                 }
             }
         }
-    val coroutineScope = rememberCoroutineScope()
-    ModalBottomSheetLayout(
-        sheetState = sheetState,
-        sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        sheetBackgroundColor = MaterialTheme.colorScheme.surface,
-        sheetContent = {
-            Column(
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+//                    .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = getString(LocalContext.current, R.string.edit_book),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            OutlinedTextField(
+                value = state.title,
+                onValueChange = { editModalViewModel.updateTitle(it) },
+                label = { Text(getString(LocalContext.current, R.string.book_name)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = state.author,
+                onValueChange = { editModalViewModel.updateAuthor(it) },
+                label = { Text(getString(LocalContext.current, R.string.book_author)) },
                 modifier = Modifier
                     .fillMaxWidth()
-//                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                    .padding(top = 8.dp)
+            )
+
+            // Поле загрузки обложки
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
             ) {
-                Text(
-                    text = getString(LocalContext.current, R.string.edit_book),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                OutlinedTextField(
-                    value = state.title,
-                    onValueChange = { editModalViewModel.updateTitle(it) },
-                    label = { Text(getString(LocalContext.current, R.string.book_name)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = state.author,
-                    onValueChange = { editModalViewModel.updateAuthor(it) },
-                    label = { Text(getString(LocalContext.current, R.string.book_author)) },
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                )
-
-                // Поле загрузки обложки
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                val intent = Intent(Intent.ACTION_PICK).apply {
-                                    type = "image/*"
-                                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-                                }
-                                launcher.launch(intent)
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            val intent = Intent(Intent.ACTION_PICK).apply {
+                                type = "image/*"
+                                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
                             }
-                            .background(
-                                color = MaterialTheme.colorScheme.surface,
-                            )
-                    ) {
-                        AsyncImage(
-                            uri = state.previewUri,
-                            modifier = Modifier.fillMaxSize(),
-                            alpha = 0.5f // Степень затемнения
+                            launcher.launch(intent)
+                        }
+                        .background(
+                            color = MaterialTheme.colorScheme.surface,
                         )
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Icon",
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(24.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Column(modifier = Modifier.padding(start = 16.dp)) {
-                        Text(
-                            text = getString(LocalContext.current, R.string.book_cover),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = getString(LocalContext.current, R.string.book_cover_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = getString(LocalContext.current, R.string.book_cover_formats),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Кнопки
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 24.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            onSave(
-                                book.copy(
-                                    bundleName = state.title,
-                                    previewUri = state.previewUri,
-                                    bookMetaInfo = book.bookMetaInfo.copy(
-                                        title = state.title
-                                    )
-                                ),
-                                state.changed,
-                                state.previewChanged
-                            )
-                        },
-                        shape = RoundedCornerShape(16.dp),
+                    AsyncImage(
+                        uri = state.previewUri,
+                        modifier = Modifier.fillMaxSize(),
+                        alpha = 0.5f // Степень затемнения
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Icon",
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                    ) {
-                        Text(getString(LocalContext.current, R.string.save))
-                    }
-
-                    Button(
-                        onClick = {
-                            coroutineScope.launch { sheetState.hide() }
-                            onClose()
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .padding(top = 8.dp)
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(16.dp)
-                            ),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                    ) {
-                        Text(getString(LocalContext.current, R.string.cancel))
-                    }
+                            .align(Alignment.Center)
+                            .size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Column(modifier = Modifier.padding(start = 16.dp)) {
+                    Text(
+                        text = getString(LocalContext.current, R.string.book_cover),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = getString(LocalContext.current, R.string.book_cover_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = getString(LocalContext.current, R.string.book_cover_formats),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
+            // Кнопки
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onSave(
+                            book.copy(
+                                bundleName = state.title,
+                                previewUri = state.previewUri,
+                                bookMetaInfo = book.bookMetaInfo.copy(
+                                    title = state.title
+                                )
+                            ),
+                            state.changed,
+                            state.previewChanged
+                        )
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                ) {
+                    Text(getString(LocalContext.current, R.string.save))
+                }
+
+                Button(
+                    onClick = {
+                        onClose()
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .padding(top = 8.dp)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                ) {
+                    Text(getString(LocalContext.current, R.string.cancel))
+                }
+            }
         }
-    ) {  }
 }
