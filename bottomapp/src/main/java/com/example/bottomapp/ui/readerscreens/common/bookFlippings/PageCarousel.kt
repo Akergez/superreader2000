@@ -126,8 +126,12 @@ fun PageCarousel(
                 Icon(Icons.Default.List, contentDescription = "Chapters")
             }
 
-            Column {
+            Column (
+            ) {
                 Slider(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .offset(y = 8.dp),
                     value = firstVisibleItemIndex.toFloat(),
                     onValueChange = { newValue ->
                         CoroutineScope(Dispatchers.Main).launch {
@@ -162,6 +166,7 @@ fun PageCarousel(
                 )
 
                 Text(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                     text = "Page ${firstVisibleItemIndex + 1} of $totalPagesState",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground
