@@ -181,11 +181,8 @@ fun EditBookModal(
 
                     Button(
                         onClick = {
-                            onClose()
                             coroutineScope.launch { sheetState.hide() }
-//                            CoroutineScope(Dispatchers.Default).launch {
-//                                sheetState.hide()
-//                            }
+                            onClose()
                         },
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier

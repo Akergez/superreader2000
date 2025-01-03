@@ -12,14 +12,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -33,6 +36,9 @@ import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.ExperimentalUuidApi
@@ -47,6 +53,7 @@ fun HomeScreen(
 ) {
     hoomeScreenViewModel.dumpBooks()
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
+    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current
     Log.d("color", "HomeScreen: ${MaterialTheme.colorScheme.background}")
@@ -130,6 +137,9 @@ fun HomeScreen(
     }
 
     state.editingBook?.let { book ->
+        CoroutineScope(Dispatchers.Default).launch {
+            sheetState.show()
+        }
         EditBookModal(
             onClose = { hoomeScreenViewModel.updateEditingBook(null) },
             onSave = { updatedBook, changed, previewChanged ->
