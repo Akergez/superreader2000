@@ -1,14 +1,18 @@
 package com.example.bottomapp.ui.readerscreens.common.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetState
+import androidx.compose.material.Switch
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -19,6 +23,8 @@ import com.example.bottomapp.R
 @Composable
 fun SettingsModal(
     sheetState: ModalBottomSheetState,
+    onApplyInversionToggle: (Boolean) -> Unit,
+    applyInversion: Boolean,
 ) {
     ModalBottomSheetLayout(
         sheetState = sheetState,
@@ -37,6 +43,18 @@ fun SettingsModal(
                     modifier = Modifier.padding(bottom = 16.dp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Инвертировать тему", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = applyInversion,
+                        onCheckedChange = { onApplyInversionToggle(!applyInversion)  }
+                    )
+                }
 
 
             }

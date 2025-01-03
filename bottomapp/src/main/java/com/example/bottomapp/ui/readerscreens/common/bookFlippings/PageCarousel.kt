@@ -41,7 +41,6 @@ fun PageCarousel(
     onPageChange: (Int) -> Unit,
     onSettingsClick: () -> Job,
     applyInversion: Boolean,
-    onApplyInversionToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
 ) {
@@ -98,12 +97,12 @@ fun PageCarousel(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = if (applyInversion) "Inversion: On" else "Inversion: Off",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.clickable { onApplyInversionToggle(!applyInversion) }
-            )
+//            Text(
+//                text = if (applyInversion) "Inversion: On" else "Inversion: Off",
+//                style = MaterialTheme.typography.bodySmall,
+//                color = MaterialTheme.colorScheme.onBackground,
+//                modifier = Modifier.clickable { onApplyInversionToggle(!applyInversion) }
+//            )
             IconButton(onClick = { onSettingsClick() }) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
             }

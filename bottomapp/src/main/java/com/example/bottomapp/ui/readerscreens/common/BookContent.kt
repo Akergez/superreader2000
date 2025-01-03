@@ -93,9 +93,6 @@ fun BookContent(
                         coroutineScope.launch { sheetState.show() }
                     },
                     applyInversion = documentTheme == DocThemeMode.Invert,
-                    onApplyInversionToggle = { applyInversion ->
-                        updateDocumentThemeMode(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
-                    },
                     modifier = modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
@@ -110,6 +107,10 @@ fun BookContent(
                 )
                 SettingsModal(
                     sheetState = sheetState,
+                    onApplyInversionToggle = { applyInversion ->
+                        updateDocumentThemeMode(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
+                    },
+                    applyInversion = documentTheme == DocThemeMode.Invert
                     )
 
             }
