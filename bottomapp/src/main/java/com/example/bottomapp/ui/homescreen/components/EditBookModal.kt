@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ModalBottomSheetLayout
+import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -49,9 +50,9 @@ import org.koin.compose.koinInject
 fun EditBookModal(
     onClose: () -> Unit,
     onSave: (newBook: BookStorageEntry, changed: Boolean, previewChanged: Boolean) -> Unit,
+    sheetState: ModalBottomSheetState,
     editModalViewModel: EditModalViewModel = koinInject()
 ) {
-    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Expanded)
     val state by editModalViewModel.editModalState.collectAsState()
     val book = editModalViewModel.book
     val launcher =
@@ -62,7 +63,6 @@ fun EditBookModal(
                 }
             }
         }
-    val coroutineScope = rememberCoroutineScope()
     ModalBottomSheetLayout(
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
@@ -181,7 +181,6 @@ fun EditBookModal(
 
                     Button(
                         onClick = {
-                            coroutineScope.launch { sheetState.hide() }
                             onClose()
                         },
                         shape = RoundedCornerShape(16.dp),

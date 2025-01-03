@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -53,7 +54,8 @@ fun HomeScreen(
 ) {
     hoomeScreenViewModel.dumpBooks()
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
-    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
+    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Expanded, skipHalfExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current
     Log.d("color", "HomeScreen: ${MaterialTheme.colorScheme.background}")
@@ -137,14 +139,16 @@ fun HomeScreen(
     }
 
     state.editingBook?.let { book ->
-        CoroutineScope(Dispatchers.Default).launch {
-            sheetState.show()
-        }
+        coroutineScope.launch { sheetState.show() }
         EditBookModal(
-            onClose = { hoomeScreenViewModel.updateEditingBook(null) },
+            onClose = {
+                coroutineScope.launch { sheetState.hide() }
+                hoomeScreenViewModel.updateEditingBook(null)
+                      },
             onSave = { updatedBook, changed, previewChanged ->
                 hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
             },
+            sheetState = sheetState,
             editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
         )
     }
