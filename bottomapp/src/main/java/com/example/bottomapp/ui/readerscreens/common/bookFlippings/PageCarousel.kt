@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,7 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -17,10 +20,12 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
@@ -42,6 +50,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PageCarousel(
     bookContent: (Int) -> MutableStateFlow<IBookContent>,
@@ -127,8 +136,29 @@ fun PageCarousel(
                         }
                     },
                     valueRange = 0f..(totalPagesState - 1).toFloat(), // Диапазон значений
-                    steps = totalPagesState, // Количество шагов между min и max
-                    modifier = Modifier.fillMaxWidth(0.8f)
+                    steps = totalPagesState, // Количество шагов между min и max ,
+                    track = {
+                        Box(
+                            Modifier
+                                .height(2.dp) // Тонкий трек
+                                .fillMaxWidth()
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50),
+                                    ) // Цвет трека
+                        )
+                    },
+                    thumb = {
+                        Box(
+                            Modifier
+                                .size(10.dp)
+                                .offset(y = 3.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(50)
+                                )
+                        )
+                    }
                 )
 
                 Text(
