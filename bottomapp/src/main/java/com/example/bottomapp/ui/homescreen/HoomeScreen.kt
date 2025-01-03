@@ -127,19 +127,17 @@ fun HomeScreen(
                 selectedCount = selectedBooks.size
             )
         }
-
-        state.editingBook?.let { book ->
-            EditBookModal(
-                onClose = { hoomeScreenViewModel.updateEditingBook(null) },
-                onSave = { updatedBook, changed, previewChanged ->
-                    hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
-                },
-                editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
-            )
-        }
     }
 
-
+    state.editingBook?.let { book ->
+        EditBookModal(
+            onClose = { hoomeScreenViewModel.updateEditingBook(null) },
+            onSave = { updatedBook, changed, previewChanged ->
+                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
+            },
+            editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
+        )
+    }
 
 }
 
