@@ -78,7 +78,7 @@ fun PageCarousel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Page ${firstVisibleItemIndex + 1} of $totalPages",
+                text = "Page ${firstVisibleItemIndex + 1} of $totalPagesState",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground
             )
