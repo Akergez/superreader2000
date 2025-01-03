@@ -1,9 +1,12 @@
 package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -11,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -55,7 +59,7 @@ fun PageCarousel(
             Spacer(modifier = Modifier.width(8.dp))
             Text(title, style = MaterialTheme.typography.bodyLarge)
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         LazyRow(
             modifier = Modifier.weight(0.9f),
             state = lazyListState,
@@ -71,7 +75,7 @@ fun PageCarousel(
                             .fillParentMaxWidth(0.9f)
                             .align(Alignment.Center)
                             .shadow(
-                                elevation = 4.dp,
+                                elevation = 8.dp,
                                 shape = RoundedCornerShape(8.dp),
                                 clip = true
                             )
@@ -96,15 +100,20 @@ fun PageCarousel(
         Row(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
+                .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // TODO Верим что появятся главы
+            IconButton(onClick = { onSettingsClick() }) {
+                Icon(Icons.Default.List, contentDescription = "Chapters")
+            }
             Text(
                 text = "Page ${firstVisibleItemIndex + 1} of $totalPagesState",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground
             )
-//            Spacer(modifier = Modifier.width(16.dp))
             IconButton(onClick = { onSettingsClick() }) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
             }
