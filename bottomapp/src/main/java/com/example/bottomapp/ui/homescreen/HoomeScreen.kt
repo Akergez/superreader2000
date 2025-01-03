@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.homescreen
 
+import EditBookModal
 import android.app.Activity
 import android.content.Intent
 import android.util.Log
@@ -29,11 +30,9 @@ import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.ui.homescreen.components.BookItem
-import com.example.bottomapp.ui.homescreen.components.EditBookModal
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
-import kotlinx.coroutines.flow.firstOrNull
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.ExperimentalUuidApi
@@ -128,17 +127,19 @@ fun HomeScreen(
                 selectedCount = selectedBooks.size
             )
         }
+
+        state.editingBook?.let { book ->
+            EditBookModal(
+                onClose = { hoomeScreenViewModel.updateEditingBook(null) },
+                onSave = { updatedBook, changed, previewChanged ->
+                    hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
+                },
+                editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
+            )
+        }
     }
 
-    state.editingBook?.let { book ->
-        EditBookModal(
-            onClose = { hoomeScreenViewModel.updateEditingBook(null) },
-            onSave = { updatedBook, changed, previewChanged ->
-                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
-            },
-            editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
-        )
-    }
+
 
 }
 
