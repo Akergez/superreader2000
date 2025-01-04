@@ -34,12 +34,11 @@ import org.koin.compose.koinInject
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
     var mode by remember { mutableStateOf(ReaderMode.Reading) }
-    var sums by remember { mutableStateOf(listOf<Int>()) }
+    var sums = listOf<Int>()
     val textMeasurer = rememberTextMeasurer()
 
     var componentHeight by remember { mutableIntStateOf(0) }
     var componentWidth by remember { mutableIntStateOf(0) }
-    // get local density from composable
     val density = LocalDensity.current
 
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
@@ -78,14 +77,15 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             componentWidth = it.size.width
         }) {
         if (fb2RenderHelper.value != null) {
-            val totalPages = fb2RenderHelper.value!!.getPageCount().collectAsState()
+            val totalPages = fb2RenderHelper.value!!.pagesCount.collectAsState()
             val curlMode = remember { settingsManager.getFlipMode() }
 
-            sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pageCache.values.toList()) }
+            sums =
+                remember { calculatePrefixSums(fb2RenderHelper.value!!.pageCache.values.map { it.value.text }) }
             val offset = book.readProgress().wordOffset
 
             if (offset > 0) {
-                for (i in 0 until sums.size) {
+                for (i in sums.indices) {
                     if (sums[i] > offset) {
                         currentPage = i - 1
                         break
@@ -95,14 +95,18 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
             BookContent(
                 currentPage = currentPage,
-                totalPages = fb2RenderHelper.value!!.getPageCount(),
+                totalPages = fb2RenderHelper.value!!.pagesCount,
                 mode = mode,
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },
                 flipMode = curlMode,
                 getPage = { page -> fb2RenderHelper.value!!.openPage(page) },
                 documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
-                updateDocumentThemeMode = { docThemeMode -> settingsManager.setDocumentsTheme(docThemeMode) }
+                updateDocumentThemeMode = { docThemeMode ->
+                    settingsManager.setDocumentsTheme(
+                        docThemeMode
+                    )
+                }
             )
         } else {
             Text(getString(LocalContext.current, R.string.loading))
@@ -111,12 +115,15 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
 }
 
-fun calculatePrefixSums(pages: List<String>): List<Int> {
+fun calculatePrefixSums(pages: List<String?>): List<Int> {
     val prefixSums = mutableListOf<Int>()
     var currentSum = 0
 
     for (page in pages) {
         prefixSums.add(currentSum)
+        if (page == null) {
+            break
+        }
         currentSum += page.length
     }
 

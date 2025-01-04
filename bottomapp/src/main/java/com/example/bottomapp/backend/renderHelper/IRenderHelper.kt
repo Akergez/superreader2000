@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface IRenderHelper {
     fun openPage(pageIndex: Int): StateFlow<IBookContent>
-    fun getPageCount(): StateFlow<Int>
     fun close()
     fun getBookType(): FormatType
 }

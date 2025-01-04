@@ -25,58 +25,48 @@ class Fb2RenderHelper(
     private val textMeasurer: TextMeasurer,
     private val fb2File: File
 ) : IRenderHelper {
-    private var cachedContent: String? = null
-    val pageCache = mutableMapOf<Int, String>()
-    private var pagesCount = MutableStateFlow(1)
+    private var cachedContent = listOf<String>()
+    val pageCache = mutableMapOf<Int, StateFlow<Fb2BookContent>>()
+    var pagesCount = MutableStateFlow(1)
     private var isAllPageSliced = false
+    private val lock = Any()
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            cachedContent = parseFb2Content(fb2File)
+            cachedContent = parseFb2Content(fb2File).split(" ", "\r\n", "\n")
+            generatePagesUpTo(1)
         }
-    }
-
-    override fun getPageCount(): StateFlow<Int> {
-        Log.d("Fb2RenderHelper", "GetPageCount return: $pagesCount")
-        return pagesCount
     }
 
     override fun openPage(pageIndex: Int): StateFlow<IBookContent> {
         Log.d("Fb2RenderHelper", "OpenPage: $pageIndex")
-        // Ленивая генерация страниц по требованию
-        generatePagesUpTo(pageIndex)
 
-        val pageText = pageCache[pageIndex]
-
-        CoroutineScope(Dispatchers.IO).launch {
-            generatePagesUpTo(pageIndex + 2)
+        pageCache[pageIndex]?.let {
+            return it
         }
 
-        if (pageText == null && isAllPageSliced) {
+        if (isAllPageSliced) {
             return MutableStateFlow(Fb2BookContent(null))
         }
 
-        return MutableStateFlow(Fb2BookContent(pageText))
+        val pageText = MutableStateFlow(Fb2BookContent(null))
+        pageCache[pageIndex] = pageText
+
+        CoroutineScope(Dispatchers.IO).launch {
+            synchronized(lock) {
+                generatePagesUpTo(pageIndex)
+            }
+        }
+        return pageText
     }
 
     private fun generatePagesUpTo(targetPageIndex: Int) {
         Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
-        // Если страницы уже сгенерированы до нужного индекса, выходим
 
-        if (cachedContent == null) {
-            Log.d("Fb2RenderHelper", "Start Parse book")
-            cachedContent = parseFb2Content(fb2File)
-        }
-
-        if (pageCache.containsKey(targetPageIndex)) {
-            return
-        }
-
-        val words = cachedContent?.split(" ", " ") ?: return
         var currentPage = StringBuilder()
         var currentPageIndex = 0
 
-        for (word in words) {
+        for (word in cachedContent) {
             val testLine = if (currentPage.isEmpty()) word else "$currentPage $word"
 
             val result = textMeasurer.measure(
@@ -94,12 +84,13 @@ class Fb2RenderHelper(
             if (!result.didOverflowHeight) {
                 currentPage.append(if (currentPage.isEmpty()) word else " $word")
             } else {
-                pageCache[currentPageIndex] = currentPage.toString().trim()
+                pageCache[currentPageIndex] =
+                    MutableStateFlow(Fb2BookContent(currentPage.toString().trim()))
                 currentPageIndex++
 
                 if (pagesCount.value == 1) {
                     // примерно считаем, сколько страниц будет в книге
-                    pagesCount.update { words.size / currentPage.split(" ", " ").size }
+                    pagesCount.update { cachedContent.size / currentPage.split(" ", " ").size }
                 }
 
                 // Если достигли нужной страницы, можем остановиться
@@ -117,7 +108,8 @@ class Fb2RenderHelper(
 
         // Добавляем последнюю страницу, если она не пустая
         if (currentPage.isNotEmpty() && currentPageIndex <= targetPageIndex) {
-            pageCache[currentPageIndex] = currentPage.toString().trim()
+            pageCache[currentPageIndex] =
+                MutableStateFlow(Fb2BookContent(currentPage.toString().trim()))
             isAllPageSliced = true
         }
     }
@@ -125,7 +117,6 @@ class Fb2RenderHelper(
     override fun close() {
         Log.d("Fb2RenderHelper", "Clear cache and content")
         pageCache.clear()
-        cachedContent = null
     }
 
     override fun getBookType(): FormatType {
