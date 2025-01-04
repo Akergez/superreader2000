@@ -5,9 +5,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.getString
+import com.example.bottomapp.R
 
 @Composable
 fun Fb2Viewer(
@@ -18,14 +21,16 @@ fun Fb2Viewer(
     offsetX: Float,
     offsetY: Float
 ) {
+
     val backgroundColor = if (applyInversion) Color.Black else Color.White
     val textColor = if (applyInversion) Color.White else Color.Black
-    text?.let {
-        Text(
-            text = text,
-            color = textColor,
-            modifier = Modifier.background(backgroundColor),
-            style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Left),
-        )
-    }
+
+    val textToRender = text ?: getString(LocalContext.current, R.string.loading)
+
+    Text(
+        text = textToRender,
+        color = textColor,
+        modifier = Modifier.background(backgroundColor),
+        style = TextStyle(fontSize = 16.sp, textAlign = TextAlign.Left),
+    )
 }

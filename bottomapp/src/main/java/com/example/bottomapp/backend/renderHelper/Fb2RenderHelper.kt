@@ -54,7 +54,7 @@ class Fb2RenderHelper(
 
         CoroutineScope(Dispatchers.IO).launch {
             synchronized(lock) {
-                generatePagesUpTo(pageIndex)
+                generatePagesUpTo(pageIndex+2)
             }
         }
         return pageText
