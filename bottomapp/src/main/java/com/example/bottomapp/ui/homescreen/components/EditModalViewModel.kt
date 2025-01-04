@@ -23,6 +23,10 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
         _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Not supported")
     }
 
+    fun updateDragging(value: Boolean) {
+        _editModalState.value = _editModalState.value.copy(isDragging = value)
+    }
+
     fun updateTitle(title: String) {
         _editModalState.value = _editModalState.value.copy(title = title, changed = true)
     }

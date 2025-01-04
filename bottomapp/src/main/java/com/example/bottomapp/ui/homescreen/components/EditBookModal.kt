@@ -1,20 +1,26 @@
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetState
 import androidx.compose.material.icons.Icons
@@ -29,10 +35,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
@@ -40,8 +49,11 @@ import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.ui.homescreen.components.AsyncImage
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import org.koin.compose.koinInject
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun EditBookModal(
     onClose: () -> Unit,
@@ -76,12 +88,38 @@ fun EditBookModal(
             }
     }
 
+    var updateDraggingAfterTouch = true
+    var updateDraggingAfterRelease = true
+    LaunchedEffect(sheetState.progress) {
+        val value = sheetState.progress
+        if (value < 1f) {
+            if (updateDraggingAfterTouch){
+                editModalViewModel.updateDragging(true)
+                updateDraggingAfterRelease = true
+            }
+            updateDraggingAfterTouch = false
+        } else {
+            if (updateDraggingAfterRelease) {
+                editModalViewModel.updateDragging(false)
+                updateDraggingAfterTouch = true
+            }
+            updateDraggingAfterRelease = false
+        }
+    }
+
     BackHandler(enabled = sheetState.isVisible) {
         onClose()
     }
 
     ModalBottomSheetLayout(
         sheetState = sheetState,
+//        modifier = Modifier.pointerInput(Unit) {
+//            detectTapGestures(
+//                onPress = {
+//                    editModalViewModel.updateDragging(true)
+//                }
+//            )
+//        },
         sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         sheetBackgroundColor = MaterialTheme.colorScheme.surface,
         sheetContent = {
@@ -91,10 +129,25 @@ fun EditBookModal(
 //                    .align(Alignment.BottomCenter)
                     .padding(16.dp)
             ) {
+                val color = if (state.isDragging) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                Box(
+                    Modifier
+                        .height(3.dp)
+                        .width(25.dp)
+                        .background(
+                            color = color,
+                            shape = RoundedCornerShape(50),
+                        )
+                        .align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = getString(LocalContext.current, R.string.edit_book),
                     style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp),
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+//                        .align(Alignment.CenterHorizontally) // Как по мне слева лучше чем по центру
+                    ,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
@@ -102,7 +155,9 @@ fun EditBookModal(
                     value = state.title,
                     onValueChange = { editModalViewModel.updateTitle(it) },
                     label = { Text(getString(LocalContext.current, R.string.book_name)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-5).dp)
                 )
 
                 OutlinedTextField(
@@ -224,3 +279,5 @@ fun EditBookModal(
         }
     ) {  }
 }
+
+
