@@ -117,7 +117,6 @@ fun HomeScreen(
                     onItemClick = { book ->
                         if (isSelectedAny) {
                             hoomeScreenViewModel.updateSelectedBook(bookLink)
-                            vibrationFeedback(context, 30)
                         } else {
                             onItemClick(book)
                             hoomeScreenViewModel.clearTemporaryState()
