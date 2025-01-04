@@ -3,10 +3,12 @@ package com.example.bottomapp.ui.homescreen
 import EditBookModal
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,7 +43,12 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.example.bottomapp.ui.common.vibrationFeedback
 
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalUuidApi::class)
 @Composable
 fun HomeScreen(
@@ -110,12 +117,16 @@ fun HomeScreen(
                     onItemClick = { book ->
                         if (isSelectedAny) {
                             hoomeScreenViewModel.updateSelectedBook(bookLink)
-                        } else{
+                            vibrationFeedback(context, 30)
+                        } else {
                             onItemClick(book)
                             hoomeScreenViewModel.clearTemporaryState()
                         }
                     },
-                    onLongClick = { hoomeScreenViewModel.updateSelectedBook(bookLink)  }
+                    onLongClick = {
+                        hoomeScreenViewModel.updateSelectedBook(bookLink)
+                        vibrationFeedback(context, 30)
+                    }
                 )
             }
         }
@@ -161,5 +172,13 @@ private fun openFilePicker(): Intent {
     return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
         type = "*/*"
+    }
+}
+
+@Composable
+fun ProvideVibrationFeedback(): () -> Unit {
+    val hapticFeedback = LocalHapticFeedback.current
+    return {
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 }
