@@ -153,6 +153,12 @@ fun HomeScreen(
                     sheetState.hide()
                     hoomeScreenViewModel.updateEditingBook(null)
                 } },
+            onCloseWithVibration = {
+                vibrationFeedback(context, 30)
+                coroutineScope.launch {
+                    sheetState.hide()
+                    hoomeScreenViewModel.updateEditingBook(null)
+                } },
             onSave = { updatedBook, changed, previewChanged ->
                 hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
             },

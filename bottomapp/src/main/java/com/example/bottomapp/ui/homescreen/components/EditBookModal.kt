@@ -45,6 +45,7 @@ import org.koin.compose.koinInject
 @Composable
 fun EditBookModal(
     onClose: () -> Unit,
+    onCloseWithVibration: () -> Unit,
     onSave: (newBook: BookStorageEntry, changed: Boolean, previewChanged: Boolean) -> Unit,
     sheetState: ModalBottomSheetState,
     editModalViewModel: EditModalViewModel = koinInject()
@@ -67,13 +68,12 @@ fun EditBookModal(
         snapshotFlow { sheetState.isVisible }
             .collect { isVisible ->
                 if (!isVisible && shouldOnCloseCall) {
-                    onClose()
+                    onCloseWithVibration()
                     shouldOnCloseCall = false
                 } else if (isVisible) {
                     shouldOnCloseCall = true
                 }
             }
-
     }
 
     BackHandler(enabled = sheetState.isVisible) {
@@ -198,6 +198,7 @@ fun EditBookModal(
 
                     Button(
                         onClick = {
+                            shouldOnCloseCall = false
                             onClose()
                         },
                         shape = RoundedCornerShape(16.dp),
