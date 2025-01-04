@@ -82,24 +82,15 @@ fun EditBookModal(
             }
     }
 
-    val upperStripThresholdHandler = ThresholdHandler(
-        threshold = 1f,
-        onExceeding = {
-            editModalViewModel.updateDragging(false)
-        },
-        onLowering = {
-            editModalViewModel.updateDragging(true)
-        })
-    val vibrationThresholdHandler = ThresholdHandler(
-        threshold = 0.5f,
-        onExceeding = { draggingFeedback() },
-        onLowering = { draggingFeedback() },
-        updateDraggingAfterExceeding = false)
     LaunchedEffect(sheetState.progress) {
-        upperStripThresholdHandler.update(sheetState.progress)
+        editModalViewModel.handleUpperStrip(
+            sheetState.progress,
+            onExceeding = { editModalViewModel.updateDragging(false) },
+            onLowering = { editModalViewModel.updateDragging(true) }
+        )
         if (sheetState.currentValue == ModalBottomSheetValue.Expanded
             && sheetState.targetValue != ModalBottomSheetValue.Hidden)
-            vibrationThresholdHandler.update(sheetState.progress)
+            editModalViewModel.handleVibrationFeedback(sheetState.progress, draggingFeedback, draggingFeedback)
     }
 
     BackHandler(enabled = sheetState.isVisible) {
@@ -266,28 +257,4 @@ fun EditBookModal(
 
         }
     ) {  }
-}
-
-class ThresholdHandler(
-    private val threshold: Float,
-    private val onExceeding: () -> Unit,
-    private val onLowering: () -> Unit,
-    private var updateDraggingAfterLowering:Boolean = true,
-    private var updateDraggingAfterExceeding: Boolean = true) {
-
-    fun update(value: Float) {
-        if (value < threshold) {
-            if (updateDraggingAfterLowering){
-                onLowering()
-                updateDraggingAfterExceeding = true
-            }
-            updateDraggingAfterLowering = false
-        } else {
-            if (updateDraggingAfterExceeding) {
-                onExceeding()
-                updateDraggingAfterLowering = true
-            }
-            updateDraggingAfterExceeding = false
-        }
-    }
 }

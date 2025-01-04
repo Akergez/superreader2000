@@ -151,7 +151,7 @@ fun HomeScreen(
                     sheetState.hide()
                     hoomeScreenViewModel.updateEditingBook(null)
                 } },
-            draggingFeedback = { vibrationFeedback(context, 30) },
+            draggingFeedback = { vibrationFeedback(context, 25) },
             onSave = { updatedBook, changed, previewChanged ->
                 hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
             },
@@ -159,7 +159,6 @@ fun HomeScreen(
             editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
         )
     }
-
 }
 
 private fun getFileType(fileName: String): String {
