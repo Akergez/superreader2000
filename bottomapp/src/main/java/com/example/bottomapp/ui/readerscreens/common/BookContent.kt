@@ -98,6 +98,7 @@ fun BookContent(
                 when (flipMode) {
                     FlipMode.PagingCurl -> com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl(
                         totalPages = totalPages,
+                        onPageChange = onPageChange,
                         currentPage = currentPage,
                         getPage = getPage,
                         documentTheme = documentTheme,
