@@ -25,8 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +58,23 @@ fun EditBookModal(
                 }
             }
         }
+
+    // Без флага он будет вызывать онКлоуз до того как модальное развернется => сбросится книга для редактирования =>
+    // => модальное снова пропадет
+    var shouldOnCloseCall = false
+    LaunchedEffect(sheetState) {
+        snapshotFlow { sheetState.isVisible }
+            .collect { isVisible ->
+                if (!isVisible && shouldOnCloseCall) {
+                    onClose()
+                    shouldOnCloseCall = false
+                } else if (isVisible) {
+                    shouldOnCloseCall = true
+                }
+            }
+
+    }
+
     ModalBottomSheetLayout(
         sheetState = sheetState,
         sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
