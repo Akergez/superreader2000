@@ -34,6 +34,7 @@ import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.ui.common.vibrationFeedback
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
@@ -43,9 +44,6 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import com.example.bottomapp.ui.common.vibrationFeedback
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -153,12 +151,7 @@ fun HomeScreen(
                     sheetState.hide()
                     hoomeScreenViewModel.updateEditingBook(null)
                 } },
-            onCloseWithVibration = {
-                vibrationFeedback(context, 30)
-                coroutineScope.launch {
-                    sheetState.hide()
-                    hoomeScreenViewModel.updateEditingBook(null)
-                } },
+            draggingFeedback = { vibrationFeedback(context, 30) },
             onSave = { updatedBook, changed, previewChanged ->
                 hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
             },
@@ -177,13 +170,5 @@ private fun openFilePicker(): Intent {
     return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
         type = "*/*"
-    }
-}
-
-@Composable
-fun ProvideVibrationFeedback(): () -> Unit {
-    val hapticFeedback = LocalHapticFeedback.current
-    return {
-        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 }

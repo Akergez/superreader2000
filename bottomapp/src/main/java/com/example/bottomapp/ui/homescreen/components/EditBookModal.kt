@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ModalBottomSheetLayout
 import androidx.compose.material.ModalBottomSheetState
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -50,7 +51,7 @@ import org.koin.compose.koinInject
 @Composable
 fun EditBookModal(
     onClose: () -> Unit,
-    onCloseWithVibration: () -> Unit,
+    draggingFeedback: () -> Unit,
     onSave: (newBook: BookStorageEntry, changed: Boolean, previewChanged: Boolean) -> Unit,
     sheetState: ModalBottomSheetState,
     editModalViewModel: EditModalViewModel = koinInject()
@@ -73,7 +74,7 @@ fun EditBookModal(
         snapshotFlow { sheetState.isVisible }
             .collect { isVisible ->
                 if (!isVisible && shouldOnCloseCall) {
-                    onCloseWithVibration()
+                    onClose()
                     shouldOnCloseCall = false
                 } else if (isVisible) {
                     shouldOnCloseCall = true
@@ -89,8 +90,16 @@ fun EditBookModal(
         onLowering = {
             editModalViewModel.updateDragging(true)
         })
+    val vibrationThresholdHandler = ThresholdHandler(
+        threshold = 0.5f,
+        onExceeding = { draggingFeedback() },
+        onLowering = { draggingFeedback() },
+        updateDraggingAfterExceeding = false)
     LaunchedEffect(sheetState.progress) {
         upperStripThresholdHandler.update(sheetState.progress)
+        if (sheetState.currentValue == ModalBottomSheetValue.Expanded
+            && sheetState.targetValue != ModalBottomSheetValue.Hidden)
+            vibrationThresholdHandler.update(sheetState.progress)
     }
 
     BackHandler(enabled = sheetState.isVisible) {
@@ -262,10 +271,9 @@ fun EditBookModal(
 class ThresholdHandler(
     private val threshold: Float,
     private val onExceeding: () -> Unit,
-    private val onLowering: () -> Unit) {
-
-    private var updateDraggingAfterLowering = true
-    private var updateDraggingAfterExceeding = true
+    private val onLowering: () -> Unit,
+    private var updateDraggingAfterLowering:Boolean = true,
+    private var updateDraggingAfterExceeding: Boolean = true) {
 
     fun update(value: Float) {
         if (value < threshold) {
