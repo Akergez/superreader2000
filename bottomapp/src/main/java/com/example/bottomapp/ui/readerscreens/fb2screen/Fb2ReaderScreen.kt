@@ -44,7 +44,6 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val density = LocalDensity.current
 
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-    val isLoaded = remember { mutableStateOf(false) }
 
     LaunchedEffect(componentHeight, fb2File) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -61,8 +60,6 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                     textMeasurer,
                     fb2File.value!!
                 )
-                //fb2RenderHelper.value!!.Init()
-                isLoaded.value = true
             }
         }
     }
@@ -70,9 +67,9 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val onPageChange = { newPage: Int ->
         if (sums.isNotEmpty() && newPage > 0) {
             currentPage = newPage
-/*            CoroutineScope(Dispatchers.IO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 book.saveProgress(Fb2Progress(sums[newPage]))
-            }*/
+            }
         }
         if (newPage == 0) {
             currentPage = 0
@@ -85,10 +82,11 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             componentHeight = it.size.height
             componentWidth = it.size.width
         }) {
-        if (isLoaded.value) {
+        if (fb2RenderHelper.value != null) {
+            val totalPages = fb2RenderHelper.value!!.getPageCount().collectAsState()
             val curlMode = remember { settingsManager.getFlipMode() }
 
-           // sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pages) }
+            sums = remember { calculatePrefixSums(fb2RenderHelper.value!!.pageCache.values.toList()) }
             val offset = book.readProgress().wordOffset
 
             if (offset > 0) {
@@ -102,7 +100,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
             BookContent(
                 currentPage = currentPage,
-                totalPages = fb2RenderHelper.value!!.pagesCount,
+                totalPages = fb2RenderHelper.value!!.getPageCount(),
                 mode = mode,
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },

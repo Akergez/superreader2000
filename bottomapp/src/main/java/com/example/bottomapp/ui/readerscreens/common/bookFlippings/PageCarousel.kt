@@ -24,11 +24,12 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun PageCarousel(
-    bookContent: (Int) -> MutableStateFlow<IBookContent>,
-    totalPages: MutableStateFlow<Int>,
+    bookContent: (Int) -> StateFlow<IBookContent>,
+    totalPages: StateFlow<Int>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     onApplyInversionToggle: (Boolean) -> Unit,

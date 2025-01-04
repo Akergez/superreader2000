@@ -9,9 +9,12 @@ import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import com.example.bottomapp.ui.readerscreens.IBookContent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.w3c.dom.Node
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
@@ -22,13 +25,24 @@ class Fb2RenderHelper(
     private val textMeasurer: TextMeasurer,
     private val fb2File: File
 ) : IRenderHelper {
-
-    val pagesCount = MutableStateFlow<Int>(0)
     private var cachedContent: String? = null
-    private val pageCache = mutableMapOf<Int, String>()
+    public val pageCache = mutableMapOf<Int, String>()
+    private var pagesCount = MutableStateFlow(1)
     private var isAllPageSliced = false
 
-    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            cachedContent = parseFb2Content(fb2File)
+        }
+    }
+
+    override fun getPageCount(): StateFlow<Int> {
+        Log.d("Fb2RenderHelper", "GetPageCount return: $pagesCount")
+        return pagesCount
+    }
+
+    override fun openPage(pageIndex: Int): StateFlow<IBookContent> {
+        Log.d("Fb2RenderHelper", "OpenPage: $pageIndex")
         // Ленивая генерация страниц по требованию
         generatePagesUpTo(pageIndex)
 
@@ -42,11 +56,7 @@ class Fb2RenderHelper(
     }
 
     private fun generatePagesUpTo(targetPageIndex: Int) {
-        // Если контент еще не загружен, загружаем
-        if (cachedContent == null) {
-            cachedContent = parseFb2Content(fb2File)
-        }
-
+        Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
         // Если страницы уже сгенерированы до нужного индекса, выходим
         if (pageCache.containsKey(targetPageIndex)) {
             return
@@ -77,7 +87,7 @@ class Fb2RenderHelper(
                 pageCache[currentPageIndex] = currentPage.toString().trim()
                 currentPageIndex++
 
-                if (pagesCount.value == 1) {
+                if (pagesCount.value == 2) {
                     // примерно считаем, сколько страниц будет в книге
                     pagesCount.update { words.size / currentPage.split(" ", " ").size }
                 }
@@ -103,6 +113,7 @@ class Fb2RenderHelper(
     }
 
     override fun close() {
+        Log.d("Fb2RenderHelper", "Clear cache and content")
         pageCache.clear()
         cachedContent = null
     }

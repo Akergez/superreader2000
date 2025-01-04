@@ -17,7 +17,7 @@ import java.io.File
 
 class PdfRendererHelper(pdfFile: suspend () -> File) : IRenderHelper {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
-    val pagesCount = MutableStateFlow(0)
+    private val pagesCount = MutableStateFlow(0)
     private val bitmapCache = mutableMapOf<Int, MutableStateFlow<IBookContent>>()
     private val lock = Any()
 
@@ -51,6 +51,10 @@ class PdfRendererHelper(pdfFile: suspend () -> File) : IRenderHelper {
             }
         }
         return bitmapStateFlow
+    }
+
+    override fun getPageCount(): StateFlow<Int> {
+        return pagesCount
     }
 
     override fun close() {

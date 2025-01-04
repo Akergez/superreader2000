@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -13,17 +14,20 @@ import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlin.math.log
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
 fun PageCurl(
-    totalPages: MutableStateFlow<Int>,
+    totalPages: StateFlow<Int>,
     currentPage: Int,
-    getPage: (Int) -> MutableStateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
+    Log.d("dasds", pagerState.current.toString())
     val totalPagesState by totalPages.collectAsState()
     eu.wewox.pagecurl.page.PageCurl(
         count = totalPagesState,
