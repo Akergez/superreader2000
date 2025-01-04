@@ -1,3 +1,4 @@
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -27,14 +28,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import java.io.File
 
 
 @Composable
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
     var mode by remember { mutableStateOf(ReaderMode.Reading) }
-    val fb2File = remember { mutableStateOf<File?>(null) }
     var sums by remember { mutableStateOf(listOf<Int>()) }
     val textMeasurer = rememberTextMeasurer()
 
@@ -44,21 +43,17 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val density = LocalDensity.current
 
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-
-    LaunchedEffect(componentHeight, fb2File) {
+    Log.d("fb2ReaderScreen", "$currentPage $mode $sums $componentHeight $componentWidth")
+    LaunchedEffect(componentHeight) {
+        Log.d("fb2ReaderScreen", "$componentHeight")
         CoroutineScope(Dispatchers.IO).launch {
-            fb2File.value = book.getFile()
-        }
-        if(fb2File.value == null) {
-            return@LaunchedEffect
-        }
-        launch(Dispatchers.IO) {
+            val fb2File = book.getFile()
             if (componentHeight != 0) {
                 fb2RenderHelper.value = Fb2RenderHelper(
                     componentWidth - (density.density * 16).toInt(),
                     componentHeight - (density.density * 16).toInt(),
                     textMeasurer,
-                    fb2File.value!!
+                    fb2File
                 )
             }
         }
@@ -90,7 +85,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             val offset = book.readProgress().wordOffset
 
             if (offset > 0) {
-                for (i in 0..sums.size) {
+                for (i in 0 until sums.size) {
                     if (sums[i] > offset) {
                         currentPage = i - 1
                         break

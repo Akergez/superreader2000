@@ -26,7 +26,7 @@ class Fb2RenderHelper(
     private val fb2File: File
 ) : IRenderHelper {
     private var cachedContent: String? = null
-    public val pageCache = mutableMapOf<Int, String>()
+    val pageCache = mutableMapOf<Int, String>()
     private var pagesCount = MutableStateFlow(1)
     private var isAllPageSliced = false
 
@@ -48,6 +48,10 @@ class Fb2RenderHelper(
 
         val pageText = pageCache[pageIndex]
 
+        CoroutineScope(Dispatchers.IO).launch {
+            generatePagesUpTo(pageIndex + 2)
+        }
+
         if (pageText == null && isAllPageSliced) {
             return MutableStateFlow(Fb2BookContent(null))
         }
@@ -58,6 +62,12 @@ class Fb2RenderHelper(
     private fun generatePagesUpTo(targetPageIndex: Int) {
         Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
         // Если страницы уже сгенерированы до нужного индекса, выходим
+
+        if (cachedContent == null) {
+            Log.d("Fb2RenderHelper", "Start Parse book")
+            cachedContent = parseFb2Content(fb2File)
+        }
+
         if (pageCache.containsKey(targetPageIndex)) {
             return
         }
@@ -87,7 +97,7 @@ class Fb2RenderHelper(
                 pageCache[currentPageIndex] = currentPage.toString().trim()
                 currentPageIndex++
 
-                if (pagesCount.value == 2) {
+                if (pagesCount.value == 1) {
                     // примерно считаем, сколько страниц будет в книге
                     pagesCount.update { words.size / currentPage.split(" ", " ").size }
                 }
