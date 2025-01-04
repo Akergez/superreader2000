@@ -26,7 +26,7 @@ class Fb2RenderHelper(
     private val fb2File: File
 ) : IRenderHelper {
     private var cachedContent = listOf<String>()
-    val pageCache = mutableMapOf<Int, StateFlow<Fb2BookContent>>()
+    val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
     var pagesCount = MutableStateFlow(1)
     private var isAllPageSliced = false
     private val lock = Any()
@@ -54,7 +54,7 @@ class Fb2RenderHelper(
 
         CoroutineScope(Dispatchers.IO).launch {
             synchronized(lock) {
-                generatePagesUpTo(pageIndex+2)
+                generatePagesUpTo(pageIndex + 2)
             }
         }
         return pageText
@@ -62,6 +62,10 @@ class Fb2RenderHelper(
 
     private fun generatePagesUpTo(targetPageIndex: Int) {
         Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
+
+        if (pageCache[targetPageIndex]?.value?.text != null) {
+            return
+        }
 
         var currentPage = StringBuilder()
         var currentPageIndex = 0
@@ -84,12 +88,11 @@ class Fb2RenderHelper(
             if (!result.didOverflowHeight) {
                 currentPage.append(if (currentPage.isEmpty()) word else " $word")
             } else {
-                pageCache[currentPageIndex] =
-                    MutableStateFlow(Fb2BookContent(currentPage.toString().trim()))
+                addOrUpdatePage(currentPageIndex, currentPage.toString().trim())
                 currentPageIndex++
 
                 if (pagesCount.value == 1) {
-                    // примерно считаем, сколько страниц будет в книге
+                    // Примерно считаем, сколько страниц будет в книге
                     pagesCount.update { cachedContent.size / currentPage.split(" ", " ").size }
                 }
 
@@ -106,11 +109,17 @@ class Fb2RenderHelper(
             }
         }
 
-        // Добавляем последнюю страницу, если она не пустая
         if (currentPage.isNotEmpty() && currentPageIndex <= targetPageIndex) {
-            pageCache[currentPageIndex] =
-                MutableStateFlow(Fb2BookContent(currentPage.toString().trim()))
+            addOrUpdatePage(currentPageIndex,currentPage.toString().trim())
             isAllPageSliced = true
+        }
+    }
+
+    private fun addOrUpdatePage(index: Int, text: String) {
+        if (pageCache.containsKey(index)) {
+            pageCache[index]!!.value = Fb2BookContent(text)
+        } else {
+            pageCache[index] = MutableStateFlow(Fb2BookContent(text))
         }
     }
 

@@ -27,9 +27,7 @@ fun BookPage(
     offsetY: Float = 0f
 ) {
     val content by bookContent.collectAsState()
-    Box(
-        modifier = modifier
-    ) {
+    Box(modifier = modifier) {
         when (content) {
             is PdfBookContent -> {
                 val pdfContent = content as PdfBookContent

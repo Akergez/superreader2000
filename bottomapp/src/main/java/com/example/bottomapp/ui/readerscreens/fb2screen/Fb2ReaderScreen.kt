@@ -42,7 +42,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val density = LocalDensity.current
 
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-    Log.d("fb2ReaderScreen", "$currentPage $mode $sums $componentHeight $componentWidth")
+
     LaunchedEffect(componentHeight) {
         Log.d("fb2ReaderScreen", "$componentHeight")
         CoroutineScope(Dispatchers.IO).launch {
@@ -103,9 +103,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 getPage = { page -> fb2RenderHelper.value!!.openPage(page) },
                 documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { docThemeMode ->
-                    settingsManager.setDocumentsTheme(
-                        docThemeMode
-                    )
+                    settingsManager.setDocumentsTheme(docThemeMode)
                 }
             )
         } else {
