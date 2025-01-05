@@ -1,10 +1,8 @@
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +32,6 @@ import org.koin.compose.koinInject
 fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager = koinInject()) {
     var currentPage by remember { mutableIntStateOf(0) }
     var mode by remember { mutableStateOf(ReaderMode.Reading) }
-    var sums = listOf<Int>()
     val textMeasurer = rememberTextMeasurer()
 
     var componentHeight by remember { mutableIntStateOf(0) }
@@ -44,7 +41,6 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
 
     LaunchedEffect(componentHeight) {
-        Log.d("fb2ReaderScreen", "$componentHeight")
         CoroutineScope(Dispatchers.IO).launch {
             val fb2File = book.getFile()
             if (componentHeight != 0) {
@@ -55,19 +51,37 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                     fb2File
                 )
             }
+            val offset = book.readProgress().wordOffset
+
+            if (offset > 0) {
+                var index = 0
+                while (true) {
+                    val wordsCount = fb2RenderHelper.value!!.pageWordSum
+
+                    // если страница прогрузилась
+                    if (wordsCount.size > index) {
+                        if (wordsCount[index] > offset) {
+                            currentPage = index
+                            break
+                        }
+                    } else {
+                        fb2RenderHelper.value!!.openPage(index)
+                        continue
+                    }
+                    index += 1
+                }
+            }
         }
     }
 
-    val onPageChange = { newPage: Int ->
-        if (sums.isNotEmpty() && newPage > 0) {
-            currentPage = newPage
+    val onPageChange = { pageIndex: Int ->
+        val wordsCount = fb2RenderHelper.value!!.pageWordSum
+        if (wordsCount.size > pageIndex) {
             CoroutineScope(Dispatchers.IO).launch {
-                book.saveProgress(Fb2Progress(sums[newPage]))
+                book.saveProgress(Fb2Progress(wordsCount[pageIndex]))
             }
         }
-        if (newPage == 0) {
-            currentPage = 0
-        }
+        currentPage = pageIndex
     }
 
     Box(modifier = Modifier
@@ -77,21 +91,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             componentWidth = it.size.width
         }) {
         if (fb2RenderHelper.value != null) {
-            val totalPages = fb2RenderHelper.value!!.pagesCount.collectAsState()
             val curlMode = remember { settingsManager.getFlipMode() }
-
-            sums =
-                remember { calculatePrefixSums(fb2RenderHelper.value!!.pageCache.values.map { it.value.text }) }
-            val offset = book.readProgress().wordOffset
-
-            if (offset > 0) {
-                for (i in sums.indices) {
-                    if (sums[i] > offset) {
-                        currentPage = i - 1
-                        break
-                    }
-                }
-            }
 
             BookContent(
                 currentPage = currentPage,
@@ -103,7 +103,9 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 getPage = { page -> fb2RenderHelper.value!!.openPage(page) },
                 documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { docThemeMode ->
-                    settingsManager.setDocumentsTheme(docThemeMode)
+                    settingsManager.setDocumentsTheme(
+                        docThemeMode
+                    )
                 }
             )
         } else {
@@ -112,19 +114,3 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     }
 
 }
-
-fun calculatePrefixSums(pages: List<String?>): List<Int> {
-    val prefixSums = mutableListOf<Int>()
-    var currentSum = 0
-
-    for (page in pages) {
-        prefixSums.add(currentSum)
-        if (page == null) {
-            break
-        }
-        currentSum += page.length
-    }
-
-    return prefixSums
-}
-

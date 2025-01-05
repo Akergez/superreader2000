@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.w3c.dom.Node
 import java.io.File
+import java.util.LinkedList
+import java.util.Queue
 import javax.xml.parsers.DocumentBuilderFactory
 
 class Fb2RenderHelper(
@@ -25,16 +27,21 @@ class Fb2RenderHelper(
     private val textMeasurer: TextMeasurer,
     private val fb2File: File
 ) : IRenderHelper {
-    private var cachedContent = listOf<String>()
+    private var cachedContent: Queue<String>? = null
     val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
+    val pageWordSum = mutableListOf<Int>()
     var pagesCount = MutableStateFlow(1)
+    private var currentPage = StringBuilder()
+    private var lastSlicedPageIndex = 0
     private var isAllPageSliced = false
     private val lock = Any()
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            cachedContent = parseFb2Content(fb2File).split(" ", "\r\n", "\n")
-            generatePagesUpTo(1)
+            cachedContent = LinkedList(parseFb2Content(fb2File).split(" ", "\r\n", "\n"))
+            synchronized(lock) {
+                generatePagesUpTo(1)
+            }
         }
     }
 
@@ -46,15 +53,16 @@ class Fb2RenderHelper(
         }
 
         if (isAllPageSliced) {
-            return MutableStateFlow(Fb2BookContent(null))
+            return MutableStateFlow(Fb2BookContent(""))
         }
 
         val pageText = MutableStateFlow(Fb2BookContent(null))
-        pageCache[pageIndex] = pageText
-
         CoroutineScope(Dispatchers.IO).launch {
             synchronized(lock) {
-                generatePagesUpTo(pageIndex + 2)
+                if (pageCache[pageIndex]?.value?.text == null) {
+                    pageCache[pageIndex] = pageText
+                    generatePagesUpTo(pageIndex)
+                }
             }
         }
         return pageText
@@ -63,14 +71,12 @@ class Fb2RenderHelper(
     private fun generatePagesUpTo(targetPageIndex: Int) {
         Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
 
-        if (pageCache[targetPageIndex]?.value?.text != null) {
+        if (pageCache[targetPageIndex]?.value?.text != null || cachedContent.isNullOrEmpty()) {
             return
         }
 
-        var currentPage = StringBuilder()
-        var currentPageIndex = 0
-
-        for (word in cachedContent) {
+        while (true) {
+            val word = cachedContent!!.remove()
             val testLine = if (currentPage.isEmpty()) word else "$currentPage $word"
 
             val result = textMeasurer.measure(
@@ -88,29 +94,29 @@ class Fb2RenderHelper(
             if (!result.didOverflowHeight) {
                 currentPage.append(if (currentPage.isEmpty()) word else " $word")
             } else {
-                addOrUpdatePage(currentPageIndex, currentPage.toString().trim())
-                currentPageIndex++
+                addOrUpdatePage(lastSlicedPageIndex, currentPage.toString().trim())
+                lastSlicedPageIndex++
 
                 if (pagesCount.value == 1) {
                     // Примерно считаем, сколько страниц будет в книге
-                    pagesCount.update { cachedContent.size / currentPage.split(" ", " ").size }
-                }
-
-                // Если достигли нужной страницы, можем остановиться
-                if (currentPageIndex > targetPageIndex) {
-                    if (currentPageIndex >= pagesCount.value) {
-                        pagesCount.update { pagesCount.value + 1 }
-                    }
-                    break
+                    pagesCount.update { cachedContent!!.size / currentPage.split(" ", " ").size }
                 }
 
                 currentPage = StringBuilder()
                 currentPage.append(word)
+
+                // Если достигли нужной страницы, можем остановиться
+                if (lastSlicedPageIndex > targetPageIndex) {
+                    if (lastSlicedPageIndex >= pagesCount.value) {
+                        pagesCount.update { pagesCount.value + 1 }
+                    }
+                    break
+                }
             }
         }
 
-        if (currentPage.isNotEmpty() && currentPageIndex <= targetPageIndex) {
-            addOrUpdatePage(currentPageIndex,currentPage.toString().trim())
+        if (currentPage.isNotEmpty() && lastSlicedPageIndex <= targetPageIndex) {
+            addOrUpdatePage(lastSlicedPageIndex, currentPage.toString().trim())
             isAllPageSliced = true
         }
     }
@@ -120,6 +126,12 @@ class Fb2RenderHelper(
             pageCache[index]!!.value = Fb2BookContent(text)
         } else {
             pageCache[index] = MutableStateFlow(Fb2BookContent(text))
+        }
+        val wordsPerPage = text.split(" ").size
+        if (index > 0) {
+            pageWordSum.add(index, pageWordSum[index - 1] + wordsPerPage)
+        } else {
+            pageWordSum.add(index, wordsPerPage)
         }
     }
 
