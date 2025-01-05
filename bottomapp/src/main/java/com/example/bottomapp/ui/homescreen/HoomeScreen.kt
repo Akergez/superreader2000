@@ -4,7 +4,6 @@ import EditBookModal
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,10 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,13 +25,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
-import com.example.bottomapp.ui.common.vibrationFeedback
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
@@ -54,23 +52,21 @@ fun HomeScreen(
     hoomeScreenViewModel: HoomeScreenViewModel = koinViewModel(),
     navController: NavController
 ) {
-    hoomeScreenViewModel.dumpBooks()
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
-    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Expanded, skipHalfExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current
-    Log.d("color", "HomeScreen: ${MaterialTheme.colorScheme.background}")
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val type = getFileType(result.data?.data.toString());
+                val type = getFileType(result.data?.data.toString())
                 when (type) {
                     "pdf", "fb2" -> {
-                        result.data?.data?.also { uri ->
+                        result.data?.data?.let { uri ->
                             hoomeScreenViewModel.addBook(uri, context)
                         }
                     }
+
                     else -> {
                         Toast.makeText(
                             context,
@@ -83,12 +79,15 @@ fun HomeScreen(
         }
     val books by hoomeScreenViewModel.books.collectAsState()
     val selectedBooks by hoomeScreenViewModel.selectedBooks.collectAsState()
+    val haptic = LocalHapticFeedback.current
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { launcher.launch(openFilePicker()) })
-            {
-                Icon(Icons.Filled.Add, contentDescription = getString(LocalContext.current, R.string.add_book))
+            FloatingActionButton(onClick = { launcher.launch(openFilePicker()) }) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = getString(LocalContext.current, R.string.add_book)
+                )
             }
         },
         bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) }
@@ -122,7 +121,7 @@ fun HomeScreen(
                     },
                     onLongClick = {
                         hoomeScreenViewModel.updateSelectedBook(bookLink)
-                        vibrationFeedback(context, 30)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                 )
             }
@@ -144,19 +143,26 @@ fun HomeScreen(
     }
 
     state.editingBook?.let { book ->
-        coroutineScope.launch { sheetState.show() }
         EditBookModal(
             onClose = {
                 coroutineScope.launch {
-                    sheetState.hide()
                     hoomeScreenViewModel.updateEditingBook(null)
-                } },
-            draggingFeedback = { vibrationFeedback(context, 25) },
-            onSave = { updatedBook, changed, previewChanged ->
-                hoomeScreenViewModel.onSaveEditModal(book, updatedBook, changed, previewChanged, context)
+                }
             },
-            sheetState = sheetState,
-            editModalViewModel = koinViewModel(key = Uuid.random().toString(), parameters = { parametersOf(book) })
+            onSave = { updatedBook, changed, previewChanged ->
+                hoomeScreenViewModel.onSaveEditModal(
+                    book,
+                    updatedBook,
+                    changed,
+                    previewChanged,
+                    context
+                )
+            },
+            editModalViewModel = koinViewModel(
+                key = Uuid.random().toString(),
+                parameters = { parametersOf(book) }
+            ),
+            isVisible = true
         )
     }
 }

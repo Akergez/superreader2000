@@ -1,5 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.common
 
+import android.util.Log
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
@@ -9,10 +10,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
@@ -36,6 +40,7 @@ fun BookContent(
     documentTheme: DocThemeMode,
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
 ) {
+    Log.d("BookContent", "mode = $mode, flipMode = $flipMode, currentPage = $currentPage")
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
     LaunchedEffect(pagerState.current) {
         onPageChange(pagerState.current)
@@ -44,27 +49,37 @@ fun BookContent(
     var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
+    val haptic = LocalHapticFeedback.current
 
-    // Preload next and previous pages
-    val transformGesturesHandler = { _: Offset, pan: Offset, zoom: Float, _: Float ->
-        val newScale = zoom * scale
+    val actualMode = rememberUpdatedState(mode)
+    val transformGesturesHandler =
+        { _: Offset, pan: Offset, zoom: Float, _: Float ->
+            val newScale = zoom * scale
 
-        if (abs(newScale - 1f) < 0.5f
-            || (mode == ReaderMode.Zoom && offsetX + pan.x == 0f)
-        ) {
-            if (mode != ReaderMode.Reading)
-                onToggleMode(ReaderMode.Reading)
-        } else if (newScale < 0.5f) {
-            if (mode != ReaderMode.Carousel)
-                onToggleMode(ReaderMode.Carousel)
-        } else {
-            if (mode != ReaderMode.Zoom)
-                onToggleMode(ReaderMode.Zoom)
+            if (abs(newScale - 1f) < 0.5f
+                || (actualMode.value == ReaderMode.Zoom && offsetX + pan.x == 0f)
+            ) {
+                if (actualMode.value != ReaderMode.Reading) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleMode(ReaderMode.Reading)
+                }
+            } else if (newScale < 0.5f) {
+                if (actualMode.value != ReaderMode.Carousel) {
+                    Log.d("BookContent", "Updating mode from ${actualMode.value} to Carousel")
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleMode(ReaderMode.Carousel)
+                }
+            } else {
+                if (actualMode.value != ReaderMode.Zoom) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleMode(ReaderMode.Zoom)
+                }
+            }
+            scale = (scale * zoom)
+            offsetX += pan.x
+            offsetY += pan.y
         }
-        scale = (scale * zoom)
-        offsetX += pan.x
-        offsetY += pan.y
-    }
+
 
     Box(modifier = modifier.pointerInput(Unit) {
         detectTransformGestures { centroid, pan, zoom, rotation ->
