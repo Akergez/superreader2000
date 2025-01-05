@@ -1,3 +1,4 @@
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
 
@@ -51,8 +53,12 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                     fb2File
                 )
             }
-            val offset = book.readProgress().wordOffset
+        }
+    }
 
+    LaunchedEffect(fb2RenderHelper.value) {
+        if (fb2RenderHelper.value != null) {
+            val offset = book.readProgress().wordOffset
             if (offset > 0) {
                 var index = 0
                 while (true) {
@@ -61,11 +67,13 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                     // если страница прогрузилась
                     if (wordsCount.size > index) {
                         if (wordsCount[index] > offset) {
-                            currentPage = index
+                            withContext(Dispatchers.Main) {
+                                currentPage = 10
+                            }
                             break
                         }
                     } else {
-                        fb2RenderHelper.value!!.openPage(index)
+                        fb2RenderHelper.value!!.openPage(index + 1)
                         continue
                     }
                     index += 1
@@ -92,7 +100,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
         }) {
         if (fb2RenderHelper.value != null) {
             val curlMode = remember { settingsManager.getFlipMode() }
-
+            Log.d("Fb2ReaderScreen", "$currentPage")
             BookContent(
                 currentPage = currentPage,
                 totalPages = fb2RenderHelper.value!!.pagesCount,
