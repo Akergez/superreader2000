@@ -28,9 +28,9 @@ class Fb2RenderHelper(
     private val fb2File: File
 ) : IRenderHelper {
     private var cachedContent: Queue<String>? = null
-    val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
+    private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
     val pageWordSum = mutableListOf<Int>()
-    var pagesCount = MutableStateFlow(1)
+    var pagesCount = MutableStateFlow(100)
     private var currentPage = StringBuilder()
     private var lastSlicedPageIndex = 0
     private var isAllPageSliced = false
@@ -39,9 +39,6 @@ class Fb2RenderHelper(
     init {
         CoroutineScope(Dispatchers.IO).launch {
             cachedContent = LinkedList(parseFb2Content(fb2File).split(" ", "\r\n", "\n"))
-            synchronized(lock) {
-                generatePagesUpTo(1)
-            }
         }
     }
 
@@ -59,7 +56,7 @@ class Fb2RenderHelper(
         val pageText = MutableStateFlow(Fb2BookContent(null))
         CoroutineScope(Dispatchers.IO).launch {
             synchronized(lock) {
-                if (pageCache[pageIndex]?.value?.text == null) {
+                if (pageCache[pageIndex] == null || pageCache[pageIndex]?.value?.text == null) {
                     pageCache[pageIndex] = pageText
                     generatePagesUpTo(pageIndex)
                 }
@@ -71,7 +68,11 @@ class Fb2RenderHelper(
     private fun generatePagesUpTo(targetPageIndex: Int) {
         Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
 
-        if (pageCache[targetPageIndex]?.value?.text != null || cachedContent.isNullOrEmpty()) {
+        if(cachedContent.isNullOrEmpty()){
+            cachedContent = LinkedList(parseFb2Content(fb2File).split(" ", "\r\n", "\n"))
+        }
+
+        if (pageCache[targetPageIndex]?.value?.text != null) {
             return
         }
 
@@ -123,10 +124,11 @@ class Fb2RenderHelper(
 
     private fun addOrUpdatePage(index: Int, text: String) {
         if (pageCache.containsKey(index)) {
-            pageCache[index]!!.value = Fb2BookContent(text)
+            pageCache[index]!!.update {  Fb2BookContent(text)}
         } else {
             pageCache[index] = MutableStateFlow(Fb2BookContent(text))
         }
+
         val wordsPerPage = text.split(" ").size
         if (index > 0) {
             pageWordSum.add(index, pageWordSum[index - 1] + wordsPerPage)

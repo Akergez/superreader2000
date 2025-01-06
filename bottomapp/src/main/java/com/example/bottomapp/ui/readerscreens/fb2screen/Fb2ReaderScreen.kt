@@ -25,8 +25,8 @@ import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
 
@@ -35,6 +35,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     var currentPage by remember { mutableIntStateOf(0) }
     var mode by remember { mutableStateOf(ReaderMode.Reading) }
     val textMeasurer = rememberTextMeasurer()
+    var isStartPageLoaded by remember {  mutableStateOf(false) }
 
     var componentHeight by remember { mutableIntStateOf(0) }
     var componentWidth by remember { mutableIntStateOf(0) }
@@ -58,38 +59,47 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
 
     LaunchedEffect(fb2RenderHelper.value) {
         if (fb2RenderHelper.value != null) {
-            val offset = book.readProgress().wordOffset
-            if (offset > 0) {
-                var index = 0
-                while (true) {
-                    val wordsCount = fb2RenderHelper.value!!.pageWordSum
+            CoroutineScope(Dispatchers.Main).launch {
+                val offset = book.readProgress().wordOffset
+                if (offset > 0) {
+                    var index = 0
+                    var startLoading = false
+                    while (true) {
+                        val wordsCount = fb2RenderHelper.value!!.pageWordSum
 
-                    // если страница прогрузилась
-                    if (wordsCount.size > index) {
-                        if (wordsCount[index] > offset) {
-                            withContext(Dispatchers.Main) {
-                                currentPage = 10
+                        // если страница прогрузилась
+                        if (wordsCount.size > index) {
+                            startLoading = false
+                            if (wordsCount[index] > offset) {
+                                currentPage = index
+                                break
                             }
-                            break
+                        } else {
+                            if (!startLoading) {
+                                fb2RenderHelper.value!!.openPage(index + 1)
+                                startLoading = true
+                            }
+                            delay(50)
+                            continue
                         }
-                    } else {
-                        fb2RenderHelper.value!!.openPage(index + 1)
-                        continue
+                        index += 1
                     }
-                    index += 1
                 }
+                isStartPageLoaded = true
             }
         }
     }
 
     val onPageChange = { pageIndex: Int ->
-        val wordsCount = fb2RenderHelper.value!!.pageWordSum
-        if (wordsCount.size > pageIndex) {
-            CoroutineScope(Dispatchers.IO).launch {
-                book.saveProgress(Fb2Progress(wordsCount[pageIndex]))
+        if (false) {
+            val wordsCount = fb2RenderHelper.value!!.pageWordSum
+            if (wordsCount.size > pageIndex) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    book.saveProgress(Fb2Progress(wordsCount[pageIndex]))
+                }
             }
+            currentPage = pageIndex
         }
-        currentPage = pageIndex
     }
 
     Box(modifier = Modifier
@@ -98,7 +108,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             componentHeight = it.size.height
             componentWidth = it.size.width
         }) {
-        if (fb2RenderHelper.value != null) {
+        if (fb2RenderHelper.value != null && isStartPageLoaded) {
             val curlMode = remember { settingsManager.getFlipMode() }
             Log.d("Fb2ReaderScreen", "$currentPage")
             BookContent(
@@ -120,5 +130,4 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             Text(getString(LocalContext.current, R.string.loading))
         }
     }
-
 }
