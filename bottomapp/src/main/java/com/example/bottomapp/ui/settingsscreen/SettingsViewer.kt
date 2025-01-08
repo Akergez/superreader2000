@@ -215,7 +215,7 @@ fun <TEnum> ThemeSelector(
                 label = {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
