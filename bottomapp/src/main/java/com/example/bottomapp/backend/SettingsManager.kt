@@ -35,6 +35,11 @@ class SettingsManager(context: Context) {
         return sharedPreferences.getString(key, null)
     }
 
+    fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
+        val setting = getSetting(appThemeKey) ?: return defaultTheme
+        return AppThemeMode.valueOf(setting)
+    }
+
     fun setAppTheme(theme: AppThemeMode) {
         saveSetting(appThemeKey, theme.name)
         _appThemeMode.value = theme

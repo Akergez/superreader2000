@@ -26,8 +26,9 @@ class SettingsViewModel(
         val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
         val pdfFlipMode = settingsManager.getFlipMode()
         val storageAddress = settingsManager.getStorageUri()?.lastPathSegment
+        val appThemeMode = settingsManager.getAppTheme(AppThemeMode.System)
         _settingsState.value =
-            SettingsScreenState(storageAddress.toString(), docThemeMode, pdfFlipMode)
+            SettingsScreenState(storageAddress.toString(), docThemeMode, pdfFlipMode, appThemeMode)
     }
 
     private val viewModelJob = SupervisorJob()
