@@ -6,7 +6,7 @@
     <string name="title_settings">Настройки</string>
     <string name="add_book">Добавить книгу</string>
     <string name="my_books">Мои книги</string>
-    <string name="title_storage_address">Адрес ранилища</string>
+    <string name="title_storage_address">Адрес хранилища</string>
     <string name="paging_mode">Режим листания</string>
     <string name="app_theme">Тема приложения</string>
     <string name="documents_theme">Тема документов</string>
@@ -18,6 +18,8 @@
     <string name="paging_mode_classic">Классический</string>
     <string name="paging_mode_vertical">Вертикальный</string>
     <string name="loading">Загрузка, подождите немного</string>
+    <string name="settings_group_general">Общие настройки</string>
+    <string name="settings_group_documents">Просмотр документов</string>
 
     <!-- Commons-->
     <string name="save">Сохранить</string>

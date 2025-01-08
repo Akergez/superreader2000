@@ -7,21 +7,38 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
@@ -54,14 +71,18 @@ fun SettingsScreen(
             }
         }
 
-
     Scaffold(bottomBar = { BottomNavigationBar(navController, Screen.SETTINGS_SCREEN) }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding(),
+                    start = 15.dp,
+                    end = 15.dp)
         ) {
-            SettingRow(
+            SettingsGroup(getString(LocalContext.current, R.string.settings_group_general))
+
+            ThemeSelector(
                 getString(LocalContext.current, R.string.app_theme),
                 mapOf(
                     AppThemeMode.Light to getString(LocalContext.current, R.string.app_theme_light),
@@ -73,7 +94,27 @@ fun SettingsScreen(
                 settingsViewModel.updateAppThemeMode(mode)
             }
 
-            SettingRow(
+            SettingsOption(getString(LocalContext.current, R.string.title_storage_address))
+            Row(Modifier.padding(vertical = 8.dp)) {
+                Text(
+                    text = settings.storageAddress,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier
+                        .combinedClickable(
+                            onClick = {
+                                directoryLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                            }
+                        )
+                        .padding(start = 8.dp)
+                )
+            }
+
+            Row(Modifier.padding(32.dp)) {
+            }
+
+            SettingsGroup(getString(LocalContext.current, R.string.settings_group_documents))
+
+            ThemeSelector(
                 getString(LocalContext.current, R.string.documents_theme),
                 mapOf(
                     DocThemeMode.AsIs to getString(LocalContext.current, R.string.documents_theme_as_is),
@@ -84,11 +125,7 @@ fun SettingsScreen(
                 settingsViewModel.updateDocThemeMode(mode)
             }
 
-            Row(Modifier.padding(32.dp)) {
-
-            }
-
-            SettingRow(
+            ThemeSelector(
                 getString(LocalContext.current, R.string.paging_mode),
                 mapOf(
                     FlipMode.PagingCurl to getString(LocalContext.current, R.string.paging_mode_classic),
@@ -98,26 +135,28 @@ fun SettingsScreen(
             ) { mode ->
                 settingsViewModel.updateFlipMode(mode)
             }
-
-            Row(Modifier.padding(32.dp)) {
-            }
-
-            Text(getString(LocalContext.current, R.string.title_storage_address), style = MaterialTheme.typography.headlineMedium)
-            Row(Modifier.padding(vertical = 8.dp)) {
-                Text(
-                    text = settings.storageAddress,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .combinedClickable(
-                            onClick = {
-                                directoryLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
-                            }
-                        )
-                        .padding(start = 8.dp)
-                )
-            }
         }
     }
+}
+
+@Composable
+fun SettingsGroup(name: String) {
+    Text(
+        text = name,
+        style = MaterialTheme.typography.headlineLarge,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentSize(Alignment.Center)
+            .padding(vertical = 10.dp)
+    )
+}
+
+@Composable
+fun SettingsOption(name: String) {
+    Text(name, style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(vertical = 10.dp) )
 }
 
 @Composable
@@ -142,4 +181,75 @@ fun <TEnum> SettingRow(
     }
 }
 
+
+@Composable
+fun <TEnum> ThemeSelector(
+    title: String,
+    values: Map<TEnum, String>,
+    selectedTheme: TEnum,
+    onThemeChange: (TEnum) -> Unit
+) {
+    SettingsOption(title)
+
+    Row(
+        modifier = Modifier
+            .padding(0.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(1000.dp)
+            )
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = RoundedCornerShape(1000.dp)
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        values.forEach { value ->
+            val isSelected = value.key == selectedTheme
+            TextButton(
+                onClick = { onThemeChange(value.key) },
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                    else Color.Transparent,
+                    contentColor = if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.weight(1f).border(
+                    width = if (isSelected) 2.dp else 0.dp,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.outline
+                    else
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0f),
+                    shape = RoundedCornerShape(1000.dp))
+            ) {
+                Text(
+                    text = value.value,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // Добавляем троеточие, если текст не вмещается
+
+                )
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewThemeSelector() {
+    var selectedTheme by remember { mutableStateOf(AppThemeMode.System) }
+
+    ThemeSelector(
+        "what",
+        values =
+        mapOf(
+            AppThemeMode.Light to "app_theme_light",
+            AppThemeMode.Dark to "app_theme_dark",
+            AppThemeMode.System to "app_theme_system"
+        ),
+        selectedTheme = selectedTheme,
+        onThemeChange = { selectedTheme = it }
+    )
+}
 

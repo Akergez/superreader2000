@@ -25,7 +25,7 @@ class SettingsViewModel(
     init {
         val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
         val pdfFlipMode = settingsManager.getFlipMode()
-        val storageAddress = settingsManager.getStorageUri()
+        val storageAddress = settingsManager.getStorageUri()?.lastPathSegment
         _settingsState.value =
             SettingsScreenState(storageAddress.toString(), docThemeMode, pdfFlipMode)
     }
@@ -52,9 +52,7 @@ class SettingsViewModel(
     }
 
     fun updateAppThemeMode(appThemeMode: AppThemeMode) {
-        uiScope.launch {
-            settingsManager.setAppTheme(appThemeMode)
-        }
+        settingsManager.setAppTheme(appThemeMode)
         _settingsState.value = _settingsState.value.copy(appThemeMode = appThemeMode)
     }
 }
