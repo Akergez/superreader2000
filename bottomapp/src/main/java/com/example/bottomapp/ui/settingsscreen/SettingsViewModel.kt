@@ -49,7 +49,7 @@ class SettingsViewModel(
         uiScope.launch {
             bookManager.refreshBooksLinks()
         }
-        _settingsState.value = _settingsState.value.copy(storageAddress = storageAddress.toString())
+        _settingsState.value = _settingsState.value.copy(storageAddress = settingsManager.getStorageUri()?.lastPathSegment.toString())
     }
 
     fun updateAppThemeMode(appThemeMode: AppThemeMode) {

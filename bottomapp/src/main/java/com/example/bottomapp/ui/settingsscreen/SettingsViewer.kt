@@ -24,6 +24,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -38,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
@@ -85,9 +89,9 @@ fun SettingsScreen(
             ThemeSelector(
                 getString(LocalContext.current, R.string.app_theme),
                 mapOf(
+                    AppThemeMode.System to getString(LocalContext.current, R.string.app_theme_system),
                     AppThemeMode.Light to getString(LocalContext.current, R.string.app_theme_light),
-                    AppThemeMode.Dark to getString(LocalContext.current, R.string.app_theme_dark),
-                    AppThemeMode.System to getString(LocalContext.current, R.string.app_theme_system)
+                    AppThemeMode.Dark to getString(LocalContext.current, R.string.app_theme_dark)
                 ),
                 settings.appThemeMode
             ) { mode ->
@@ -181,7 +185,6 @@ fun <TEnum> SettingRow(
     }
 }
 
-
 @Composable
 fun <TEnum> ThemeSelector(
     title: String,
@@ -191,46 +194,33 @@ fun <TEnum> ThemeSelector(
 ) {
     SettingsOption(title)
 
-    Row(
-        modifier = Modifier
-            .padding(0.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(1000.dp)
-            )
-            .border(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.outline,
-                shape = RoundedCornerShape(1000.dp)
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        values.forEach { value ->
-            val isSelected = value.key == selectedTheme
-            TextButton(
-                onClick = { onThemeChange(value.key) },
-                colors = ButtonDefaults.textButtonColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    else Color.Transparent,
-                    contentColor = if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier.weight(1f).border(
-                    width = if (isSelected) 2.dp else 0.dp,
-                    color = if (isSelected)
-                        MaterialTheme.colorScheme.outline
-                    else
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0f),
-                    shape = RoundedCornerShape(1000.dp))
-            ) {
-                Text(
-                    text = value.value,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // Добавляем троеточие, если текст не вмещается
+    val options = values.values.toList()
+    val selectedIndex = remember { mutableStateOf(options.indexOf(values[selectedTheme])) }
 
-                )
-            }
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier.padding(0.dp)
+    ) {
+        options.forEachIndexed { index, label ->
+            SegmentedButton(
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = options.size
+                ),
+                onClick = {
+                    selectedIndex.value = index
+                    val selectedValue = values.keys.toList()[index]
+                    onThemeChange(selectedValue)
+                },
+                selected = index == selectedIndex.value,
+                label = {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            )
         }
     }
 }
