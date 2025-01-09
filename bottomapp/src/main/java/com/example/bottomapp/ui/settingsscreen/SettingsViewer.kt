@@ -72,8 +72,8 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding(),
                     bottom = innerPadding.calculateBottomPadding(),
-                    start = 15.dp,
-                    end = 15.dp)
+                    start = 20.dp,
+                    end = 20.dp)
         ) {
             SettingsGroup(getString(LocalContext.current, R.string.settings_group_general))
 
@@ -100,7 +100,7 @@ fun SettingsScreen(
                                 directoryLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
                             }
                         )
-                        .padding(start = 8.dp)
+                        .padding(bottom = 15.dp)
                 )
             }
 
@@ -155,28 +155,6 @@ fun SettingsOption(name: String) {
 }
 
 @Composable
-fun <TEnum> SettingRow(
-    title: String,
-    values: Map<TEnum, String>,
-    selectedValue: TEnum,
-    onValueChange: (TEnum) -> Unit
-) {
-    Text(title, style = MaterialTheme.typography.headlineMedium)
-    Row(Modifier.padding(vertical = 8.dp)) {
-        values.forEach { value ->
-            RadioButton(
-                selected = selectedValue == value.key,
-                onClick = { onValueChange(value.key) })
-            Text(text = value.value,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier
-                    .clickable { onValueChange(value.key) }
-                    .padding(start = 8.dp))
-        }
-    }
-}
-
-@Composable
 fun <TEnum> ThemeSelector(
     title: String,
     values: Map<TEnum, String>,
@@ -188,7 +166,7 @@ fun <TEnum> ThemeSelector(
     val options = values.values.toList()
     var selectedIndex by remember { mutableStateOf(options.indexOf(values[selectedTheme])) }
 
-    SingleChoiceSegmentedButtonRow{
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(bottom = 15.dp)){
         options.forEachIndexed { index, label ->
             SegmentedButton(
                 shape = SegmentedButtonDefaults.itemShape(

@@ -6,9 +6,9 @@
     <string name="title_settings">Настройки</string>
     <string name="add_book">Добавить книгу</string>
     <string name="my_books">Мои книги</string>
-    <string name="title_storage_address">Адрес хранилища</string>
+    <string name="title_storage_address">Место сохранения</string>
     <string name="paging_mode">Режим листания</string>
-    <string name="app_theme">Тема приложения</string>
+    <string name="app_theme">Тема</string>
     <string name="documents_theme">Тема документов</string>
     <string name="documents_theme_as_is">Оригинал</string>
     <string name="documents_theme_invert">Негатив</string>
