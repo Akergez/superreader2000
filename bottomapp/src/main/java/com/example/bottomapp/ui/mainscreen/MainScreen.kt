@@ -212,15 +212,16 @@ fun MainScreen(
     if (settingsManager.getStorageUri() == null && isDialogVisible) {
         StorageSelectionDialog(
             onDismiss = {
-                isDialogVisible = false // Закрыть диалог
+                isDialogVisible = false
             },
             onChoose = {
                 triggerEffect++
-                isDialogVisible = false // Закрыть диалог
-                isNextScreenVisible = true // Показать следующий экран или другую функцию
+                isDialogVisible = false
+                isNextScreenVisible = true
             }
         )
     }
+
     LaunchedEffect("storage_$triggerEffect") {
         if (isNextScreenVisible) {
             isNextScreenVisible = false
