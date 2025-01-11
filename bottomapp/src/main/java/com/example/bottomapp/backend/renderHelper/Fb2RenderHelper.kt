@@ -58,7 +58,7 @@ class Fb2RenderHelper(
             synchronized(lock) {
                 if (pageCache[pageIndex] == null || pageCache[pageIndex]?.value?.text == null) {
                     pageCache[pageIndex] = pageText
-                    generatePagesUpTo(pageIndex)
+                    generatePagesUpTo(pageIndex+2)
                 }
             }
         }
