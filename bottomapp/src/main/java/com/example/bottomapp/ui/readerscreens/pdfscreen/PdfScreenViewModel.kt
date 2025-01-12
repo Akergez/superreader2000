@@ -12,6 +12,7 @@ import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PdfScreenViewModel(
@@ -34,7 +35,7 @@ class PdfScreenViewModel(
     }
 
     fun switchReaderMode(newMode: ReaderMode) {
-        _pdfScreenState.value = _pdfScreenState.value.copy(mode = newMode)
+        _pdfScreenState.update { it.copy(mode = newMode) }
     }
 
     fun getTitle():String {
@@ -42,15 +43,17 @@ class PdfScreenViewModel(
     }
 
     fun changePage(newPage: Int) {
-        _pdfScreenState.value = _pdfScreenState.value.copy(
-            currentPage = newPage,
-        )
+        _pdfScreenState.update {
+            it.copy(
+                currentPage = newPage,
+            )
+        }
         viewModelScope.launch { pdfBookDomainModel.saveProgress(PdfProgress(newPage)) }
     }
 
     fun updateDocumentThemeMode(docThemeMode: DocThemeMode) {
         settingsManager.setDocumentsTheme(docThemeMode)
-        _pdfScreenState.value = _pdfScreenState.value.copy(docThemeMode = docThemeMode)
+        _pdfScreenState.update { it.copy(docThemeMode = docThemeMode) }
     }
 
     fun updateFlipMode(flipMode: FlipMode) {

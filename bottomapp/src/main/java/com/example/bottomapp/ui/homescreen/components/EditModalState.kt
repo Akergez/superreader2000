@@ -10,4 +10,5 @@ data class EditModalState (
     val author: String = NotSupportedMessage,
     val changed: Boolean = false,
     val previewChanged: Boolean = false,
+    val isDragging: Boolean = false
 )

@@ -15,14 +15,6 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
         _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, NotSupportedMessage)
     }
 
-    fun initState(book: BookStorageEntry) {
-        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, NotSupportedMessage)
-    }
-
-    fun resetState(book: BookStorageEntry) {
-        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, "Not supported")
-    }
-
     fun updateTitle(title: String) {
         _editModalState.value = _editModalState.value.copy(title = title, changed = true)
     }
