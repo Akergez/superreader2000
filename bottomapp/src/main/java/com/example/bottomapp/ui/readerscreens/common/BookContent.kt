@@ -5,8 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.core.view.WindowCompat
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.renderHelper.TOCEntry
 import com.example.bottomapp.ui.readerscreens.IBookContent
@@ -93,7 +98,6 @@ fun BookContent(
             offsetY += pan.y
         }
 
-
     Box(modifier = modifier.pointerInput(Unit) {
         detectTransformGestures { centroid, pan, zoom, rotation ->
             transformGesturesHandler(centroid, pan, zoom, rotation)
@@ -121,10 +125,10 @@ fun BookContent(
                     bookContent = getPage,
                     title = title,
                     onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
-                    onChaptersClick = {onToggleMode(ReaderMode.Chapters)}
+                    onChaptersClick = { onToggleMode(ReaderMode.Chapters) }
                 )
-                if(showSettingsModal.value) {
-                    if(showSettingsModal.value) {
+                if (showSettingsModal.value) {
+                    if (showSettingsModal.value) {
                         SettingsModal(
                             onApplyInversionToggle = {
                                 updateDocumentThemeMode(if (it) DocThemeMode.Invert else DocThemeMode.AsIs)
@@ -161,16 +165,21 @@ fun BookContent(
             }
 
             ReaderMode.Zoom -> {
-                BookPage(
-                    bookContent = getPage(currentPage),
-                    applyInversion = documentTheme == DocThemeMode.Invert,
-                    modifier = modifier
-                        .basePageBoxModifier(),
-                    scale = scale,
-                    offsetX = offsetX,
-                    offsetY = offsetY
-                )
+                Scaffold { inner ->
+                    BookPage(
+                        bookContent = getPage(currentPage),
+                        applyInversion = documentTheme == DocThemeMode.Invert,
+                        modifier = modifier
+                            .padding(inner)
+                            .fillMaxSize()
+                            .consumeWindowInsets(inner),
+                        scale = scale,
+                        offsetX = offsetX,
+                        offsetY = offsetY
+                    )
+                }
             }
+
 
             ReaderMode.Chapters -> ChapterScreen(
                 onChapterClick = {

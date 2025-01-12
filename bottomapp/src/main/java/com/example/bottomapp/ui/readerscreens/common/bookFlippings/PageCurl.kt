@@ -1,5 +1,12 @@
 package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,19 +32,26 @@ fun PageCurl(
 ) {
     val pagerState = rememberPageCurlState(initialCurrent = currentPage)
     val totalPagesState by totalPages.collectAsState()
-    eu.wewox.pagecurl.page.PageCurl(
-        count = totalPagesState,
-        state = pagerState,
-        config = rememberPageCurlConfig(
-            backPageContentAlpha = 0.5f,
-            backPageColor = Color.Black
-        ),
-    ) { index ->
-        BookPage(
-            bookContent = getPage(index),
-            applyInversion = documentTheme == DocThemeMode.Invert,
+    Scaffold { innerPadding ->
+        eu.wewox.pagecurl.page.PageCurl(
+            count = totalPagesState,
+            state = pagerState,
+            config = rememberPageCurlConfig(
+                backPageContentAlpha = 0.5f,
+                backPageColor = Color.Black
+            ),
             modifier = modifier
-                .basePageBoxModifier(),
-        )
+                .fillMaxSize()
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .systemBarsPadding()
+        ) { index ->
+            BookPage(
+                bookContent = getPage(index),
+                applyInversion = documentTheme == DocThemeMode.Invert,
+                modifier = modifier
+                    .basePageBoxModifier(),
+            )
+        }
     }
 }

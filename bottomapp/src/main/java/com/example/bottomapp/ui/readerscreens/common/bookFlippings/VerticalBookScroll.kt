@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,37 +31,39 @@ fun VerticalBookScroll(
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
 
-    Column(modifier = modifier) {
-        LazyColumn(
-            state = lazyListState,
-        ) {
-            items(totalPagesState, key = { it }) { page ->
-                Box(
-                    Modifier
-                        .padding(vertical = 5.dp)
-                ) {
-                    Card(
+    Scaffold { innerPadding ->
+        Column(modifier = modifier.padding(innerPadding)) {
+            LazyColumn(
+                state = lazyListState,
+            ) {
+                items(totalPagesState, key = { it }) { page ->
+                    Box(
                         Modifier
-                            .fillParentMaxHeight()
+                            .padding(vertical = 5.dp)
                     ) {
-                        BookPage(
-                            applyInversion = applyInversion,
-                            bookContent = getPage(page)
-                        )
+                        Card(
+                            Modifier
+                                .fillParentMaxHeight()
+                        ) {
+                            BookPage(
+                                applyInversion = applyInversion,
+                                bookContent = getPage(page)
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // Emit page change when the page is scrolled
-        val firstVisibleItemIndex by remember {
-            derivedStateOf { lazyListState.firstVisibleItemIndex }
-        }
+            // Emit page change when the page is scrolled
+            val firstVisibleItemIndex by remember {
+                derivedStateOf { lazyListState.firstVisibleItemIndex }
+            }
 
-        // Synchronize the page change
-        LaunchedEffect(firstVisibleItemIndex) {
-            onPageChange(firstVisibleItemIndex)
-        }
+            // Synchronize the page change
+            LaunchedEffect(firstVisibleItemIndex) {
+                onPageChange(firstVisibleItemIndex)
+            }
 
+        }
     }
 }
