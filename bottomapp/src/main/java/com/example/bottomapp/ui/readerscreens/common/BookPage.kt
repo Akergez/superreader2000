@@ -43,7 +43,7 @@ fun BookPage(
             is Fb2BookContent -> {
                 val fb2BookContent = content as Fb2BookContent
                 Fb2Viewer(
-                    text = fb2BookContent.text,
+                    content = fb2BookContent,
                     applyInversion = applyInversion,
                     scale = scale,
                     offsetX = offsetX,
