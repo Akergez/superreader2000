@@ -1,20 +1,17 @@
 package com.example.bottomapp.ui.readerscreens.common
 
-import androidx.compose.foundation.background
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -26,11 +23,9 @@ import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
-import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -55,10 +50,6 @@ fun BookContent(
     LaunchedEffect(pagerState.current) {
         onPageChange(pagerState.current)
     }
-
-    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
-
 
     var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
     var offsetX by remember { mutableFloatStateOf(0f) }
@@ -108,9 +99,6 @@ fun BookContent(
                     initialPage = currentPage,
                     onPageChange = onPageChange,
                     onBack = { onCarouselBack() },
-                    onSettingsClick = {
-                        coroutineScope.launch { sheetState.show() }
-                    },
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
                         .fillMaxSize()
@@ -123,19 +111,12 @@ fun BookContent(
                             )
                         },
                     bookContent = getPage,
-                    title = title
+                    title = title,
+                    updateDocumentThemeMode = updateDocumentThemeMode,
+                    documentTheme = documentTheme,
+                    updateFlipMode = updateFlipMode,
+                    flipMode = flipMode
                 )
-                SettingsModal(
-                    sheetState = sheetState,
-                    onApplyInversionToggle = { applyInversion ->
-                        updateDocumentThemeMode(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
-                    },
-                    applyInversion = documentTheme == DocThemeMode.Invert,
-                    onVerticalScroll = {
-                        updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
-                    },
-                    scrollMode = flipMode
-                    )
             }
 
             ReaderMode.Reading -> {
