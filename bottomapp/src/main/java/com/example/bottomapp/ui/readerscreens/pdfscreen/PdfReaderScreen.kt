@@ -13,23 +13,19 @@ import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
 
     val state by pdfScreenViewModel.pdfScreenState.collectAsState()
-
-    Scaffold() { innerPadding ->
-        BookContent(
-            currentPage = state.currentPage,
-            title = pdfScreenViewModel.getTitle(),
-            totalPages = pdfScreenViewModel.pdfRendererHelper.pagesCount,
-            mode = state.mode,
-            onPageChange = { pdfScreenViewModel.changePage(it) },
-            onToggleMode = { pdfScreenViewModel.switchReaderMode(it) },
-            flipMode = state.curlMode,
-            modifier = Modifier.padding(innerPadding),
-            getPage = { pdfScreenViewModel.pdfRendererHelper.openPage(it) },
-            documentTheme = state.docThemeMode,
-            updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
-            updateFlipMode = { pdfScreenViewModel.updateFlipMode(it)},
-            onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading)},
-            tableOfContent = pdfScreenViewModel.pdfRendererHelper.getTableOfContents()
-        )
-    }
+    BookContent(
+        currentPage = state.currentPage,
+        title = pdfScreenViewModel.getTitle(),
+        totalPages = pdfScreenViewModel.pdfRendererHelper.pagesCount,
+        mode = state.mode,
+        onPageChange = { pdfScreenViewModel.changePage(it) },
+        onToggleMode = { pdfScreenViewModel.switchReaderMode(it) },
+        flipMode = state.curlMode,
+        getPage = { pdfScreenViewModel.pdfRendererHelper.openPage(it) },
+        documentTheme = state.docThemeMode,
+        updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
+        updateFlipMode = { pdfScreenViewModel.updateFlipMode(it) },
+        onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading) },
+        tableOfContent = pdfScreenViewModel.pdfRendererHelper.getTableOfContents()
+    )
 }

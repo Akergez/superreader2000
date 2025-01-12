@@ -178,6 +178,7 @@ fun BookContent(
                     onToggleMode(ReaderMode.Reading)
                 },
                 tableOfContents = tableOfContent,
+                onBack = { onToggleMode(ReaderMode.Carousel) }
             )
         }
     }
