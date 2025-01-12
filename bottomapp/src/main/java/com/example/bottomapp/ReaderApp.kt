@@ -15,6 +15,7 @@ import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext.startKoin
@@ -67,5 +68,6 @@ class ReaderApp : Application() {
             androidContext(this@ReaderApp)
             modules(appModule)
         }
+        PDFBoxResourceLoader.init(applicationContext)
     }
 }
