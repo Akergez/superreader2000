@@ -8,6 +8,7 @@ import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.PdfBookContent
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDPageTree
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,16 +74,16 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
     private fun extractTableOfContents() {
         CoroutineScope(Dispatchers.IO).launch {
             val tocEntries = mutableListOf<TOCEntry>()
-
             try {
                 val file = pdfFile()
                 PDDocument.load(file).use { document ->
                     val catalog = document.documentCatalog
                     val outline = catalog.documentOutline
+                    val tree = document.pages
                     if (outline != null) {
                         var currentNode = outline.firstChild
                         while (currentNode != null) {
-                            val chapter = parseOutlineItem(currentNode, "", document)
+                            val chapter = parseOutlineItem(currentNode, document, tree)
                             tocEntries.add(chapter)
                             currentNode = currentNode.nextSibling
                         }
@@ -100,16 +101,16 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
 
     private fun parseOutlineItem(
         outlineItem: PDOutlineItem,
-        parentTitle: String,
-        document: PDDocument
+        document: PDDocument,
+        tree: PDPageTree
     ) : TOCEntry {
         val tocEntries = mutableListOf<TOCEntry>()
-        val title = parentTitle + outlineItem.title
-        val pageIndex = outlineItem.findDestinationPage(document).structParents
+        val title = outlineItem.title
+        val pageIndex = tree.indexOf(outlineItem.findDestinationPage(document))
 
         var child = outlineItem.firstChild
         while (child != null) {
-            val tocChild = parseOutlineItem(child, "$title -> ", document)
+            val tocChild = parseOutlineItem(child, document, tree)
             tocEntries.add(tocChild)
             child = child.nextSibling
         }

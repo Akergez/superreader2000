@@ -14,7 +14,7 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
 
     val state by pdfScreenViewModel.pdfScreenState.collectAsState()
 
-    Scaffold { innerPadding ->
+    Scaffold() { innerPadding ->
         BookContent(
             currentPage = state.currentPage,
             title = pdfScreenViewModel.getTitle(),
@@ -28,7 +28,8 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
             documentTheme = state.docThemeMode,
             updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
             updateFlipMode = { pdfScreenViewModel.updateFlipMode(it)},
-            onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading)}
+            onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading)},
+            tableOfContent = pdfScreenViewModel.pdfRendererHelper.getTableOfContents()
         )
     }
 }

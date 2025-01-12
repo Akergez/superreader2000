@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -20,12 +21,16 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.backend.renderHelper.TOCEntry
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
+import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
+import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.abs
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -34,6 +39,7 @@ fun BookContent(
     currentPage: Int,
     title: String,
     totalPages: MutableStateFlow<Int>,
+    tableOfContent: StateFlow<List<TOCEntry>>,
     mode: ReaderMode,
     flipMode: FlipMode,
     onPageChange: (Int) -> Unit,
@@ -55,6 +61,8 @@ fun BookContent(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     val haptic = LocalHapticFeedback.current
+
+    val showSettingsModal = remember { mutableStateOf(false) }
 
     val actualMode = rememberUpdatedState(mode)
     val transformGesturesHandler =
@@ -112,16 +120,29 @@ fun BookContent(
                         },
                     bookContent = getPage,
                     title = title,
-                    updateDocumentThemeMode = updateDocumentThemeMode,
-                    documentTheme = documentTheme,
-                    updateFlipMode = updateFlipMode,
-                    flipMode = flipMode
+                    onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
+                    onChaptersClick = {onToggleMode(ReaderMode.Chapters)}
                 )
+                if(showSettingsModal.value) {
+                    if(showSettingsModal.value) {
+                        SettingsModal(
+                            onApplyInversionToggle = {
+                                updateDocumentThemeMode(if (it) DocThemeMode.Invert else DocThemeMode.AsIs)
+                            },
+                            applyInversion = documentTheme == DocThemeMode.Invert,
+                            onVerticalScroll = {
+                                updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
+                            },
+                            scrollMode = flipMode,
+                            onStateChange = { showSettingsModal.value = it }
+                        )
+                    }
+                }
             }
 
             ReaderMode.Reading -> {
                 when (flipMode) {
-                    FlipMode.PagingCurl -> com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl(
+                    FlipMode.PagingCurl -> PageCurl(
                         totalPages = totalPages,
                         currentPage = currentPage,
                         getPage = getPage,
@@ -150,6 +171,14 @@ fun BookContent(
                     offsetY = offsetY
                 )
             }
+
+            ReaderMode.Chapters -> ChapterScreen(
+                onChapterClick = {
+                    onPageChange(it)
+                    onToggleMode(ReaderMode.Reading)
+                },
+                tableOfContents = tableOfContent,
+            )
         }
     }
 }

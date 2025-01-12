@@ -31,17 +31,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
-import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,15 +54,11 @@ fun PageCarousel(
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     title: String,
-    updateDocumentThemeMode: (DocThemeMode) -> Unit,
-    documentTheme: DocThemeMode,
-    updateFlipMode: (FlipMode) -> Unit,
-    flipMode: FlipMode
+    onSettingsClick: () -> Unit,
+    onChaptersClick: () -> Unit
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
-    val isSettingsVisible = remember { mutableStateOf(false) }
-
 
     Column(modifier = modifier) {
         Row (verticalAlignment = Alignment.CenterVertically){
@@ -122,8 +114,7 @@ fun PageCarousel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // TODO Верим что появятся главы
-            IconButton(onClick = {  }) {
+            IconButton(onClick = { onChaptersClick() }) {
                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
             }
 
@@ -173,23 +164,9 @@ fun PageCarousel(
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-            IconButton(onClick = { isSettingsVisible.value = !isSettingsVisible.value }) {
+            IconButton(onClick = { onSettingsClick() }) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
             }
         }
-    }
-
-    if(isSettingsVisible.value) {
-        SettingsModal(
-            onApplyInversionToggle = {
-                updateDocumentThemeMode(if (it) DocThemeMode.Invert else DocThemeMode.AsIs)
-            },
-            applyInversion = documentTheme == DocThemeMode.Invert,
-            onVerticalScroll = {
-                updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
-            },
-            scrollMode = flipMode,
-            onStateChange = { isSettingsVisible.value = it }
-        )
     }
 }

@@ -3,7 +3,8 @@ package com.example.bottomapp.ui.readerscreens.common
 enum class ReaderMode {
     Carousel,
     Zoom,
-    Reading
+    Reading,
+    Chapters
 }
 
 enum class FlipMode {
