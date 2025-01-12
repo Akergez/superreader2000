@@ -34,6 +34,10 @@
     <string name="confirm_deletion">Подтвердите удаление</string>
     <string name="confirm_deletion_hint">Вы уверены, что хотите удалить все выбранные книги?</string>
 
+    <!--    Settings modal-->
+    <string name="apply_inversion">Инвертировать тему</string>
+    <string name="vertical_scroll">Вертикальный скролл</string>
+
     <!-- Error messages-->
     <string name="error_book_already_exists">Книга уже существует</string>
     <string name="error_invalid_storage_directory">Выбрана неверная директория</string>

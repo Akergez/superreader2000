@@ -34,6 +34,10 @@
     <string name="confirm_deletion">Confirm Deletion</string>
     <string name="confirm_deletion_hint">Are you sure you want to delete the selected items?</string>
 
+    <!--    Settings modal-->
+    <string name="apply_inversion">Inverse theme</string>
+    <string name="vertical_scroll">Vertical scroll</string>
+
     <!-- Error messages-->
     <string name="error_book_already_exists">Book already exists</string>
     <string name="error_invalid_storage_directory">Invalid storage directory</string>
