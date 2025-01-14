@@ -2,6 +2,7 @@ package com.example.bottomapp.ui.mainscreen
 
 import Fb2ReaderScreen
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -13,18 +14,28 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -64,23 +75,6 @@ fun MainScreen(
     settingsManager: SettingsManager = koinInject()
 ) {
     val context = LocalContext.current
-
-
-    val directoryLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.also { uri ->
-                    context.contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    )
-                    settingsManager.saveStorageUri(uri)
-                    (context as ComponentActivity).lifecycleScope.launch {
-                        bookManager.refreshBooksLinks()
-                    }
-                }
-            }
-        }
 
     val navController = rememberNavController()
     val currentTheme by settingsManager.appThemeMode.collectAsState(AppThemeMode.System)
@@ -190,15 +184,84 @@ fun MainScreen(
                     }
                 }
             }
+
+            var isDialogVisible by remember { mutableStateOf(true) }
+            var isNextScreenVisible by remember { mutableStateOf(false) }
+            var triggerEffect by remember { mutableIntStateOf(1) }
+
+            val directoryLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                    if (result.resultCode == Activity.RESULT_OK) {
+                        result.data?.data?.also { uri ->
+                            context.contentResolver.takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            )
+                            settingsManager.saveStorageUri(uri)
+                            (context as ComponentActivity).lifecycleScope.launch {
+                                bookManager.refreshBooksLinks()
+                            }
+                        }
+                    } else {
+                        isDialogVisible = true
+                    }
+                }
+
+            if (settingsManager.getStorageUri() == null && isDialogVisible) {
+                StorageSelectionDialog(
+                    onChoose = {
+                        triggerEffect++
+                        isDialogVisible = false
+                        isNextScreenVisible = true
+                    }
+                )
+            }
+
+            LaunchedEffect("storage_$triggerEffect") {
+                if (isNextScreenVisible) {
+                    isNextScreenVisible = false
+                    // Trigger directory picker in MainActivity
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                    directoryLauncher.launch(intent)
+                }
+            }
         }
     }
-    if (settingsManager.getStorageUri() == null) {
-        LaunchedEffect("storage") {
-            // Trigger directory picker in MainActivity
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            directoryLauncher.launch(intent)
-        }
-    }
+}
+
+@Composable
+fun StorageSelectionDialog(
+    onChoose: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { },
+        title = {
+            Text(
+                text = "Выберите хранилище",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "Для использования приложения необходимо выбрать место, где будет храниться прогресс чтения.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onChoose() }) {
+                Text(text = "Выбрать")
+            }
+        },
+        tonalElevation = 8.dp
+    )
+}
+
+@Preview
+@Composable
+fun PreviewStorageSelectionDialog() {
+    StorageSelectionDialog(
+        onChoose = {}
+    )
 }
 
 @Composable
