@@ -52,7 +52,7 @@ class Fb2RenderHelper(
     private var cachedContent: Queue<FB2Element>? = null
     private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
     val pageWordSum = mutableListOf<Int>()
-    var pagesCount = MutableStateFlow(100)
+    var pagesCount = MutableStateFlow<Int?>(null)
     private val imageMap = mutableMapOf<String, InlineTextContent>()
     private var currentPage = AnnotatedString("")
     private var lastSlicedPageIndex = 0
@@ -65,7 +65,7 @@ class Fb2RenderHelper(
         }
     }
 
-    override fun openPage(pageIndex: Int): StateFlow<IBookContent> {
+    override fun openPage(pageIndex: Int): MutableStateFlow<Fb2BookContent> {
         Log.d("Fb2RenderHelper", "OpenPage: $pageIndex")
 
         pageCache[pageIndex]?.let {
@@ -140,9 +140,9 @@ class Fb2RenderHelper(
                 currentPage = word.toStyledString()
 
                 // Проверка достижения целевой страницы
-                if (lastSlicedPageIndex > targetPageIndex) {
-                    if (lastSlicedPageIndex >= pagesCount.value) {
-                        pagesCount.update { pagesCount.value + 1 }
+                if (lastSlicedPageIndex > targetPageIndex && pagesCount.value != null) {
+                    if (lastSlicedPageIndex >= pagesCount.value!!) {
+                        pagesCount.update { pagesCount.value!! + 1 }
                     }
                     break
                 }
