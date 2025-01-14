@@ -17,12 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun VerticalBookScroll(
-    totalPages: StateFlow<Int>,
+    totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
@@ -33,38 +32,40 @@ fun VerticalBookScroll(
     val totalPagesState by totalPages.collectAsState()
 
     Scaffold { innerPadding ->
-        Column(modifier = modifier.padding(innerPadding)) {
-            LazyColumn(
-                state = lazyListState,
-            ) {
-                items(totalPagesState, key = { it }) { page ->
-                    Box(
-                        Modifier
-                            .padding(vertical = 5.dp)
-                    ) {
-                        Card(
+        totalPagesState?.let { totalPagesValue ->
+            Column(modifier = modifier.padding(innerPadding)) {
+                LazyColumn(
+                    state = lazyListState,
+                ) {
+                    items(totalPagesValue, key = { it }) { page ->
+                        Box(
                             Modifier
-                                .fillParentMaxHeight()
+                                .padding(vertical = 5.dp)
                         ) {
-                            BookPage(
-                                applyInversion = applyInversion,
-                                bookContent = getPage(page)
-                            )
+                            Card(
+                                Modifier
+                                    .fillParentMaxHeight()
+                            ) {
+                                BookPage(
+                                    applyInversion = applyInversion,
+                                    bookContent = getPage(page)
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Emit page change when the page is scrolled
-            val firstVisibleItemIndex by remember {
-                derivedStateOf { lazyListState.firstVisibleItemIndex }
-            }
+                // Emit page change when the page is scrolled
+                val firstVisibleItemIndex by remember {
+                    derivedStateOf { lazyListState.firstVisibleItemIndex }
+                }
 
-            // Synchronize the page change
-            LaunchedEffect(firstVisibleItemIndex) {
-                onPageChange(firstVisibleItemIndex)
-            }
+                // Synchronize the page change
+                LaunchedEffect(firstVisibleItemIndex) {
+                    onPageChange(firstVisibleItemIndex)
+                }
 
+            }
         }
     }
 }

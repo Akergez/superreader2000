@@ -1,18 +1,15 @@
 package com.example.bottomapp.ui.readerscreens.common.bookFlippings
 
-import android.content.res.Resources.Theme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,7 +40,6 @@ import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -52,7 +47,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PageCarousel(
     bookContent: (Int) -> StateFlow<IBookContent>,
-    totalPages: StateFlow<Int>,
+    totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     onBack: () -> Unit,
     applyInversion: Boolean,
@@ -82,104 +77,106 @@ fun PageCarousel(
             )
         },
     ) { padding ->
-        Column(modifier = modifier.padding(padding)) {
-            LazyRow(
-                modifier = Modifier.weight(0.9f),
-                state = lazyListState,
-            ) {
-                items(totalPagesState, key = { it }) { page ->
-                    Box(
-                        Modifier
-                            .fillParentMaxWidth()
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        Card(
+        totalPagesState?.let { totalPagesNotNull ->
+            Column(modifier = modifier.padding(padding)) {
+                LazyRow(
+                    modifier = Modifier.weight(0.9f),
+                    state = lazyListState,
+                ) {
+                    items(totalPagesNotNull, key = { it }) { page ->
+                        Box(
                             Modifier
-                                .fillParentMaxWidth(0.9f)
-                                .align(Alignment.Center)
-                                .shadow(
-                                    elevation = 8.dp,
-                                    shape = RoundedCornerShape(8.dp),
-                                    clip = true
-                                )
+                                .fillParentMaxWidth()
+                                .align(Alignment.CenterHorizontally)
                         ) {
-                            BookPage(
-                                bookContent = bookContent(page),
-                                applyInversion = applyInversion
-                            )
+                            Card(
+                                Modifier
+                                    .fillParentMaxWidth(0.9f)
+                                    .align(Alignment.Center)
+                                    .shadow(
+                                        elevation = 8.dp,
+                                        shape = RoundedCornerShape(8.dp),
+                                        clip = true
+                                    )
+                            ) {
+                                BookPage(
+                                    bookContent = bookContent(page),
+                                    applyInversion = applyInversion
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            val firstVisibleItemIndex by remember {
-                derivedStateOf { lazyListState.firstVisibleItemIndex }
-            }
-
-            LaunchedEffect(firstVisibleItemIndex) {
-                onPageChange(firstVisibleItemIndex)
-            }
-
-            Row(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = { onChaptersClick() }) {
-                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
+                val firstVisibleItemIndex by remember {
+                    derivedStateOf { lazyListState.firstVisibleItemIndex }
                 }
 
-                Column(
+                LaunchedEffect(firstVisibleItemIndex) {
+                    onPageChange(firstVisibleItemIndex)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Slider(
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .offset(y = 8.dp),
-                        value = firstVisibleItemIndex.toFloat(),
-                        onValueChange = { newValue ->
-                            CoroutineScope(Dispatchers.Main).launch {
-                                lazyListState.scrollToItem(newValue.toInt())
-                                onPageChange(newValue.toInt())
-                            }
-                        },
-                        valueRange = 0f..(totalPagesState - 1).toFloat(), // Диапазон значений
-                        steps = totalPagesState, // Количество шагов между min и max ,
-                        track = {
-                            Box(
-                                Modifier
-                                    .height(2.dp) // Тонкий трек
-                                    .fillMaxWidth()
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = RoundedCornerShape(50),
-                                    ) // Цвет трека
-                            )
-                        },
-                        thumb = {
-                            Box(
-                                Modifier
-                                    .size(10.dp)
-                                    .offset(y = 3.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = RoundedCornerShape(50)
-                                    )
-                            )
-                        }
-                    )
+                    IconButton(onClick = { onChaptersClick() }) {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
+                    }
 
-                    Text(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        text = "Page ${firstVisibleItemIndex + 1} of $totalPagesState",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                IconButton(onClick = { onSettingsClick() }) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    Column(
+                    ) {
+                        Slider(
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .offset(y = 8.dp),
+                            value = firstVisibleItemIndex.toFloat(),
+                            onValueChange = { newValue ->
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    lazyListState.scrollToItem(newValue.toInt())
+                                    onPageChange(newValue.toInt())
+                                }
+                            },
+                            valueRange = 0f..(totalPagesNotNull - 1).toFloat(), // Диапазон значений
+                            steps = totalPagesNotNull, // Количество шагов между min и max ,
+                            track = {
+                                Box(
+                                    Modifier
+                                        .height(2.dp) // Тонкий трек
+                                        .fillMaxWidth()
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(50),
+                                        ) // Цвет трека
+                                )
+                            },
+                            thumb = {
+                                Box(
+                                    Modifier
+                                        .size(10.dp)
+                                        .offset(y = 3.dp)
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(50)
+                                        )
+                                )
+                            }
+                        )
+
+                        Text(
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            text = "Page ${firstVisibleItemIndex + 1} of $totalPagesState",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                    IconButton(onClick = { onSettingsClick() }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
                 }
             }
         }

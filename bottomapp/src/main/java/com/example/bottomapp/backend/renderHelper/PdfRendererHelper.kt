@@ -14,13 +14,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
 class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
-    val pagesCount = MutableStateFlow(0)
+    val pagesCount: MutableStateFlow<Int?> = MutableStateFlow(null)
     private val bitmapCache = mutableMapOf<Int, MutableStateFlow<IBookContent>>()
     private val lock = Any()
     private val tableOfContents = MutableStateFlow<List<TOCEntry>>(emptyList())
@@ -30,7 +31,7 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
             val parcelFileDescriptor =
                 ParcelFileDescriptor.open(pdfFile(), ParcelFileDescriptor.MODE_READ_ONLY)
             pdfRenderer.value = PdfRenderer(parcelFileDescriptor)
-            pagesCount.value = pdfRenderer.value!!.pageCount
+            pagesCount.update { pdfRenderer.value!!.pageCount }
             extractTableOfContents()
         }
     }

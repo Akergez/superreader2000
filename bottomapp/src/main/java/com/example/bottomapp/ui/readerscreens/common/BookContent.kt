@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,7 +23,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.core.view.WindowCompat
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.renderHelper.TOCEntry
 import com.example.bottomapp.ui.readerscreens.IBookContent
@@ -34,7 +32,6 @@ import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookS
 import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.rememberPageCurlState
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.abs
 
@@ -43,7 +40,7 @@ import kotlin.math.abs
 fun BookContent(
     currentPage: Int,
     title: String,
-    totalPages: StateFlow<Int>,
+    totalPages: StateFlow<Int?>,
     tableOfContent: StateFlow<List<TOCEntry>>,
     mode: ReaderMode,
     flipMode: FlipMode,
