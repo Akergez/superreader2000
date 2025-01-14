@@ -25,9 +25,10 @@ class SettingsViewModel(
     init {
         val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
         val pdfFlipMode = settingsManager.getFlipMode()
-        val storageAddress = settingsManager.getStorageUri()
+        val storageAddress = extractBeautifulStoragePath(settingsManager.getStorageUri())
+        val appThemeMode = settingsManager.getAppTheme(AppThemeMode.System)
         _settingsState.value =
-            SettingsScreenState(storageAddress.toString(), docThemeMode, pdfFlipMode)
+            SettingsScreenState(storageAddress, docThemeMode, pdfFlipMode, appThemeMode)
     }
 
     private val viewModelJob = SupervisorJob()
@@ -48,13 +49,15 @@ class SettingsViewModel(
         uiScope.launch {
             bookManager.refreshBooksLinks()
         }
-        _settingsState.value = _settingsState.value.copy(storageAddress = storageAddress.toString())
+        _settingsState.value = _settingsState.value.copy(storageAddress = extractBeautifulStoragePath(settingsManager.getStorageUri()))
     }
 
     fun updateAppThemeMode(appThemeMode: AppThemeMode) {
-        uiScope.launch {
-            settingsManager.setAppTheme(appThemeMode)
-        }
+        settingsManager.setAppTheme(appThemeMode)
         _settingsState.value = _settingsState.value.copy(appThemeMode = appThemeMode)
+    }
+
+    private fun extractBeautifulStoragePath(path: Uri?) : String {
+        return path?.lastPathSegment.toString()
     }
 }
