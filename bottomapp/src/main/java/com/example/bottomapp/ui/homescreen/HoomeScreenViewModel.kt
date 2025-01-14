@@ -48,14 +48,14 @@ class HoomeScreenViewModel(
         val fileName = getFileName(context, uri)
         when (val fileType = getFileType(fileName)) {
             FileType.fb2 -> {
-                val bookLink = Fb2Progress(0)
+                val bookLink = Fb2Progress(0, null)
                 viewModelScope.launch {
                     bookManager.addNewBook(uri, fileName, bookLink, fileType)
                 }
             }
 
             FileType.pdf -> {
-                val bookLink = PdfProgress(0)
+                val bookLink = PdfProgress(0, null)
                 viewModelScope.launch {
                     bookManager.addNewBook(uri, fileName, bookLink, fileType)
                         .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
@@ -126,14 +126,29 @@ class HoomeScreenViewModel(
                 }
             }
         }
-        if (newBook.bundleName == oldBook.bundleName) {
+        if (newBook.bundleName != oldBook.bundleName) {
+            viewModelScope.launch {
+                bookManager.renameBook(
+                    oldBook.bundleName, updatedBook.bundleName
+                ).onFailure {
+                    Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                }.onSuccess {
+                    if (newBook.bookMetaInfo.author != oldBook.bookMetaInfo.author) {
+                        viewModelScope.launch {
+                            bookManager.updateAuthor(
+                                newBook.bundleName,
+                                newBook.bookMetaInfo.author
+                            )
+                        }
+                    }
+                }
+            }
             return
         }
-        viewModelScope.launch {
-            bookManager.renameBook(
-                oldBook.bundleName, updatedBook.bundleName
-            ).onFailure {
-                Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+
+        if (newBook.bookMetaInfo.author != oldBook.bookMetaInfo.author) {
+            viewModelScope.launch {
+                bookManager.updateAuthor(newBook.bundleName, newBook.bookMetaInfo.author)
             }
         }
     }

@@ -7,8 +7,10 @@ enum class FormatType {
     FB2
 }
 
-open class Progress(val formatType: FormatType)
-
+abstract class Progress(val formatType: FormatType)
+{
+    abstract fun getProgressInPercent(): Double?
+}
 
 interface BookDomainModel<T> where T : Progress{
     fun readProgress(): T

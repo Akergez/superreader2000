@@ -201,8 +201,9 @@ fun EditBookModal(
                             bundleName = state.title,
                             previewUri = state.previewUri,
                             bookMetaInfo = book.bookMetaInfo.copy(
-                                title = state.title
-                            )
+                                title = state.title,
+                                author = state.author
+                            ),
                         ),
                         state.changed,
                         state.previewChanged

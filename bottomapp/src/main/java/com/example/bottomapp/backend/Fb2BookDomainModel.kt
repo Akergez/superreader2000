@@ -3,10 +3,18 @@ package com.example.bottomapp.backend
 import java.io.File
 
 
-data class Fb2Progress(val wordOffset: Int) : Progress(FormatType.FB2)
+data class Fb2Progress(val wordOffset: Int, val totalWords: Int?) : Progress(FormatType.FB2) {
+    override fun getProgressInPercent(): Double? {
+        return if (totalWords != null && totalWords != 0) {
+            wordOffset.toDouble() / totalWords.toDouble() * 100
+        } else {
+            null
+        }
+    }
+}
 
 class Fb2BookDomainModel(
-    bookLink: BookMetaInfo,
+    val bookLink: BookMetaInfo,
     val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFileFromStorage: suspend () -> File,
 ) :
@@ -24,6 +32,6 @@ class Fb2BookDomainModel(
 
     override suspend fun saveProgress(progress: Fb2Progress) {
         this.progress = progress
-        updateProgress(BookMetaInfo(title, progress))
+        updateProgress(BookMetaInfo(title, progress, bookLink.author))
     }
 }
