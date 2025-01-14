@@ -46,4 +46,5 @@
     <string name="error_storage_not_set">Выберите сначала хранилище</string>
     <string name="table_of_contents">Оглавление</string>
     <string name="page">Страница</string>
+    <string name="paging_mode_casual">Обычный</string>
 </resources>

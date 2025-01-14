@@ -7,7 +7,6 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -38,13 +36,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
-import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(
     settingsViewModel: SettingsViewModel = koinViewModel(),
@@ -125,6 +124,7 @@ fun SettingsScreen(
                 mapOf(
                     FlipMode.PagingCurl to getString(LocalContext.current, R.string.paging_mode_classic),
                     FlipMode.VerticalScroll to getString(LocalContext.current, R.string.paging_mode_vertical),
+                    FlipMode.Casual to getString(LocalContext.current, R.string.paging_mode_casual)
                 ),
                 settings.flipMode
             ) { mode ->

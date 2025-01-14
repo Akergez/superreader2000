@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.TransformState
 import com.example.bottomapp.ui.readerscreens.common.basePageBoxModifier
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
@@ -31,6 +32,7 @@ fun PageCurl(
     getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
+    persistentZoom: TransformState
 ) {
     Log.d("BookContent", "currentPage = $currentPage")
     val pagerState = remember { PageCurlState(initialCurrent = currentPage, initialMax = 0) }
@@ -54,6 +56,7 @@ fun PageCurl(
                     .systemBarsPadding()
             ) { index ->
                 BookPage(
+                    transformState = persistentZoom,
                     bookContent = getPage(index),
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier

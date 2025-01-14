@@ -17,14 +17,18 @@ import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
 import kotlinx.coroutines.flow.StateFlow
 
+data class TransformState(
+    val scale: Float = 1f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f
+)
+
 @Composable
 fun BookPage(
     bookContent: StateFlow<IBookContent>,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
-    scale: Float = 1f,
-    offsetX: Float = 0f,
-    offsetY: Float = 0f
+    transformState: TransformState = TransformState()
 ) {
     val content by bookContent.collectAsState()
     Box(modifier = modifier) {
@@ -33,9 +37,9 @@ fun BookPage(
                 val pdfContent = content as PdfBookContent
                 PdfViewer(
                     applyInversion = applyInversion,
-                    scale = scale,
-                    offsetX = offsetX,
-                    offsetY = offsetY,
+                    scale = transformState.scale,
+                    offsetX = transformState.offsetX,
+                    offsetY = transformState.offsetY,
                     bitmap = pdfContent.bitmap
                 )
             }
@@ -45,9 +49,9 @@ fun BookPage(
                 Fb2Viewer(
                     text = fb2BookContent.text,
                     applyInversion = applyInversion,
-                    scale = scale,
-                    offsetX = offsetX,
-                    offsetY = offsetY
+                    scale = transformState.scale,
+                    offsetX = transformState.offsetX,
+                    offsetY = transformState.offsetY
                 )
             }
         }
