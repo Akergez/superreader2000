@@ -55,7 +55,7 @@ fun PageCarousel(
     initialPage: Int = 0,
     title: String,
     onSettingsClick: () -> Unit,
-    onChaptersClick: () -> Unit
+    onChaptersClick: () -> Unit,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()

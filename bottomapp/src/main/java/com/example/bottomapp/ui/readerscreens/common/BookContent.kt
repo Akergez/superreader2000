@@ -5,11 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,9 +23,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.renderHelper.TOCEntry
 import com.example.bottomapp.ui.readerscreens.IBookContent
+import com.example.bottomapp.ui.readerscreens.common.bookFlippings.CasualCurl
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
+import com.example.bottomapp.ui.readerscreens.common.bookFlippings.Zoom
 import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.rememberPageCurlState
@@ -62,6 +61,8 @@ fun BookContent(
     var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
+
+    var persistentZoom by remember { mutableStateOf(TransformState()) }
     val haptic = LocalHapticFeedback.current
 
     val showSettingsModal = remember { mutableStateOf(false) }
@@ -74,10 +75,10 @@ fun BookContent(
             if (abs(newScale - 1f) < 0.5f
                 || (actualMode.value == ReaderMode.Zoom && offsetX + pan.x == 0f)
             ) {
-                if (actualMode.value != ReaderMode.Reading) {
+/*                if (actualMode.value != ReaderMode.Reading) {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onToggleMode(ReaderMode.Reading)
-                }
+                }*/
             } else if (newScale < 0.5f) {
                 if (actualMode.value != ReaderMode.Carousel) {
                     Log.d("BookContent", "Updating mode from ${actualMode.value} to Carousel")
@@ -149,7 +150,8 @@ fun BookContent(
                         currentPage = currentPage,
                         getPage = getPage,
                         documentTheme = documentTheme,
-                        modifier = modifier
+                        modifier = modifier,
+                        persistentZoom = persistentZoom
                     )
 
                     FlipMode.VerticalScroll -> VerticalBookScroll(
@@ -159,23 +161,38 @@ fun BookContent(
                         applyInversion = documentTheme == DocThemeMode.Invert,
                         getPage = getPage
                     )
+
+                    FlipMode.Casual -> CasualCurl(
+                        totalPages = totalPages,
+                        initialPage = currentPage,
+                        onPageChange = onPageChange,
+                        applyInversion = documentTheme == DocThemeMode.Invert,
+                        getPage = getPage,
+                        persistentZoom = persistentZoom
+                    )
                 }
             }
 
             ReaderMode.Zoom -> {
-                Scaffold { inner ->
-                    BookPage(
-                        bookContent = getPage(currentPage),
-                        applyInversion = documentTheme == DocThemeMode.Invert,
-                        modifier = modifier
-                            .padding(inner)
-                            .fillMaxSize()
-                            .consumeWindowInsets(inner),
-                        scale = scale,
-                        offsetX = offsetX,
-                        offsetY = offsetY
-                    )
-                }
+                Zoom(
+                    currentPage = currentPage,
+                    getPage = getPage,
+                    documentTheme = documentTheme,
+                    modifier = modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                    scale = scale,
+                    offsetX = offsetX,
+                    offsetY = offsetY,
+                    onZoomLock = {
+                        persistentZoom = TransformState(
+                            scale = scale,
+                            offsetX = offsetX,
+                            offsetY = offsetY
+                        )
+                        onToggleMode(ReaderMode.Reading)
+                    }
+                )
             }
 
 

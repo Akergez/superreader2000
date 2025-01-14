@@ -8,6 +8,7 @@ enum class ReaderMode {
 }
 
 enum class FlipMode {
+    Casual,
     PagingCurl,
     VerticalScroll
 }

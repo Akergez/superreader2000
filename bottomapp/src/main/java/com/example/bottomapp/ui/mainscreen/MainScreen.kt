@@ -2,19 +2,18 @@ package com.example.bottomapp.ui.mainscreen
 
 import Fb2ReaderScreen
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -69,6 +68,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
     bookManager: BookManager = koinInject(),
