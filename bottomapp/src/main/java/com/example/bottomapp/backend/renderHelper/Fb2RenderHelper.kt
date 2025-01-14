@@ -9,11 +9,16 @@ import androidx.compose.ui.unit.sp
 import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import com.example.bottomapp.ui.readerscreens.IBookContent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.w3c.dom.Node
 import java.io.File
+import java.util.LinkedList
+import java.util.Queue
 import javax.xml.parsers.DocumentBuilderFactory
 
 class Fb2RenderHelper(
@@ -22,41 +27,57 @@ class Fb2RenderHelper(
     private val textMeasurer: TextMeasurer,
     private val fb2File: File
 ) : IRenderHelper {
-
-    val pagesCount = MutableStateFlow<Int>(0)
-    private var cachedContent: String? = null
-    private val pageCache = mutableMapOf<Int, String>()
+    private var cachedContent: Queue<String>? = null
+    private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
+    val pageWordSum = mutableListOf<Int>()
+    var pagesCount = MutableStateFlow(100)
+    private var currentPage = StringBuilder()
+    private var lastSlicedPageIndex = 0
     private var isAllPageSliced = false
+    private val lock = Any()
 
-    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
-        // Ленивая генерация страниц по требованию
-        generatePagesUpTo(pageIndex)
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            cachedContent = LinkedList(parseFb2Content(fb2File).split(" ", "\r\n", "\n"))
+        }
+    }
 
-        val pageText = pageCache[pageIndex]
+    override fun openPage(pageIndex: Int): StateFlow<IBookContent> {
+        Log.d("Fb2RenderHelper", "OpenPage: $pageIndex")
 
-        if (pageText == null && isAllPageSliced) {
-            return MutableStateFlow(Fb2BookContent(null))
+        pageCache[pageIndex]?.let {
+            return it
         }
 
-        return MutableStateFlow(Fb2BookContent(pageText))
+        if (isAllPageSliced) {
+            return MutableStateFlow(Fb2BookContent(""))
+        }
+
+        val pageText = MutableStateFlow(Fb2BookContent(null))
+        CoroutineScope(Dispatchers.IO).launch {
+            synchronized(lock) {
+                if (pageCache[pageIndex] == null || pageCache[pageIndex]?.value?.text == null) {
+                    pageCache[pageIndex] = pageText
+                    generatePagesUpTo(pageIndex+2)
+                }
+            }
+        }
+        return pageText
     }
 
     private fun generatePagesUpTo(targetPageIndex: Int) {
-        // Если контент еще не загружен, загружаем
-        if (cachedContent == null) {
-            cachedContent = parseFb2Content(fb2File)
+        Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
+
+        if(cachedContent.isNullOrEmpty()){
+            cachedContent = LinkedList(parseFb2Content(fb2File).split(" ", "\r\n", "\n"))
         }
 
-        // Если страницы уже сгенерированы до нужного индекса, выходим
-        if (pageCache.containsKey(targetPageIndex)) {
+        if (pageCache[targetPageIndex]?.value?.text != null) {
             return
         }
 
-        val words = cachedContent?.split(" ", " ") ?: return
-        var currentPage = StringBuilder()
-        var currentPageIndex = 0
-
-        for (word in words) {
+        while (true) {
+            val word = cachedContent!!.remove()
             val testLine = if (currentPage.isEmpty()) word else "$currentPage $word"
 
             val result = textMeasurer.measure(
@@ -74,37 +95,51 @@ class Fb2RenderHelper(
             if (!result.didOverflowHeight) {
                 currentPage.append(if (currentPage.isEmpty()) word else " $word")
             } else {
-                pageCache[currentPageIndex] = currentPage.toString().trim()
-                currentPageIndex++
+                addOrUpdatePage(lastSlicedPageIndex, currentPage.toString().trim())
+                lastSlicedPageIndex++
 
                 if (pagesCount.value == 1) {
-                    // примерно считаем, сколько страниц будет в книге
-                    pagesCount.update { words.size / currentPage.split(" ", " ").size }
-                }
-
-                // Если достигли нужной страницы, можем остановиться
-                if (currentPageIndex > targetPageIndex) {
-                    if (currentPageIndex >= pagesCount.value) {
-                        pagesCount.update { pagesCount.value + 1 }
-                    }
-                    break
+                    // Примерно считаем, сколько страниц будет в книге
+                    pagesCount.update { cachedContent!!.size / currentPage.split(" ", " ").size }
                 }
 
                 currentPage = StringBuilder()
                 currentPage.append(word)
+
+                // Если достигли нужной страницы, можем остановиться
+                if (lastSlicedPageIndex > targetPageIndex) {
+                    if (lastSlicedPageIndex >= pagesCount.value) {
+                        pagesCount.update { pagesCount.value + 1 }
+                    }
+                    break
+                }
             }
         }
 
-        // Добавляем последнюю страницу, если она не пустая
-        if (currentPage.isNotEmpty() && currentPageIndex <= targetPageIndex) {
-            pageCache[currentPageIndex] = currentPage.toString().trim()
+        if (currentPage.isNotEmpty() && lastSlicedPageIndex <= targetPageIndex) {
+            addOrUpdatePage(lastSlicedPageIndex, currentPage.toString().trim())
             isAllPageSliced = true
         }
     }
 
+    private fun addOrUpdatePage(index: Int, text: String) {
+        if (pageCache.containsKey(index)) {
+            pageCache[index]!!.update {  Fb2BookContent(text)}
+        } else {
+            pageCache[index] = MutableStateFlow(Fb2BookContent(text))
+        }
+
+        val wordsPerPage = text.split(" ").size
+        if (index > 0) {
+            pageWordSum.add(index, pageWordSum[index - 1] + wordsPerPage)
+        } else {
+            pageWordSum.add(index, wordsPerPage)
+        }
+    }
+
     override fun close() {
+        Log.d("Fb2RenderHelper", "Clear cache and content")
         pageCache.clear()
-        cachedContent = null
     }
 
     override fun getBookType(): FormatType {

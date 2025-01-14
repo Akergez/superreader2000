@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -19,14 +20,15 @@ import com.example.bottomapp.ui.readerscreens.common.basePageBoxModifier
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.rememberPageCurlState
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
 fun PageCurl(
-    totalPages: MutableStateFlow<Int>,
+    totalPages: StateFlow<Int>,
+    onPageChange: (Int) -> Unit,
     currentPage: Int,
-    getPage: (Int) -> MutableStateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
 ) {
@@ -52,6 +54,9 @@ fun PageCurl(
                 modifier = modifier
                     .basePageBoxModifier(),
             )
+            LaunchedEffect(index) {
+                onPageChange(index)
+            }
         }
     }
 }

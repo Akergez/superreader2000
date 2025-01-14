@@ -43,7 +43,7 @@ import kotlin.math.abs
 fun BookContent(
     currentPage: Int,
     title: String,
-    totalPages: MutableStateFlow<Int>,
+    totalPages: StateFlow<Int>,
     tableOfContent: StateFlow<List<TOCEntry>>,
     mode: ReaderMode,
     flipMode: FlipMode,
@@ -51,7 +51,7 @@ fun BookContent(
     onToggleMode: (ReaderMode) -> Unit,
     onCarouselBack: () -> Unit,
     modifier: Modifier = Modifier,
-    getPage: (Int) -> MutableStateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
     updateFlipMode: (FlipMode) -> Unit
@@ -148,6 +148,7 @@ fun BookContent(
                 when (flipMode) {
                     FlipMode.PagingCurl -> PageCurl(
                         totalPages = totalPages,
+                        onPageChange = onPageChange,
                         currentPage = currentPage,
                         getPage = getPage,
                         documentTheme = documentTheme,

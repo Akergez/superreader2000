@@ -45,13 +45,14 @@ import com.example.bottomapp.ui.readerscreens.common.BookPage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PageCarousel(
-    bookContent: (Int) -> MutableStateFlow<IBookContent>,
-    totalPages: MutableStateFlow<Int>,
+    bookContent: (Int) -> StateFlow<IBookContent>,
+    totalPages: StateFlow<Int>,
     onPageChange: (Int) -> Unit,
     onBack: () -> Unit,
     applyInversion: Boolean,

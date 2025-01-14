@@ -15,11 +15,11 @@ import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.PdfBookContent
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun BookPage(
-    bookContent: MutableStateFlow<IBookContent>,
+    bookContent: StateFlow<IBookContent>,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
@@ -27,9 +27,7 @@ fun BookPage(
     offsetY: Float = 0f
 ) {
     val content by bookContent.collectAsState()
-    Box(
-        modifier = modifier
-    ) {
+    Box(modifier = modifier) {
         when (content) {
             is PdfBookContent -> {
                 val pdfContent = content as PdfBookContent

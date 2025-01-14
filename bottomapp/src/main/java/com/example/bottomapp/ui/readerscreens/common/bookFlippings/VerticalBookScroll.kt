@@ -18,15 +18,16 @@ import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun VerticalBookScroll(
-    totalPages: MutableStateFlow<Int>,
+    totalPages: StateFlow<Int>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
-    getPage: (Int) -> MutableStateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<IBookContent>,
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
