@@ -25,6 +25,7 @@ import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             val fb2File = book.getFile()
             if (componentHeight != 0) {
                 fb2RenderHelper.value = Fb2RenderHelper(
-                    componentWidth - (density.density * 16).toInt(),
+                    componentWidth - (density.density * (16+32)).toInt(),
                     componentHeight - (density.density * 16).toInt(),
                     textMeasurer,
                     fb2File
@@ -92,7 +93,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     }
 
     val onPageChange = { pageIndex: Int ->
-        if (false) {
+        if (fb2RenderHelper.value != null && isStartPageLoaded) {
             val wordsCount = fb2RenderHelper.value!!.pageWordSum
             if (wordsCount.size > pageIndex) {
                 CoroutineScope(Dispatchers.IO).launch {
@@ -131,9 +132,11 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 onCarouselBack = { mode = ReaderMode.Reading },
                 title = book.title,
                 tableOfContent = MutableStateFlow(emptyList())
+
             )
         } else {
             Text(getString(LocalContext.current, R.string.loading))
         }
     }
+
 }
