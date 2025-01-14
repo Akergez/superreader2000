@@ -140,16 +140,3 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     }
 
 }
-
-fun calculatePrefixSums(pages: List<String>): List<Int> {
-    val prefixSums = mutableListOf<Int>()
-    var currentSum = 0
-
-    for (page in pages) {
-        prefixSums.add(currentSum)
-        currentSum += page.length
-    }
-
-    return prefixSums
-}
-
