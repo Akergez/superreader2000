@@ -184,61 +184,57 @@ fun MainScreen(
                     }
                 }
             }
-        }
-    }
 
-    var isDialogVisible by remember { mutableStateOf(true) }
-    var isNextScreenVisible by remember { mutableStateOf(false) }
-    var triggerEffect by remember { mutableIntStateOf(1) }
+            var isDialogVisible by remember { mutableStateOf(true) }
+            var isNextScreenVisible by remember { mutableStateOf(false) }
+            var triggerEffect by remember { mutableIntStateOf(1) }
 
-    val directoryLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.also { uri ->
-                    context.contentResolver.takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    )
-                    settingsManager.saveStorageUri(uri)
-                    (context as ComponentActivity).lifecycleScope.launch {
-                        bookManager.refreshBooksLinks()
+            val directoryLauncher =
+                rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                    if (result.resultCode == Activity.RESULT_OK) {
+                        result.data?.data?.also { uri ->
+                            context.contentResolver.takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            )
+                            settingsManager.saveStorageUri(uri)
+                            (context as ComponentActivity).lifecycleScope.launch {
+                                bookManager.refreshBooksLinks()
+                            }
+                        }
+                    } else {
+                        isDialogVisible = true
                     }
                 }
-            } else {
-                isDialogVisible = true
-            }
-        }
 
-    if (settingsManager.getStorageUri() == null && isDialogVisible) {
-        StorageSelectionDialog(
-            onDismiss = {
-                isDialogVisible = false
-            },
-            onChoose = {
-                triggerEffect++
-                isDialogVisible = false
-                isNextScreenVisible = true
+            if (settingsManager.getStorageUri() == null && isDialogVisible) {
+                StorageSelectionDialog(
+                    onChoose = {
+                        triggerEffect++
+                        isDialogVisible = false
+                        isNextScreenVisible = true
+                    }
+                )
             }
-        )
-    }
 
-    LaunchedEffect("storage_$triggerEffect") {
-        if (isNextScreenVisible) {
-            isNextScreenVisible = false
-            // Trigger directory picker in MainActivity
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            directoryLauncher.launch(intent)
+            LaunchedEffect("storage_$triggerEffect") {
+                if (isNextScreenVisible) {
+                    isNextScreenVisible = false
+                    // Trigger directory picker in MainActivity
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                    directoryLauncher.launch(intent)
+                }
+            }
         }
     }
 }
 
 @Composable
 fun StorageSelectionDialog(
-    onDismiss: () -> Unit,
     onChoose: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = { onDismiss() },
+        onDismissRequest = { },
         title = {
             Text(
                 text = "Выберите хранилище",
@@ -256,13 +252,6 @@ fun StorageSelectionDialog(
                 Text(text = "Выбрать")
             }
         },
-        dismissButton = {
-            TextButton(onClick = { onDismiss() }) {
-                Text(text = "Отмена")
-            }
-        },
-        shape = RoundedCornerShape(16.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     )
 }
@@ -271,7 +260,6 @@ fun StorageSelectionDialog(
 @Composable
 fun PreviewStorageSelectionDialog() {
     StorageSelectionDialog(
-        onDismiss = {},
         onChoose = {}
     )
 }
