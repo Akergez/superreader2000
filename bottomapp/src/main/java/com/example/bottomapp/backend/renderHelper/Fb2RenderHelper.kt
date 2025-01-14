@@ -30,11 +30,9 @@ import com.example.bottomapp.backend.renderHelper.fb2.FB2Paragraph
 import com.example.bottomapp.backend.renderHelper.fb2.FB2SubtitleText
 import com.example.bottomapp.backend.renderHelper.fb2.FB2Text
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
-import com.example.bottomapp.ui.readerscreens.IBookContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.w3c.dom.Node
