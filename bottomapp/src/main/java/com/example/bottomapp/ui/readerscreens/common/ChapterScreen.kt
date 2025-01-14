@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -60,15 +61,27 @@ fun ChapterScreen(
                     { e, n -> ChapterView(e.title, n, e.pageIndex) })
             )
             { chapter ->
-                Row(Modifier.pointerInput(Unit) {
-                    detectTapGestures { onChapterClick(chapter.page) }
-                }.padding(start = chapter.nestingLevel * 16.dp))
-                {
-                    Column {
-                        Text(chapter.title)
-                        Text(chapter.page.toString())
-                    }
-                }
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            chapter.title,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            getString(
+                                LocalContext.current,
+                                R.string.page
+                            ) + ' ' + chapter.page.toString(), style = MaterialTheme.typography.bodySmall
+                        )
+                    },
+                    modifier = Modifier
+                        .pointerInput(Unit) {
+                            detectTapGestures { onChapterClick(chapter.page) }
+                        }
+                        .padding(start = chapter.nestingLevel * 60.dp)
+                )
             }
         }
     }
