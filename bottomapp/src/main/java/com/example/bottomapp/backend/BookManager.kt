@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-data class BookMetaInfo(val title: String, val progress: Progress)
+data class BookMetaInfo(val title: String, val progress: Progress, val author: String?)
 
 data class BookStorageEntry(
     val title: String,
     val previewUri: Uri?,
     val bundleName: String,
+    val progressInPercent: Double?,
     val bookMetaInfo: BookMetaInfo
 )
 
@@ -55,14 +56,14 @@ class BookManager(
         storageManager.createBundle(
             fileName,
             fileUri,
-            BookMetaInfo(fileName, progress),
+            BookMetaInfo(fileName, progress, null),
             context.contentResolver,
             fileType.toMimeType()
         ).onSuccess {
             CoroutineScope(Dispatchers.IO).launch {
                 bookCache.addBook(
                     BookStorageEntry(
-                        fileName, it.previewUri, fileName, it.meta
+                        fileName, it.previewUri, fileName, null, it.meta
                     )
                 )
             }
@@ -83,7 +84,7 @@ class BookManager(
         val book = bookCache.findBook(bookMetaInfo.title)
         bookCache.updateBook(
             BookStorageEntry(
-                bookMetaInfo.title, book?.previewUri, bundleName, bookMetaInfo
+                bookMetaInfo.title, book?.previewUri, bundleName, bookMetaInfo.progress.getProgressInPercent(), bookMetaInfo
             )
         )
         _pendingBooksToSave.add(bundleName)
@@ -108,7 +109,7 @@ class BookManager(
             .onSuccess {
                 storageManager.updateBundleMeta(
                     newNameForBundle,
-                    BookMetaInfo(newNameForBundle, meta.bookMetaInfo.progress)
+                    BookMetaInfo(newNameForBundle, meta.bookMetaInfo.progress, null)
                 ).onSuccess {
                     refreshBooksLinks()
                     Result.success(Unit)
@@ -118,7 +119,23 @@ class BookManager(
                 }
             }
             .onFailure {
-                Result.failure<Unit>(it.cause!!)
+                Result.failure<Unit>(it.cause ?: Exception("Failed to rename book"))
+            }
+        return Result.success(Unit)
+    }
+
+    suspend fun updateAuthor(bundleName: String, author: String?): Result<Unit> {
+        Log.d("BookManager", "updateAuthor: $author")
+        val meta = bookCache.findBook(bundleName)
+            ?: return Result.failure(Exception("Book not found"))
+
+        storageManager.updateBundleMeta(bundleName, meta.bookMetaInfo.copy(author = author))
+            .onSuccess {
+                    refreshBooksLinks()
+                    Result.success(Unit)
+            }
+            .onFailure {
+                Result.failure<Unit>(it.cause ?: Exception("Failed to update author"))
             }
         return Result.success(Unit)
     }
@@ -147,7 +164,7 @@ class BookManager(
     private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
         return storageManager.listAllBundles().map {
             BookStorageEntry(
-                it?.meta?.title!!, it.previewUri, it.bundleName, it.meta
+                it?.meta?.title!!, it.previewUri, it.bundleName, it.meta.progress.getProgressInPercent(), it.meta
             )
         }
     }

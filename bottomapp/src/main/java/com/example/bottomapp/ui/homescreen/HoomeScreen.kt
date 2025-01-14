@@ -15,20 +15,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
@@ -45,7 +50,7 @@ import kotlin.uuid.Uuid
 
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onItemClick: (BookStorageEntry) -> Unit,
@@ -81,16 +86,57 @@ fun HomeScreen(
     val selectedBooks by hoomeScreenViewModel.selectedBooks.collectAsState()
     val haptic = LocalHapticFeedback.current
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    LaunchedEffect(Unit) {
+        hoomeScreenViewModel.dumpBooks()
+    }
+
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { launcher.launch(openFilePicker()) }) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = getString(LocalContext.current, R.string.add_book)
+            if (selectedBooks.size == 1) {
+                FloatingActionButton(onClick = {
+                    hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
+                    hoomeScreenViewModel.clearSelectedBooks()
+                }) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = getString(LocalContext.current, R.string.edit_book)
+                    )
+                }
+            }
+            else if (selectedBooks.isEmpty()) {
+                FloatingActionButton(onClick = { launcher.launch(openFilePicker()) }) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = getString(LocalContext.current, R.string.add_book)
+                    )
+                }
+            }
+        },
+        bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) },
+        topBar = {
+            if (selectedBooks.isNotEmpty()) {
+                TopEditBar(
+                    onClose = { hoomeScreenViewModel.clearSelectedBooks() },
+                    onDelete = {
+                        hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
+                    },
+                    selectedCount = selectedBooks.size
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = getString(LocalContext.current, R.string.my_books),
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    },
+                    scrollBehavior = scrollBehavior
                 )
             }
         },
-        bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) }
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -98,13 +144,6 @@ fun HomeScreen(
                 .padding(padding),
             state = lazyListState
         ) {
-            item {
-                Text(
-                    text = getString(LocalContext.current, R.string.my_books),
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
             items(books, key = { it.bundleName }) { bookLink ->
                 val isSelected = bookLink in selectedBooks
                 val isSelectedAny = selectedBooks.isNotEmpty()
@@ -125,20 +164,6 @@ fun HomeScreen(
                     }
                 )
             }
-        }
-
-        if (selectedBooks.isNotEmpty()) {
-            TopEditBar(
-                onClose = { hoomeScreenViewModel.clearSelectedBooks() },
-                onEdit = {
-                    hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
-                    hoomeScreenViewModel.clearSelectedBooks()
-                },
-                onDelete = {
-                    hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
-                },
-                selectedCount = selectedBooks.size
-            )
         }
     }
 

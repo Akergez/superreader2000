@@ -1,20 +1,22 @@
 package com.example.bottomapp.ui.readerscreens.common
 
-import androidx.compose.foundation.background
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.ModalBottomSheetValue
-import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -22,15 +24,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.core.view.WindowCompat
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.backend.renderHelper.TOCEntry
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
+import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
 import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.rememberPageCurlState
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.abs
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -39,6 +44,7 @@ fun BookContent(
     currentPage: Int,
     title: String,
     totalPages: MutableStateFlow<Int>,
+    tableOfContent: StateFlow<List<TOCEntry>>,
     mode: ReaderMode,
     flipMode: FlipMode,
     onPageChange: (Int) -> Unit,
@@ -56,14 +62,12 @@ fun BookContent(
         onPageChange(pagerState.current)
     }
 
-    val sheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
-
-
     var scale by remember { mutableFloatStateOf(1f) } // State to control zoom scale
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
     val haptic = LocalHapticFeedback.current
+
+    val showSettingsModal = remember { mutableStateOf(false) }
 
     val actualMode = rememberUpdatedState(mode)
     val transformGesturesHandler =
@@ -94,7 +98,6 @@ fun BookContent(
             offsetY += pan.y
         }
 
-
     Box(modifier = modifier.pointerInput(Unit) {
         detectTransformGestures { centroid, pan, zoom, rotation ->
             transformGesturesHandler(centroid, pan, zoom, rotation)
@@ -108,9 +111,6 @@ fun BookContent(
                     initialPage = currentPage,
                     onPageChange = onPageChange,
                     onBack = { onCarouselBack() },
-                    onSettingsClick = {
-                        coroutineScope.launch { sheetState.show() }
-                    },
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
                         .fillMaxSize()
@@ -123,24 +123,30 @@ fun BookContent(
                             )
                         },
                     bookContent = getPage,
-                    title = title
+                    title = title,
+                    onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
+                    onChaptersClick = { onToggleMode(ReaderMode.Chapters) }
                 )
-                SettingsModal(
-                    sheetState = sheetState,
-                    onApplyInversionToggle = { applyInversion ->
-                        updateDocumentThemeMode(if (applyInversion) DocThemeMode.Invert else DocThemeMode.AsIs)
-                    },
-                    applyInversion = documentTheme == DocThemeMode.Invert,
-                    onVerticalScroll = {
-                        updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
-                    },
-                    scrollMode = flipMode
-                    )
+                if (showSettingsModal.value) {
+                    if (showSettingsModal.value) {
+                        SettingsModal(
+                            onApplyInversionToggle = {
+                                updateDocumentThemeMode(if (it) DocThemeMode.Invert else DocThemeMode.AsIs)
+                            },
+                            applyInversion = documentTheme == DocThemeMode.Invert,
+                            onVerticalScroll = {
+                                updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
+                            },
+                            scrollMode = flipMode,
+                            onStateChange = { showSettingsModal.value = it }
+                        )
+                    }
+                }
             }
 
             ReaderMode.Reading -> {
                 when (flipMode) {
-                    FlipMode.PagingCurl -> com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl(
+                    FlipMode.PagingCurl -> PageCurl(
                         totalPages = totalPages,
                         currentPage = currentPage,
                         getPage = getPage,
@@ -159,16 +165,30 @@ fun BookContent(
             }
 
             ReaderMode.Zoom -> {
-                BookPage(
-                    bookContent = getPage(currentPage),
-                    applyInversion = documentTheme == DocThemeMode.Invert,
-                    modifier = modifier
-                        .basePageBoxModifier(),
-                    scale = scale,
-                    offsetX = offsetX,
-                    offsetY = offsetY
-                )
+                Scaffold { inner ->
+                    BookPage(
+                        bookContent = getPage(currentPage),
+                        applyInversion = documentTheme == DocThemeMode.Invert,
+                        modifier = modifier
+                            .padding(inner)
+                            .fillMaxSize()
+                            .consumeWindowInsets(inner),
+                        scale = scale,
+                        offsetX = offsetX,
+                        offsetY = offsetY
+                    )
+                }
             }
+
+
+            ReaderMode.Chapters -> ChapterScreen(
+                onChapterClick = {
+                    onPageChange(it)
+                    onToggleMode(ReaderMode.Reading)
+                },
+                tableOfContents = tableOfContent,
+                onBack = { onToggleMode(ReaderMode.Carousel) }
+            )
         }
     }
 }

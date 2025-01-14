@@ -1,6 +1,7 @@
 package com.example.bottomapp.backend
 
 import android.content.Context
+import com.example.bottomapp.BookInfoExtractorFactory
 import com.example.bottomapp.backend.storage.IDeserializer
 import com.example.bottomapp.backend.storage.INameProvider
 import com.example.bottomapp.backend.storage.StorageManager
@@ -47,6 +48,6 @@ class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> 
 class BookStorage(
     context: Context,
     settingsManager: SettingsManager,
-    adapter: StorageAdapter
-) : StorageManager<BookMetaInfo>(context, settingsManager, adapter, adapter) {
-}
+    adapter: StorageAdapter,
+    infoExtractorFactory: BookInfoExtractorFactory
+) : StorageManager<BookMetaInfo>(context, settingsManager, adapter, adapter, infoExtractorFactory)

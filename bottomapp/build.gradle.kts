@@ -48,9 +48,9 @@ android {
 }
 
 dependencies {
-
     implementation("androidx.compose.material3:material3:1.3.0")
     implementation("androidx.compose.material:material:1.7.2")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.navigation.compose.v240alpha10)

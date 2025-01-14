@@ -3,10 +3,18 @@ package com.example.bottomapp.backend
 import java.io.File
 
 
-data class PdfProgress(val pageIndex: Int) : Progress(FormatType.PDF)
+data class PdfProgress(val pageIndex: Int, val totalPages: Int?) : Progress(FormatType.PDF) {
+    override fun getProgressInPercent(): Double? {
+        return if (totalPages != null && totalPages != 0) {
+            pageIndex.toDouble() / totalPages.toDouble() * 100
+        } else {
+            null
+        }
+    }
+}
 
 class PdfBookDomainModel(
-    bookMetaInfo: BookMetaInfo,
+    val bookMetaInfo: BookMetaInfo,
     val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFileFromStorage: suspend () -> File,
 ) :
@@ -24,6 +32,6 @@ class PdfBookDomainModel(
 
     override suspend fun saveProgress(progress: PdfProgress) {
         this.progress = progress
-        updateProgress(BookMetaInfo(title, progress))
+        updateProgress(BookMetaInfo(title, progress, bookMetaInfo.author))
     }
 }

@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import com.example.bottomapp.IBookInfoExtractorFactory
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
@@ -18,19 +19,29 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
-data class BundleDataName<TMeta>(
+data class BundleCreateResult<TMeta>(
     val bookFile: Uri,
     val bundleName: String,
     val metaFileUri: Uri,
     val previewUri: Uri,
-    val meta: TMeta
+    val meta: TMeta,
+    val author: String?
 )
 
-open class StorageManager<T>(
+data class BundleEditResult<TMeta>(
+    val bookFile: Uri,
+    val bundleName: String,
+    val metaFileUri: Uri,
+    val previewUri: Uri,
+    val meta: TMeta,
+)
+
+abstract class StorageManager<T>(
     val context: Context,
     private val settingsManager: SettingsManager,
     private val deserializer: IDeserializer<T>,
-    private val nameProvider: INameProvider<T>
+    private val nameProvider: INameProvider<T>,
+    private val infoExtractor: IBookInfoExtractorFactory<T>,
 ) {
     private val fileCache = HashMap<String, File>()
 
@@ -63,7 +74,7 @@ open class StorageManager<T>(
         meta: T,
         contentResolver: ContentResolver,
         mimeType: String
-    ): Result<BundleDataName<T>> = withContext(Dispatchers.IO) {
+    ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
         Log.i("StorageManager", "Creating bundle $bundleName")
         val storageUri = settingsManager.getStorageUri()
             ?: return@withContext Result.failure(Exception("Storage directory not set"))
@@ -115,12 +126,13 @@ open class StorageManager<T>(
             previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
         }
         return@withContext Result.success(
-            BundleDataName<T>(
+            BundleCreateResult<T>(
                 destFile.uri,
                 bundleName,
                 metaFile.uri,
                 previewFile.uri,
-                meta
+                meta,
+                infoExtractor.createExtractor(meta).getAuthor(bookFile!!)
             )
         )
     }
@@ -129,7 +141,7 @@ open class StorageManager<T>(
         old: String,
         new: String,
         meta: T
-    ): Result<BundleDataName<T>> = withContext(Dispatchers.IO) {
+    ): Result<BundleEditResult<T>> = withContext(Dispatchers.IO) {
         Log.i("StorageManager", "Renaming bundle $old to $new")
         val storageUri = settingsManager.getStorageUri()
             ?: return@withContext Result.failure(Exception("Storage directory not set"))
@@ -153,12 +165,12 @@ open class StorageManager<T>(
         oldFilePath.renameTo(nameProvider.fileName(new, meta))
 
         return@withContext Result.success(
-            BundleDataName(
+            BundleEditResult(
                 oldFilePath.uri,
                 new,
                 oldJsonPath.uri,
                 oldImagePath.uri,
-                meta
+                meta,
             )
         )
     }
@@ -231,7 +243,7 @@ open class StorageManager<T>(
             return@withContext Result.success(Unit)
         }
 
-    suspend fun listAllBundles(): List<BundleDataName<T>?> = coroutineScope {
+    suspend fun listAllBundles(): List<BundleEditResult<T>?> = coroutineScope {
         Log.i("StorageManager", "Listing all bundles")
         val storageUri = settingsManager.getStorageUri() ?: return@coroutineScope emptyList()
         val storageDir =
@@ -250,7 +262,7 @@ open class StorageManager<T>(
                         val bookFile = file.findFile(nameProvider.previewFilename(file.name!!))
                         val previewFile =
                             file.findFile(nameProvider.fileName(file.name!!, bookMetaInfo))
-                        BundleDataName(
+                        BundleEditResult(
                             previewFile?.uri!!,
                             file.name!!,
                             metaFile.uri,

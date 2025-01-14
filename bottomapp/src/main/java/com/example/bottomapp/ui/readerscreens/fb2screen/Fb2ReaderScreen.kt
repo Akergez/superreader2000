@@ -25,6 +25,7 @@ import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import java.io.File
@@ -112,7 +113,8 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 updateDocumentThemeMode = { docThemeMode -> settingsManager.setDocumentsTheme(docThemeMode) },
                 updateFlipMode = { flipMode -> settingsManager.setPdfFlipMode(flipMode)},
                 onCarouselBack = { mode = ReaderMode.Reading },
-                title = book.title
+                title = book.title,
+                tableOfContent = MutableStateFlow(emptyList())
             )
         } else {
             Text(getString(LocalContext.current, R.string.loading))

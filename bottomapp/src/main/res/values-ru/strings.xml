@@ -42,4 +42,6 @@
     <string name="error_book_already_exists">Книга уже существует</string>
     <string name="error_invalid_storage_directory">Выбрана неверная директория</string>
     <string name="error_storage_not_set">Выберите сначала хранилище</string>
+    <string name="table_of_contents">Оглавление</string>
+    <string name="page">Страница</string>
 </resources>

@@ -48,7 +48,7 @@ class PdfScreenViewModel(
                 currentPage = newPage,
             )
         }
-        viewModelScope.launch { pdfBookDomainModel.saveProgress(PdfProgress(newPage)) }
+        viewModelScope.launch { pdfBookDomainModel.saveProgress(PdfProgress(newPage, pdfRendererHelper.pagesCount.value)) }
     }
 
     fun updateDocumentThemeMode(docThemeMode: DocThemeMode) {
