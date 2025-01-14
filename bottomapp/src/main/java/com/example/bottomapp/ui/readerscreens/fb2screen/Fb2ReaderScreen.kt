@@ -96,7 +96,8 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
             val wordsCount = fb2RenderHelper.value!!.pageWordSum
             if (wordsCount.size > pageIndex) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    book.saveProgress(Fb2Progress(wordsCount[pageIndex]))
+                    //ToDo женя добавь тоталвордс
+                    book.saveProgress(Fb2Progress(wordsCount[pageIndex], null))
                 }
             }
             currentPage = pageIndex
