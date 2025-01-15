@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
@@ -123,20 +124,32 @@ fun EditBookModal(
 
             OutlinedTextField(
                 value = state.title,
-                onValueChange = { editModalViewModel.updateTitle(it) },
+                onValueChange = {
+                    val replacedText = it.replace("\n", " ")
+                    editModalViewModel.updateTitle(replacedText)
+                },
                 label = { Text(context.getString(R.string.book_name)) },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = state.author,
-                onValueChange = { editModalViewModel.updateAuthor(it) },
+                onValueChange = {
+                    val replacedText = it.replace("\n", " ")
+                    editModalViewModel.updateAuthor(replacedText)
+                },
                 label = { Text(context.getString(R.string.book_author)) },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -223,12 +236,7 @@ fun EditBookModal(
                 onClick = { coroutineScope.launch { sheetState.hide() } },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(16.dp)
-                    ),
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.primary
