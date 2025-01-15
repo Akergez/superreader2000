@@ -23,7 +23,7 @@ class SettingsManager(context: Context) {
     private val appThemeKey = "theme"
     private val docThemeKey = "doc_theme"
     private val pdfFlipModeKey = "pdf_flip_mode"
-    private val _appThemeMode = MutableStateFlow(AppThemeMode.System)
+    private val _appThemeMode = MutableStateFlow(getAppTheme(AppThemeMode.System))
     val appThemeMode: StateFlow<AppThemeMode> get() = _appThemeMode
 
 
