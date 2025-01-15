@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getString
 import com.example.bottomapp.R
+import com.example.bottomapp.ui.homescreen.components.IconScrollSelector
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import kotlinx.coroutines.launch
 
@@ -104,21 +105,7 @@ fun SettingsModal(
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    getString(LocalContext.current, R.string.vertical_scroll),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = scrollMode == FlipMode.VerticalScroll,
-                    onCheckedChange = { onVerticalScroll(scrollMode) },
-                    colors = SwitchDefaults.colors()
-                )
-            }
+            IconScrollSelector(onVerticalScroll, scrollMode)
         }
     }
 }

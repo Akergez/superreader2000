@@ -133,7 +133,7 @@ fun BookContent(
                             },
                             applyInversion = documentTheme == DocThemeMode.Invert,
                             onVerticalScroll = {
-                                updateFlipMode(if (flipMode == FlipMode.VerticalScroll) FlipMode.PagingCurl else FlipMode.VerticalScroll)
+                                updateFlipMode(it)
                             },
                             scrollMode = flipMode,
                             onStateChange = { showSettingsModal.value = it }

@@ -38,9 +38,9 @@ import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.DocThemeMode
+import com.example.bottomapp.ui.homescreen.components.IconScrollSelector
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -119,17 +119,7 @@ fun SettingsScreen(
                 settingsViewModel.updateDocThemeMode(mode)
             }
 
-            ThemeSelector(
-                getString(LocalContext.current, R.string.paging_mode),
-                mapOf(
-                    FlipMode.PagingCurl to getString(LocalContext.current, R.string.paging_mode_classic),
-                    FlipMode.VerticalScroll to getString(LocalContext.current, R.string.paging_mode_vertical),
-                    FlipMode.Casual to getString(LocalContext.current, R.string.paging_mode_casual)
-                ),
-                settings.flipMode
-            ) { mode ->
-                settingsViewModel.updateFlipMode(mode)
-            }
+            IconScrollSelector(onSelect = {settingsViewModel.updateFlipMode(it)}, selected = settings.flipMode)
         }
     }
 }
