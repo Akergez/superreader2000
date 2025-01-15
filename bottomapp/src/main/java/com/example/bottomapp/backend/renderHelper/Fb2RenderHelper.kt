@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -50,6 +51,7 @@ class Fb2RenderHelper(
     private var cachedContent: Queue<FB2Element>? = null
     private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
     val pageWordSum = mutableListOf<Int>()
+    val totalWords = MutableStateFlow<Int?>(null)
     var pagesCount = MutableStateFlow<Int?>(null)
     private val imageMap = mutableMapOf<String, InlineTextContent>()
     private var currentPage = AnnotatedString("")
@@ -60,6 +62,7 @@ class Fb2RenderHelper(
     init {
         CoroutineScope(Dispatchers.IO).launch {
             cachedContent = LinkedList(parseFb2Content(fb2File))
+            openPage(1)
         }
     }
 
@@ -130,7 +133,7 @@ class Fb2RenderHelper(
                 addOrUpdatePage(lastSlicedPageIndex, currentPage)
                 lastSlicedPageIndex++
 
-                if (pagesCount.value == 1) {
+                if (pagesCount.value == null) {
                     pagesCount.update { cachedContent!!.size / currentPage.split(" ").size }
                 }
 
@@ -236,6 +239,7 @@ class Fb2RenderHelper(
                 }
             }
 
+            totalWords.update { elements.size }
             return elements
         } catch (e: Exception) {
             Log.e("FB2Parser", "Error parsing FB2: ${e.message}")
