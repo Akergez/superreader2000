@@ -237,12 +237,7 @@ fun EditBookModal(
                 onClick = { coroutineScope.launch { sheetState.hide() } },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(16.dp)
-                    ),
+                    .height(50.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.primary
