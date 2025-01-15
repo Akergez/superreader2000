@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -41,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
@@ -123,20 +125,32 @@ fun EditBookModal(
 
             OutlinedTextField(
                 value = state.title,
-                onValueChange = { editModalViewModel.updateTitle(it) },
+                onValueChange = {
+                    val replacedText = it.replace("\n", " ")
+                    editModalViewModel.updateTitle(replacedText)
+                },
                 label = { Text(context.getString(R.string.book_name)) },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = state.author,
-                onValueChange = { editModalViewModel.updateAuthor(it) },
+                onValueChange = {
+                    val replacedText = it.replace("\n", " ")
+                    editModalViewModel.updateAuthor(replacedText)
+                },
                 label = { Text(context.getString(R.string.book_author)) },
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
