@@ -168,6 +168,7 @@ fun HomeScreen(
     }
 
     state.editingBook?.let { book ->
+        val toast = Toast.makeText(context, "", Toast.LENGTH_SHORT)
         EditBookModal(
             onClose = {
                 coroutineScope.launch {
@@ -184,7 +185,8 @@ fun HomeScreen(
                         context
                     )
                 } else {
-                    Toast.makeText(context, getString(context, R.string.error_book_with_title_already_exists), Toast.LENGTH_LONG).show()
+                    toast.setText(getString(context, R.string.error_book_with_title_already_exists))
+                    toast?.show()
                 }
             },
             editModalViewModel = koinViewModel(
