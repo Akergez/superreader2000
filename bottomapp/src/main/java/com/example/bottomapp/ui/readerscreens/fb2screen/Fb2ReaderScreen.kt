@@ -25,8 +25,6 @@ import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
@@ -49,7 +47,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
         CoroutineScope(Dispatchers.IO).launch {
             if (componentHeight > 1) {
                 val fb2File = book.getFile()
-                var newPage = 0;
+                var newPage: Int
                 synchronized(lock) {
                     if (fb2RenderHelper.value == null) {
                         fb2RenderHelper.value = Fb2RenderHelper(

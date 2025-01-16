@@ -40,6 +40,7 @@ import java.io.File
 import java.util.LinkedList
 import java.util.Queue
 import javax.xml.parsers.DocumentBuilderFactory
+import kotlin.system.measureTimeMillis
 
 class Fb2RenderHelper(
     private val maxWidth: Int,
@@ -66,7 +67,7 @@ class Fb2RenderHelper(
             synchronized(lockParseFile) {
                 cachedContent = LinkedList(parseFb2Content(fb2File))
             }
-            openPage(1)
+            openPage(1, false)
         }
     }
 
@@ -118,6 +119,7 @@ class Fb2RenderHelper(
                 }
 
                 // Измерение текста
+
                 val result = textMeasurer.measure(
                     text = annotatedStringBuilder,
                     style = TextStyle(textAlign = TextAlign.Justify),
@@ -129,6 +131,22 @@ class Fb2RenderHelper(
                     ),
                     softWrap = true
                 )
+
+                val executionTime = measureTimeMillis {
+                    textMeasurer.measure(
+                        text = annotatedStringBuilder,
+                        style = TextStyle(textAlign = TextAlign.Justify),
+                        constraints = Constraints(
+                            minWidth = maxWidth,
+                            maxWidth = maxWidth,
+                            minHeight = maxHeight,
+                            maxHeight = maxHeight
+                        ),
+                        softWrap = true
+                    )
+                }
+
+                Log.d("Fb2RenderHelper", "Execution time: $executionTime")
 
                 if (!result.didOverflowHeight) {
                     currentPage = annotatedStringBuilder
