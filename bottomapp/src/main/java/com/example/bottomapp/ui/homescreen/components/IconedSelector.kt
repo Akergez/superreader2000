@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,7 +26,8 @@ import com.example.bottomapp.ui.readerscreens.common.FlipMode
 
 @Composable
 fun IconScrollSelector(onSelect: (FlipMode) -> Unit, selected: FlipMode) {
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+    val iconSize = 64.dp
+    Row(horizontalArrangement = Arrangement.SpaceAround, modifier = Modifier.fillMaxWidth()) {
         Column {
             Icon(
                 painterResource(R.drawable.vertical_scroll_foreground),
@@ -39,7 +41,7 @@ fun IconScrollSelector(onSelect: (FlipMode) -> Unit, selected: FlipMode) {
                             MaterialTheme.colorScheme.onBackground,
                             androidx.compose.foundation.shape.CircleShape
                         )
-                    }),
+                    }).size(iconSize),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -64,7 +66,8 @@ fun IconScrollSelector(onSelect: (FlipMode) -> Unit, selected: FlipMode) {
                             MaterialTheme.colorScheme.onBackground,
                             androidx.compose.foundation.shape.CircleShape
                         )
-                    }),
+                    })
+                    .size(iconSize),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -89,7 +92,8 @@ fun IconScrollSelector(onSelect: (FlipMode) -> Unit, selected: FlipMode) {
                             MaterialTheme.colorScheme.onBackground,
                             androidx.compose.foundation.shape.CircleShape
                         )
-                    }),
+                    })
+                    .size(iconSize),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
