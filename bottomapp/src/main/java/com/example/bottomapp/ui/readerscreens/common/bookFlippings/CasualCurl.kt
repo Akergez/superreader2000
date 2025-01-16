@@ -28,6 +28,8 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.flow.StateFlow
+import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -39,7 +41,7 @@ fun CasualCurl(
     initialPage: Int = 0,
     getPage: (Int) -> StateFlow<IBookContent>,
     persistentZoom: TransformState,
-    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
+    zoomState: ZoomState
 ) {
     val lazyListState = rememberPagerState(initialPage)
     val totalPagesState by totalPages.collectAsState()
@@ -47,22 +49,15 @@ fun CasualCurl(
     Scaffold { innerPadding ->
         totalPagesState?.let { totalPagesValue ->
             HorizontalPager(
-                modifier = modifier.padding(innerPadding).fillMaxSize(),
+                modifier = modifier.padding(innerPadding).fillMaxSize().zoomable(zoomState),
                 state = lazyListState,
                 count = totalPagesValue,
                 key = { it }) { page ->
                 Card(shape = RoundedCornerShape(0.dp), modifier = Modifier.fillMaxSize()) {
                     val pageState = remember { getPage(page) }
                     BookPage(
-                        transformState = persistentZoom,
                         applyInversion = applyInversion,
                         bookContent = pageState,
-                        modifier = Modifier.pointerInput(Unit) {
-                            detectCustomTransformGestures(
-                                onGesture = transformGestureHandler,
-                                consume = false
-                            )
-                        },
                     )
                 }
 

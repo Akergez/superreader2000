@@ -46,6 +46,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +62,7 @@ fun PageCarousel(
     title: String,
     onSettingsClick: () -> Unit,
     onChaptersClick: () -> Unit,
-    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
+    zoomState: ZoomState
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
@@ -83,7 +85,7 @@ fun PageCarousel(
         },
     ) { padding ->
         totalPagesState?.let { totalPagesNotNull ->
-            Column(modifier = modifier.padding(padding)) {
+            Column(modifier = modifier.padding(padding).zoomable(zoomState)) {
                 LazyRow(
                     modifier = Modifier.weight(0.9f),
                     state = lazyListState,
@@ -107,12 +109,6 @@ fun PageCarousel(
                                 BookPage(
                                     bookContent = bookContent(page),
                                     applyInversion = applyInversion,
-                                    Modifier.pointerInput(Unit) {
-                                        detectCustomTransformGestures(
-                                            onGesture = transformGestureHandler,
-                                            consume = false
-                                        )
-                                    },
                                 )
                             }
                         }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateRotation
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,11 +38,13 @@ import com.example.bottomapp.ui.readerscreens.common.bookFlippings.CasualCurl
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCarousel
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.PageCurl
 import com.example.bottomapp.ui.readerscreens.common.bookFlippings.VerticalBookScroll
-import com.example.bottomapp.ui.readerscreens.common.bookFlippings.Zoom
 import com.example.bottomapp.ui.readerscreens.common.components.SettingsModal
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.page.rememberPageCurlState
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import net.engawapg.lib.zoomable.rememberZoomState
 import kotlin.math.abs
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -79,37 +81,34 @@ fun BookContent(
     val showSettingsModal = remember { mutableStateOf(false) }
 
     val actualMode = rememberUpdatedState(mode)
-    val transformGesturesHandler =
-        { _: Offset, pan: Offset, zoom: Float, _: Float, _: PointerInputChange, changes: List<PointerInputChange> ->
-            val newScale = zoom * scale
+    val zoomState = rememberZoomState()
+    val coroutineScope = rememberCoroutineScope()
 
-            if (abs(newScale - 1f) < 0.5f
-                || (actualMode.value == ReaderMode.Zoom && offsetX + pan.x == 0f)
-            ) {
-                /*                if (actualMode.value != ReaderMode.Reading) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onToggleMode(ReaderMode.Reading)
-                                }*/
-            } else if (newScale < 0.5f) {
-                if (actualMode.value != ReaderMode.Carousel) {
-                    Log.d("BookContent", "Updating mode from ${actualMode.value} to Carousel")
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleMode(ReaderMode.Carousel)
-                }
-            } else {
-                if (actualMode.value != ReaderMode.Zoom) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleMode(ReaderMode.Zoom)
-                }
-            }
-            scale = (scale * zoom)
-            offsetX += pan.x
-            offsetY += pan.y
+    val onToggleModeWrapper = { newMode: ReaderMode ->
+        onToggleMode(newMode)
+        coroutineScope.launch { zoomState.reset() }
+    }
 
-            if (changes.size > 1) {
-                changes.forEach { it.consume() }
+    LaunchedEffect(zoomState.scale)
+    {
+        val newScale = zoomState.scale
+        Log.d("BookContent", "New scale: $newScale")
+        if (newScale <= 0.9f) {
+            if (actualMode.value != ReaderMode.Carousel) {
+                Log.d("BookContent", "Updating mode from ${actualMode.value} to Carousel")
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onToggleModeWrapper(ReaderMode.Carousel)
             }
         }
+
+        if(newScale > 1f) {
+            if (actualMode.value != ReaderMode.Reading) {
+                Log.d("BookContent", "Updating mode from ${actualMode.value} to Reading")
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onToggleModeWrapper(ReaderMode.Reading)
+            }
+        }
+    }
 
     Box()
     {
@@ -123,19 +122,12 @@ fun BookContent(
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onDoubleTap = {
-                                    onToggleMode(ReaderMode.Reading)
-                                }
-                            )
-                        },
+                        .background(MaterialTheme.colorScheme.background),
                     bookContent = getPage,
                     title = title,
                     onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
-                    onChaptersClick = { onToggleMode(ReaderMode.Chapters) },
-                    transformGestureHandler = transformGesturesHandler
+                    onChaptersClick = { onToggleModeWrapper(ReaderMode.Chapters) },
+                    zoomState = zoomState
                 )
                 if (showSettingsModal.value) {
                     if (showSettingsModal.value) {
@@ -163,8 +155,7 @@ fun BookContent(
                         getPage = getPage,
                         documentTheme = documentTheme,
                         modifier = modifier,
-                        persistentZoom = persistentZoom,
-                        transformGestureHandler = transformGesturesHandler
+                        zoomState = zoomState
                     )
 
                     FlipMode.VerticalScroll -> VerticalBookScroll(
@@ -173,7 +164,7 @@ fun BookContent(
                         onPageChange = onPageChange,
                         applyInversion = documentTheme == DocThemeMode.Invert,
                         getPage = getPage,
-                        transformGestureHandler = transformGesturesHandler
+                        zoomState = zoomState
                     )
 
                     FlipMode.Casual -> CasualCurl(
@@ -183,47 +174,18 @@ fun BookContent(
                         applyInversion = documentTheme == DocThemeMode.Invert,
                         getPage = getPage,
                         persistentZoom = persistentZoom,
-                        transformGestureHandler = transformGesturesHandler
+                        zoomState = zoomState
                     )
                 }
             }
 
-            ReaderMode.Zoom -> {
-                Zoom(
-                    currentPage = currentPage,
-                    getPage = getPage,
-                    documentTheme = documentTheme,
-                    modifier = modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .pointerInput(Unit) {
-                        detectCustomTransformGestures(
-                            onGesture = transformGesturesHandler,
-                            consume = false
-                        )
-                    },
-                    scale = scale,
-                    offsetX = offsetX,
-                    offsetY = offsetY,
-                    onZoomLock = {
-                        persistentZoom = TransformState(
-                            scale = scale,
-                            offsetX = offsetX,
-                            offsetY = offsetY
-                        )
-                        onToggleMode(ReaderMode.Reading)
-                    }
-                )
-            }
-
-
             ReaderMode.Chapters -> ChapterScreen(
                 onChapterClick = {
                     onPageChange(it)
-                    onToggleMode(ReaderMode.Reading)
+                    onToggleModeWrapper(ReaderMode.Reading)
                 },
                 tableOfContents = tableOfContent,
-                onBack = { onToggleMode(ReaderMode.Carousel) }
+                onBack = { onToggleModeWrapper(ReaderMode.Carousel) }
             )
         }
     }

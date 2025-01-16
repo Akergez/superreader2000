@@ -10,12 +10,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.bottomapp.ui.homescreen.components.conditional
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.PdfBookContent
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
 import kotlinx.coroutines.flow.StateFlow
+import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.zoomable
 
 data class TransformState(
     val scale: Float = 1f,
@@ -28,18 +31,17 @@ fun BookPage(
     bookContent: StateFlow<IBookContent>,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
-    transformState: TransformState = TransformState()
 ) {
     val content by bookContent.collectAsState()
-    Box(modifier = modifier) {
+    Box(modifier) {
         when (content) {
             is PdfBookContent -> {
                 val pdfContent = content as PdfBookContent
                 PdfViewer(
                     applyInversion = applyInversion,
-                    scale = transformState.scale,
-                    offsetX = transformState.offsetX,
-                    offsetY = transformState.offsetY,
+                    scale = 1f,
+                    offsetX = 0f,
+                    offsetY = 0f,
                     bitmap = pdfContent.bitmap
                 )
             }
@@ -49,9 +51,9 @@ fun BookPage(
                 Fb2Viewer(
                     content = fb2BookContent,
                     applyInversion = applyInversion,
-                    scale = transformState.scale,
-                    offsetX = transformState.offsetX,
-                    offsetY = transformState.offsetY
+                    scale = 1f,
+                    offsetX = 0f,
+                    offsetY = 0f
                 )
             }
         }

@@ -22,6 +22,8 @@ import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
 import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import kotlinx.coroutines.flow.StateFlow
+import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.zoomable
 
 @Composable
 fun VerticalBookScroll(
@@ -31,14 +33,14 @@ fun VerticalBookScroll(
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     getPage: (Int) -> StateFlow<IBookContent>,
-    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
+    zoomState: ZoomState
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
 
     Scaffold { innerPadding ->
         totalPagesState?.let { totalPagesValue ->
-            Column(modifier = modifier.padding(innerPadding)) {
+            Column(modifier = modifier.padding(innerPadding).zoomable(zoomState)) {
                 LazyColumn(
                     state = lazyListState,
                 ) {
@@ -53,13 +55,7 @@ fun VerticalBookScroll(
                             ) {
                                 BookPage(
                                     applyInversion = applyInversion,
-                                    bookContent = getPage(page),
-                                    modifier = Modifier.pointerInput(Unit) {
-                                        detectCustomTransformGestures(
-                                            onGesture = transformGestureHandler,
-                                            consume = false
-                                        )
-                                    },
+                                    bookContent = getPage(page)
                                 )
                             }
                         }

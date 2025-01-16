@@ -26,6 +26,8 @@ import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurlState
 import kotlinx.coroutines.flow.StateFlow
+import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
@@ -36,8 +38,7 @@ fun PageCurl(
     getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
-    persistentZoom: TransformState,
-    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
+    zoomState: ZoomState
 ) {
     Log.d("BookContent", "currentPage = $currentPage")
     val pagerState = remember { PageCurlState(initialCurrent = currentPage, initialMax = 0) }
@@ -59,19 +60,13 @@ fun PageCurl(
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)
                     .systemBarsPadding()
+                    .zoomable(zoomState)
             ) { index ->
                 BookPage(
-                    transformState = persistentZoom,
                     bookContent = getPage(index),
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
-                        .basePageBoxModifier()
-                        .pointerInput(Unit) {
-                            detectCustomTransformGestures(
-                                onGesture = transformGestureHandler,
-                                consume = false
-                            )
-                        },
+                        .basePageBoxModifier(),
                 )
             }
         }
