@@ -50,16 +50,23 @@ class Fb2RenderHelper(
     private var cachedContent: Queue<FB2Element>? = null
     private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
     val pageWordSum = mutableListOf<Int>()
+    val totalWords = MutableStateFlow<Int?>(null)
     var pagesCount = MutableStateFlow<Int?>(null)
     private val imageMap = mutableMapOf<String, InlineTextContent>()
     private var currentPage = AnnotatedString("")
     private var lastSlicedPageIndex = 0
     private var isAllPageSliced = false
     private val lock = Any()
+    private val lockParseFile = Any()
+    val tableOfContents = MutableStateFlow<List<TOCEntry>>(emptyList())
 
     init {
+        Log.e("PIZDA", "Create new renderhelper")
         CoroutineScope(Dispatchers.IO).launch {
-            cachedContent = LinkedList(parseFb2Content(fb2File))
+            synchronized(lockParseFile) {
+                cachedContent = LinkedList(parseFb2Content(fb2File))
+            }
+            openPage(1)
         }
     }
 
@@ -76,11 +83,9 @@ class Fb2RenderHelper(
 
         val pageText = MutableStateFlow(Fb2BookContent(null, imageMap))
         CoroutineScope(Dispatchers.IO).launch {
-            synchronized(lock) {
-                if (pageCache[pageIndex] == null || pageCache[pageIndex]?.value?.text == null) {
-                    pageCache[pageIndex] = pageText
-                    generatePagesUpTo(pageIndex + 2)
-                }
+            if (pageCache[pageIndex] == null || pageCache[pageIndex]?.value?.text == null) {
+                pageCache[pageIndex] = pageText
+                generatePagesUpTo(pageIndex + 2)
             }
         }
         return pageText
@@ -89,67 +94,70 @@ class Fb2RenderHelper(
     private fun generatePagesUpTo(targetPageIndex: Int) {
         Log.d("Fb2RenderHelper", "GeneratePagesUpTo: $targetPageIndex")
 
-        if (cachedContent.isNullOrEmpty()) {
-            cachedContent = LinkedList(parseFb2Content(fb2File))
+        synchronized(lockParseFile) {
+            if (cachedContent == null) {
+                cachedContent = LinkedList(parseFb2Content(fb2File))
+            }
         }
-
-        if (pageCache[targetPageIndex]?.value?.text != null) {
-            return
-        }
-
-        while (true) {
-            if (cachedContent.isNullOrEmpty()) break
-
-            val word = cachedContent!!.remove()
-
-            val annotatedStringBuilder = buildAnnotatedString {
-                if (currentPage.isNotEmpty()) {
-                    append(currentPage)
-                    append(' ')
-                }
-                append(word.toStyledString())
+        synchronized(lock) {
+            if (pageCache[targetPageIndex]?.value?.text != null) {
+                return
             }
 
-            // Измерение текста
-            val result = textMeasurer.measure(
-                text = annotatedStringBuilder,
-                style = TextStyle(textAlign = TextAlign.Justify),
-                constraints = Constraints(
-                    minWidth = maxWidth,
-                    maxWidth = maxWidth,
-                    minHeight = maxHeight,
-                    maxHeight = maxHeight
-                ),
-                softWrap = true
-            )
+            while (true) {
+                if (cachedContent.isNullOrEmpty()) break
 
-            if (!result.didOverflowHeight) {
-                currentPage = annotatedStringBuilder
-            } else {
-                // Логика разбиения страниц
-                addOrUpdatePage(lastSlicedPageIndex, currentPage)
-                lastSlicedPageIndex++
+                val word = cachedContent!!.remove()
 
-                if (pagesCount.value == 1) {
-                    pagesCount.update { cachedContent!!.size / currentPage.split(" ").size }
-                }
-
-                // Сброс текущей страницы
-                currentPage = word.toStyledString()
-
-                // Проверка достижения целевой страницы
-                if (lastSlicedPageIndex > targetPageIndex && pagesCount.value != null) {
-                    if (lastSlicedPageIndex >= pagesCount.value!!) {
-                        pagesCount.update { pagesCount.value!! + 1 }
+                val annotatedStringBuilder = buildAnnotatedString {
+                    if (currentPage.isNotEmpty()) {
+                        append(currentPage)
+                        append(' ')
                     }
-                    break
+                    append(word.toStyledString())
+                }
+
+                // Измерение текста
+                val result = textMeasurer.measure(
+                    text = annotatedStringBuilder,
+                    style = TextStyle(textAlign = TextAlign.Justify),
+                    constraints = Constraints(
+                        minWidth = maxWidth,
+                        maxWidth = maxWidth,
+                        minHeight = maxHeight,
+                        maxHeight = maxHeight
+                    ),
+                    softWrap = true
+                )
+
+                if (!result.didOverflowHeight) {
+                    currentPage = annotatedStringBuilder
+                } else {
+                    // Логика разбиения страниц
+                    addOrUpdatePage(lastSlicedPageIndex, currentPage)
+                    lastSlicedPageIndex++
+
+                    if (pagesCount.value == null) {
+                        pagesCount.update { cachedContent!!.size / currentPage.split(" ").size }
+                    }
+
+                    // Сброс текущей страницы
+                    currentPage = word.toStyledString()
+
+                    // Проверка достижения целевой страницы
+                    if (lastSlicedPageIndex > targetPageIndex && pagesCount.value != null) {
+                        if (lastSlicedPageIndex >= pagesCount.value!!) {
+                            pagesCount.update { pagesCount.value!! + 1 }
+                        }
+                        break
+                    }
                 }
             }
-        }
 
-        if (currentPage.isNotEmpty() && lastSlicedPageIndex <= targetPageIndex) {
-            addOrUpdatePage(lastSlicedPageIndex, currentPage)
-            isAllPageSliced = true
+            if (currentPage.isNotEmpty() && lastSlicedPageIndex <= targetPageIndex) {
+                addOrUpdatePage(lastSlicedPageIndex, currentPage)
+                isAllPageSliced = true
+            }
         }
     }
 
@@ -176,6 +184,18 @@ class Fb2RenderHelper(
         return FormatType.FB2
     }
 
+    fun getPageIndexByWordOffset(offset: Int): Int {
+        var index = 0
+        while (true) {
+            // если страница прогрузилась
+            if (pageWordSum.size > index && pageWordSum[index] > offset) {
+                return index
+            } else {
+                generatePagesUpTo(++index)
+            }
+        }
+    }
+
     private fun parseFb2Content(fb2File: File): List<FB2Element> {
         try {
             val factory = DocumentBuilderFactory.newInstance()
@@ -186,13 +206,8 @@ class Fb2RenderHelper(
             // Normalize the document
             doc.documentElement.normalize()
 
+            val tocEntries = mutableListOf<TOCEntry>()
             val elements = mutableListOf<FB2Element>()
-            // Find all description elements
-            val descriptionElements = doc.getElementsByTagName("description")
-            for (i in 0 until descriptionElements.length) {
-                val description = descriptionElements.item(i)
-                elements.addAll(extractTextContent(description))
-            }
 
             // Find all body elements
             val bodyElements = doc.getElementsByTagName("body")
@@ -201,7 +216,7 @@ class Fb2RenderHelper(
                 // Check if this is the main body of the text
                 val name = body.attributes?.getNamedItem("name")?.nodeValue
                 if (name == null || name == "notes") {
-                    elements.addAll(extractTextContent(body))
+                    elements.addAll(extractTextContent(body, tocEntries))
                 }
             }
 
@@ -236,6 +251,8 @@ class Fb2RenderHelper(
                 }
             }
 
+            totalWords.update { elements.size }
+            tableOfContents.update { tocEntries.distinctBy { it.title } }
             return elements
         } catch (e: Exception) {
             Log.e("FB2Parser", "Error parsing FB2: ${e.message}")
@@ -244,8 +261,12 @@ class Fb2RenderHelper(
         }
     }
 
-    private fun extractTextContent(node: Node): List<FB2Element> {
+    private fun extractTextContent(
+        node: Node,
+        tocEntries: MutableList<TOCEntry>
+    ): List<FB2Element> {
         val elements = mutableListOf<FB2Element>()
+
         val children = node.childNodes
         for (i in 0 until children.length) {
             val child = children.item(i)
@@ -264,7 +285,7 @@ class Fb2RenderHelper(
                 }
 
                 Node.ELEMENT_NODE -> {
-                    val extracted = extractTextContent(child)
+                    val extracted = extractTextContent(child, tocEntries)
                     when (child.nodeName) {
                         "empty-line" -> elements.add(FB2Text(""))
                         "emphasis" -> elements.addAll(extracted.map { FB2ItalicText(it) })
@@ -272,13 +293,24 @@ class Fb2RenderHelper(
                             elements.add(FB2Text("\n"))
                             elements.addAll(extracted.map { FB2BoldText(it) })
                             elements.add(FB2Text("\n"))
+
+                            if (extracted.isNotEmpty()) {
+                                val tocEntry = TOCEntry(
+                                    title = child.textContent,
+                                    pageIndex = elements.size, // Здесь нужна логика определения реального индекса страницы
+                                    children = emptyList()
+                                )
+                                tocEntries.add(tocEntry)
+                            }
                         }
+
                         "strong" -> elements.addAll(extracted.map { FB2BoldText(it) })
                         "subtitle" -> {
                             elements.add(FB2Text("\n"))
                             elements.add(FB2SubtitleText(combineAnnotatedStrings(extracted.map { it.toStyledString() })))
                             elements.add(FB2Text("\n"))
                         }
+
                         "code" -> elements.addAll(extracted.map { FB2CodeText(it) })
                         "p" -> {
                             if (extracted.isNotEmpty()) {
@@ -286,12 +318,14 @@ class Fb2RenderHelper(
                                 elements.addAll(extracted.drop(1).map { FB2Text(it) })
                             }
                         }
+
                         "a" -> {
                             val href = child.attributes?.getNamedItem("href")?.nodeValue
                             if (extracted.isNotEmpty() && href != null) {
                                 elements.addAll(extracted.map { FB2ColoredText(it, Color.Blue) })
                             }
                         }
+
                         "image" -> {
                             val href = child.attributes?.getNamedItem("l:href")?.nodeValue
                             if (href != null && href.startsWith("#")) {
@@ -305,7 +339,7 @@ class Fb2RenderHelper(
                             }
                         }
 
-                        else -> elements.addAll(extractTextContent(child))
+                        else -> elements.addAll(extractTextContent(child, tocEntries))
                     }
                 }
             }

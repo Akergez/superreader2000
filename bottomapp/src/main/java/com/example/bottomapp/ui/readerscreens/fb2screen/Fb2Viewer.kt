@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,13 +30,17 @@ fun Fb2Viewer(
     val backgroundColor = if (applyInversion) Color.Black else Color.White
     val textColor = if (applyInversion) Color.White else Color.Black
 
+    val modifier = Modifier
+        .background(backgroundColor)
+        .padding(horizontal = 16.dp)
+        .fillMaxWidth()
+        .fillMaxSize()
+
     if (content?.text == null) {
         Text(
             text = getString(LocalContext.current, R.string.loading),
             color = textColor,
-            modifier = Modifier
-                .background(backgroundColor)
-                .padding(horizontal = 16.dp),
+            modifier = modifier,
             style = TextStyle(fontSize = 18.sp, textAlign = TextAlign.Justify),
         )
     } else {
@@ -45,11 +48,7 @@ fun Fb2Viewer(
         Text(
             text = content.text,
             color = textColor,
-            modifier = Modifier
-                .background(backgroundColor)
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth()
-                .fillMaxSize(),
+            modifier = modifier,
             style = TextStyle(textAlign = TextAlign.Justify),
             softWrap = true,
             inlineContent = content.extraContent
