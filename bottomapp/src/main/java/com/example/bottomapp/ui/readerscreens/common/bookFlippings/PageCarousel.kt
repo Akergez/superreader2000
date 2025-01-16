@@ -31,22 +31,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
-import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,10 +60,13 @@ fun PageCarousel(
     title: String,
     onSettingsClick: () -> Unit,
     onChaptersClick: () -> Unit,
-    zoomState: ZoomState
+    zoomState: (ZoomState) -> Unit
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
+
+    val zoomS = rememberZoomState()
+    LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
     Scaffold(
         topBar = {
@@ -85,7 +86,7 @@ fun PageCarousel(
         },
     ) { padding ->
         totalPagesState?.let { totalPagesNotNull ->
-            Column(modifier = modifier.padding(padding).zoomable(zoomState)) {
+            Column(modifier = modifier.padding(padding).zoomable(zoomS).padding(top = 16.dp)) {
                 LazyRow(
                     modifier = Modifier.weight(0.9f),
                     state = lazyListState,
@@ -108,7 +109,7 @@ fun PageCarousel(
                             ) {
                                 BookPage(
                                     bookContent = bookContent(page),
-                                    applyInversion = applyInversion,
+                                    applyInversion = applyInversion
                                 )
                             }
                         }
@@ -137,15 +138,20 @@ fun PageCarousel(
 
                     Column(
                     ) {
+                        val sliderValue = remember { mutableStateOf(firstVisibleItemIndex.toFloat()) }
                         Slider(
                             modifier = Modifier
                                 .fillMaxWidth(0.8f)
                                 .offset(y = 8.dp),
-                            value = firstVisibleItemIndex.toFloat(),
+                            value = sliderValue.value, // Используем локальное состояние
                             onValueChange = { newValue ->
+                                sliderValue.value = newValue // Обновляем временное значение
+                            },
+                            onValueChangeFinished = {
+                                // Вызываем событие только после завершения взаимодействия
                                 CoroutineScope(Dispatchers.Main).launch {
-                                    lazyListState.scrollToItem(newValue.toInt())
-                                    onPageChange(newValue.toInt())
+                                    lazyListState.scrollToItem(sliderValue.value.toInt())
+                                    onPageChange(sliderValue.value.toInt())
                                 }
                             },
                             valueRange = 0f..(totalPagesNotNull - 1).toFloat(), // Диапазон значений
@@ -176,7 +182,7 @@ fun PageCarousel(
 
                         Text(
                             modifier = Modifier.align(Alignment.CenterHorizontally),
-                            text = "Page ${firstVisibleItemIndex + 1} of $totalPagesState",
+                            text = "Page ${sliderValue.value.toInt() + 1} of $totalPagesState",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onBackground
                         )

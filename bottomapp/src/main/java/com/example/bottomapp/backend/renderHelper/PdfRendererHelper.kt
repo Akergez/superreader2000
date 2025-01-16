@@ -1,9 +1,14 @@
 package com.example.bottomapp.backend.renderHelper
 
 import android.graphics.Bitmap
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Rect
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
+import android.util.Log
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.PdfBookContent
@@ -22,7 +27,11 @@ import java.io.File
 class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
     val pagesCount: MutableStateFlow<Int?> = MutableStateFlow(null)
-    private val bitmapCache = mutableMapOf<Int, MutableStateFlow<IBookContent>>()
+    private val bitmapCache = object : LinkedHashMap<bitmapKey, MutableStateFlow<IBookContent>>(10, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<bitmapKey, MutableStateFlow<IBookContent>>?): Boolean {
+            return size > 10
+        }
+    }
     private val lock = Any()
     private val tableOfContents = MutableStateFlow<List<TOCEntry>>(emptyList())
 
@@ -36,13 +45,14 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
         }
     }
 
-    override fun openPage(pageIndex: Int): MutableStateFlow<IBookContent> {
-        bitmapCache[pageIndex]?.let {
+    override fun openPage(pageIndex: Int, applyInversion: Boolean): MutableStateFlow<IBookContent> {
+        bitmapCache[bitmapKey(applyInversion, pageIndex)]?.let {
             return it
         }
         val bitmapStateFlow = MutableStateFlow<IBookContent>(PdfBookContent(null))
-        bitmapCache[pageIndex] = bitmapStateFlow
+        bitmapCache[bitmapKey(applyInversion, pageIndex)] = bitmapStateFlow
         CoroutineScope(Dispatchers.IO).launch {
+            Log.d("PdfRendererHelper", "openPage: $pageIndex")
             var bitmap: Bitmap?
             synchronized(lock) {
                 val page = pdfRenderer.value?.openPage(pageIndex)
@@ -51,12 +61,63 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
                 val rect = Rect(0, 0, page.width * 5, page.height * 5)
                 page.render(bitmap!!, rect, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
+                bitmap = renderBitmap(
+                    bitmap!!.width,
+                    bitmap!!.height,
+                    applyInversion,
+                    bitmap!!
+                )
             }
             withContext(Dispatchers.Main) {
                 bitmapStateFlow.value = PdfBookContent(bitmap)
             }
         }
         return bitmapStateFlow
+    }
+
+    private fun renderBitmap(
+        width: Int,
+        height: Int,
+        applyInversion: Boolean,
+        bitmap: Bitmap
+    ): Bitmap {
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+            val cacheCanvas = android.graphics.Canvas(this)
+
+            val bitmapWidth = bitmap.width
+            val bitmapHeight = bitmap.height
+            val scaleFactor = 1f * minOf(
+                width.toFloat() / bitmapWidth,
+                height.toFloat() / bitmapHeight
+            )
+            val scaledWidth = (bitmapWidth * scaleFactor).toInt()
+            val scaledHeight = (bitmapHeight * scaleFactor).toInt()
+            val left = ((width - scaledWidth) / 2)
+            val top = ((height - scaledHeight) / 2)
+
+            val destRect = Rect(left, top, left + scaledWidth, top + scaledHeight)
+
+            cacheCanvas.drawColor(if (applyInversion) Color.Black.toArgb() else Color.White.toArgb())
+
+            if (applyInversion) {
+                val colorMatrix = ColorMatrix().apply {
+                    set(
+                        floatArrayOf(
+                            -1f, 0f, 0f, 0f, 255f,
+                            0f, -1f, 0f, 0f, 255f,
+                            0f, 0f, -1f, 0f, 255f,
+                            0f, 0f, 0f, 1f, 0f
+                        )
+                    )
+                }
+                val paint = android.graphics.Paint().apply {
+                    colorFilter = ColorMatrixColorFilter(colorMatrix)
+                }
+                cacheCanvas.drawBitmap(bitmap, null, destRect, paint)
+            } else {
+                cacheCanvas.drawBitmap(bitmap, null, destRect, null)
+            }
+        }
     }
 
     override fun close() {
@@ -124,4 +185,9 @@ data class TOCEntry(
     val title: String,
     val pageIndex: Int,
     val children: List<TOCEntry>
+)
+
+data class bitmapKey(
+    val applyInversion: Boolean,
+    val pageIndex: Int
 )

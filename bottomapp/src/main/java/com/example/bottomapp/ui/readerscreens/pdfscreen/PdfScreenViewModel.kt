@@ -22,6 +22,7 @@ class PdfScreenViewModel(
 ) : ViewModel() {
     private val _pdfScreenState = MutableStateFlow(PdfScreenState())
     val pdfScreenState: StateFlow<PdfScreenState> = _pdfScreenState.asStateFlow()
+    var currentPage: Int = 0
 
     init {
         val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
@@ -32,6 +33,7 @@ class PdfScreenViewModel(
             pdfFlipMode,
             docThemeMode
         )
+        currentPage = pdfBookDomainModel.readProgress().pageIndex
     }
 
     fun switchReaderMode(newMode: ReaderMode) {
@@ -43,11 +45,12 @@ class PdfScreenViewModel(
     }
 
     fun changePage(newPage: Int) {
-        _pdfScreenState.update {
+        /*_pdfScreenState.update {
             it.copy(
                 currentPage = newPage,
             )
-        }
+        }*/
+        currentPage = newPage
         viewModelScope.launch { pdfBookDomainModel.saveProgress(PdfProgress(newPage, pdfRendererHelper.pagesCount.value)) }
     }
 

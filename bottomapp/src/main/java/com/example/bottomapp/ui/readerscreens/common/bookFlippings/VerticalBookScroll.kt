@@ -14,15 +14,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
-import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import kotlinx.coroutines.flow.StateFlow
 import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.zoomable
 
 @Composable
@@ -33,14 +30,17 @@ fun VerticalBookScroll(
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     getPage: (Int) -> StateFlow<IBookContent>,
-    zoomState: ZoomState
+    zoomState: (ZoomState) -> Unit
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
+    val zoomS = rememberZoomState()
+    LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
+
 
     Scaffold { innerPadding ->
         totalPagesState?.let { totalPagesValue ->
-            Column(modifier = modifier.padding(innerPadding).zoomable(zoomState)) {
+            Column(modifier = modifier.padding(innerPadding).zoomable(zoomS)) {
                 LazyColumn(
                     state = lazyListState,
                 ) {
@@ -54,8 +54,8 @@ fun VerticalBookScroll(
                                     .fillParentMaxHeight()
                             ) {
                                 BookPage(
-                                    applyInversion = applyInversion,
-                                    bookContent = getPage(page)
+                                    bookContent = getPage(page),
+                                    applyInversion = applyInversion
                                 )
                             }
                         }

@@ -1,11 +1,9 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
+import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 
@@ -14,14 +12,14 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
 
     val state by pdfScreenViewModel.pdfScreenState.collectAsState()
     BookContent(
-        currentPage = state.currentPage,
+        currentPage = pdfScreenViewModel.currentPage,
         title = pdfScreenViewModel.getTitle(),
         totalPages = pdfScreenViewModel.pdfRendererHelper.pagesCount,
         mode = state.mode,
         onPageChange = { pdfScreenViewModel.changePage(it) },
         onToggleMode = { pdfScreenViewModel.switchReaderMode(it) },
         flipMode = state.curlMode,
-        getPage = { pdfScreenViewModel.pdfRendererHelper.openPage(it) },
+        getPage = { pdfScreenViewModel.pdfRendererHelper.openPage(it, state.docThemeMode == DocThemeMode.Invert) },
         documentTheme = state.docThemeMode,
         updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
         updateFlipMode = { pdfScreenViewModel.updateFlipMode(it) },

@@ -5,7 +5,7 @@ import com.example.bottomapp.ui.readerscreens.IBookContent
 import kotlinx.coroutines.flow.StateFlow
 
 interface IRenderHelper {
-    fun openPage(pageIndex: Int): StateFlow<IBookContent>
+    fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<IBookContent>
     fun close()
     fun getBookType(): FormatType
 }

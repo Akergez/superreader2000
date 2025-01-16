@@ -12,21 +12,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.pointerInput
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
-import com.example.bottomapp.ui.readerscreens.common.TransformState
-import com.example.bottomapp.ui.readerscreens.common.basePageBoxModifier
-import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurlState
 import kotlinx.coroutines.flow.StateFlow
 import net.engawapg.lib.zoomable.ZoomState
+import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalPageCurlApi::class)
@@ -38,7 +33,7 @@ fun PageCurl(
     getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
-    zoomState: ZoomState
+    zoomState: (ZoomState) -> Unit
 ) {
     Log.d("BookContent", "currentPage = $currentPage")
     val pagerState = remember { PageCurlState(initialCurrent = currentPage, initialMax = 0) }
@@ -46,6 +41,10 @@ fun PageCurl(
     LaunchedEffect(pagerState.current) {
         onPageChange(pagerState.current)
     }
+
+    val zoomS = rememberZoomState()
+    LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
+
     Scaffold { innerPadding ->
         totalPagesState?.let {
             eu.wewox.pagecurl.page.PageCurl(
@@ -60,13 +59,12 @@ fun PageCurl(
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)
                     .systemBarsPadding()
-                    .zoomable(zoomState)
+                    .zoomable(zoomS)
             ) { index ->
                 BookPage(
                     bookContent = getPage(index),
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
-                        .basePageBoxModifier(),
                 )
             }
         }

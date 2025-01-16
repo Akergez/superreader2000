@@ -1,6 +1,6 @@
 package com.example.bottomapp.ui.readerscreens.pdfscreen
 
-import com.example.bottomapp.ui.readerscreens.common.BitmapCanvas
+import BitmapCanvas
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,21 +18,13 @@ import com.example.bottomapp.R
 fun PdfViewer(
     bitmap: Bitmap?,
     modifier: Modifier = Modifier,
-    applyInversion: Boolean,
-    scale: Float,
-    offsetX: Float,
-    offsetY: Float
+    applyInversion: Boolean
 ) {
     val backgroundColor = if (applyInversion) Color.Black else Color.White
     bitmap?.let { loadedBitmap ->
         BitmapCanvas(
             modifier = modifier,
-            bitmap = loadedBitmap,
-            scale = scale.toDouble(),
-            offsetX = offsetX.toDouble(),
-            offsetY = offsetY.toDouble(),
-            backgroundColor = backgroundColor,
-            applyInversion = applyInversion
+            bitmap = loadedBitmap
         )
     } ?: run {
         // Show loading indicator while page is being rendered

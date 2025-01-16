@@ -27,7 +27,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -78,7 +77,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                             }
                         } else {
                             if (!startLoading) {
-                                fb2RenderHelper.value!!.openPage(index + 1)
+                                fb2RenderHelper.value!!.openPage(index + 1, applyInversion = false)
                                 startLoading = true
                             }
                             delay(50)
@@ -121,7 +120,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 onPageChange = onPageChange,
                 onToggleMode = { newMode -> mode = newMode },
                 flipMode = curlMode,
-                getPage = { page -> fb2RenderHelper.value!!.openPage(page) },
+                getPage = { page -> fb2RenderHelper.value!!.openPage(page, false) },
                 documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { docThemeMode ->
                     settingsManager.setDocumentsTheme(
