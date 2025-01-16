@@ -50,14 +50,24 @@ class HoomeScreenViewModel(
             FileType.fb2 -> {
                 val bookLink = Fb2Progress(0, null)
                 viewModelScope.launch {
-                    bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                    bookManager.addNewBook(
+                        uri,
+                        fileName.replace(".pdf", "").replace(".fb2", ""),
+                        bookLink,
+                        fileType
+                    )
                 }
             }
 
             FileType.pdf -> {
                 val bookLink = PdfProgress(0, null)
                 viewModelScope.launch {
-                    bookManager.addNewBook(uri, fileName, bookLink, fileType)
+                    bookManager.addNewBook(
+                        uri,
+                        fileName.replace(".pdf", "").replace(".fb2", ""),
+                        bookLink,
+                        fileType
+                    )
                         .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
                 }
             }

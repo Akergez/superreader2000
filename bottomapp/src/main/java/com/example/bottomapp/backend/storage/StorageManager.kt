@@ -297,7 +297,7 @@ abstract class StorageManager<T>(
         val documentFile = bundleDir.findFile(nameProvider.fileName(bundleName, meta))
             ?: return Result.failure(Exception("File not found in storage directory"))
 
-        val destFile = File(context.filesDir, bundleName)
+        val destFile = File(context.filesDir, nameProvider.fileName(bundleName, meta))
         context.contentResolver.openInputStream(documentFile.uri)?.use { input ->
             FileOutputStream(destFile).use { output ->
                 input.copyTo(output)
