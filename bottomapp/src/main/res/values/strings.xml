@@ -16,7 +16,7 @@
     <string name="app_theme_light">Light</string>
     <string name="app_theme_dark">Dark</string>
     <string name="paging_mode_classic">Classic</string>
-    <string name="paging_mode_vertical">Vertical scroll</string>
+    <string name="paging_mode_vertical">Vertical</string>
     <string name="loading">Loading…</string>
     <string name="settings_group_general">General settings</string>
     <string name="settings_group_documents">Documents settings</string>
@@ -38,7 +38,7 @@
 
     <!--    Settings modal-->
     <string name="apply_inversion">Inverse theme</string>
-    <string name="vertical_scroll">Vertical scroll</string>
+    <string name="vertical_scroll">Vertical</string>
 
     <!-- Error messages-->
     <string name="error_book_already_exists">Book already exists</string>
