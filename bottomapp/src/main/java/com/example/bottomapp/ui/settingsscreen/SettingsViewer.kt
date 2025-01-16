@@ -10,10 +10,14 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -73,6 +77,7 @@ fun SettingsScreen(
                     bottom = innerPadding.calculateBottomPadding(),
                     start = 20.dp,
                     end = 20.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             SettingsGroup(getString(LocalContext.current, R.string.settings_group_general))
 
@@ -103,8 +108,7 @@ fun SettingsScreen(
                 )
             }
 
-            Row(Modifier.padding(32.dp)) {
-            }
+            Spacer(Modifier.height(16.dp))
 
             SettingsGroup(getString(LocalContext.current, R.string.settings_group_documents))
 
@@ -128,7 +132,7 @@ fun SettingsScreen(
 fun SettingsGroup(name: String) {
     Text(
         text = name,
-        style = MaterialTheme.typography.headlineLarge,
+        style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier
             .fillMaxWidth()
@@ -172,7 +176,7 @@ fun <TEnum> ThemeSelector(
                 label = {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
