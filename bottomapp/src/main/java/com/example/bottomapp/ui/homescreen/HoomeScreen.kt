@@ -176,7 +176,10 @@ fun HomeScreen(
                 }
             },
             onSave = { updatedBook, changed, previewChanged ->
-                if (books.all { x -> x.title != updatedBook.title }) {
+                if (updatedBook.bundleName.isEmpty()) {
+                    toast.setText(getString(context, R.string.error_book_title_empty))
+                    toast?.show()
+                } else if (books.all { x -> x.bundleName != updatedBook.bundleName }) {
                     hoomeScreenViewModel.onSaveEditModal(
                         book,
                         updatedBook,
