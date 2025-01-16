@@ -19,7 +19,8 @@
     <string name="paging_mode_vertical">Вертикальный</string>
     <string name="loading">Загрузка, подождите немного</string>
     <string name="settings_group_general">Общие настройки</string>
-    <string name="settings_group_documents">Настройки чтения</string>
+    <string name="settings_group_reading">Настройки чтения</string>
+    <string name="scrolling_mode">Режим листания</string>
 
     <!-- Commons-->
     <string name="save">Сохранить</string>

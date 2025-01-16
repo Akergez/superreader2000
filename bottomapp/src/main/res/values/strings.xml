@@ -19,7 +19,8 @@
     <string name="paging_mode_vertical">Vertical</string>
     <string name="loading">Loading…</string>
     <string name="settings_group_general">General settings</string>
-    <string name="settings_group_documents">Reader settings</string>
+    <string name="settings_group_reading">Reader settings</string>
+    <string name="scrolling_mode">Scrolling mode</string>
 
     <!-- Commons-->
     <string name="save">Save</string>

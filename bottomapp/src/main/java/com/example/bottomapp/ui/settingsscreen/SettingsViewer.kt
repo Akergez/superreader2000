@@ -15,9 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -79,8 +84,8 @@ fun SettingsScreen(
                     end = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            Spacer(Modifier.height(4.dp))
             SettingsGroup(getString(LocalContext.current, R.string.settings_group_general))
-
             ThemeSelector(
                 getString(LocalContext.current, R.string.app_theme),
                 mapOf(
@@ -94,24 +99,31 @@ fun SettingsScreen(
             }
 
             SettingsOption(getString(LocalContext.current, R.string.title_storage_address))
-            Row(Modifier.padding(vertical = 8.dp)) {
+            Row(Modifier
+                .padding(vertical = 8.dp)
+                .height(26.dp)
+                .combinedClickable(
+                    onClick = {
+                        directoryLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+                    }
+                ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = getString(LocalContext.current, R.string.title_storage_address),
+                    Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = settings.storageAddress,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .combinedClickable(
-                            onClick = {
-                                directoryLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
-                            }
-                        )
-                        .padding(bottom = 15.dp)
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             Spacer(Modifier.height(16.dp))
 
-            SettingsGroup(getString(LocalContext.current, R.string.settings_group_documents))
-
+            SettingsGroup(getString(LocalContext.current, R.string.settings_group_reading))
             ThemeSelector(
                 getString(LocalContext.current, R.string.documents_theme),
                 mapOf(
@@ -123,6 +135,7 @@ fun SettingsScreen(
                 settingsViewModel.updateDocThemeMode(mode)
             }
 
+            SettingsOption(getString(LocalContext.current, R.string.scrolling_mode))
             IconScrollSelector(onSelect = {settingsViewModel.updateFlipMode(it)}, selected = settings.flipMode)
         }
     }
