@@ -133,8 +133,26 @@ class HoomeScreenViewModel(
             viewModelScope.launch {
                 bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!).onSuccess {
                     updatedBook = newBook.copy(previewUri = it)
+                }.onSuccess {
+                    viewModelScope.launch {
+                        bookManager.renameBook(
+                            oldBook.bundleName, updatedBook.bundleName
+                        ).onFailure {
+                            Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                        }.onSuccess {
+                            if (newBook.bookMetaInfo.author != oldBook.bookMetaInfo.author) {
+                                viewModelScope.launch {
+                                    bookManager.updateAuthor(
+                                        newBook.bundleName,
+                                        newBook.bookMetaInfo.author
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            return
         }
         if (newBook.bundleName != oldBook.bundleName) {
             viewModelScope.launch {
