@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,22 +74,14 @@ fun SettingsModal(
     ModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = { coroutineScope.launch { sheetState.hide() } },
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = MaterialTheme.colorScheme.surface,
     )
     {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp)
         ) {
-            Text(
-                text = getString(LocalContext.current, R.string.title_settings),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -104,7 +97,7 @@ fun SettingsModal(
                     colors = SwitchDefaults.colors()
                 )
             }
-
+            Spacer(modifier = Modifier.height(16.dp))
             IconScrollSelector(onVerticalScroll, scrollMode)
         }
     }

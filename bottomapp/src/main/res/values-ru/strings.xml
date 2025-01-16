@@ -9,7 +9,7 @@
     <string name="title_storage_address">Место сохранения</string>
     <string name="paging_mode">Режим листания</string>
     <string name="app_theme">Тема</string>
-    <string name="documents_theme">Тема документов</string>
+    <string name="documents_theme">Тема страниц</string>
     <string name="documents_theme_as_is">Оригинал</string>
     <string name="documents_theme_invert">Негатив</string>
     <string name="app_theme_system">Системная</string>
@@ -19,7 +19,7 @@
     <string name="paging_mode_vertical">Вертикальный</string>
     <string name="loading">Загрузка, подождите немного</string>
     <string name="settings_group_general">Общие настройки</string>
-    <string name="settings_group_documents">Просмотр документов</string>
+    <string name="settings_group_documents">Настройки чтения</string>
 
     <!-- Commons-->
     <string name="save">Сохранить</string>
