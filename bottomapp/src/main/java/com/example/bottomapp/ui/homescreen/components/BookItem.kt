@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,13 +66,11 @@ fun BookItem(
             .combinedClickable(
                 onClick = { onItemClick(book) },
                 onLongClick = onLongClick
-            )
-            .then(
-                if (isSelected) Modifier.border(
-                    1.dp,
-                    MaterialTheme.colorScheme.onBackground,
-                    shape
-                ) else Modifier
-            )
+            ),
+        colors = ListItemDefaults.colors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+//            headlineColor = MaterialTheme.colorScheme.onSurface,
+//            leadingIconColor = MaterialTheme.colorScheme.primary
+        )
     )
 }
