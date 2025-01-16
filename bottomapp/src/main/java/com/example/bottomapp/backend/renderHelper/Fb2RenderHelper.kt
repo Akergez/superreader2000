@@ -71,7 +71,10 @@ class Fb2RenderHelper(
         }
     }
 
-    override fun openPage(pageIndex: Int, applyInversion: Boolean): MutableStateFlow<Fb2BookContent> {
+    override fun openPage(
+        pageIndex: Int,
+        applyInversion: Boolean
+    ): MutableStateFlow<Fb2BookContent> {
         Log.d("Fb2RenderHelper", "OpenPage: $pageIndex")
 
         pageCache[pageIndex]?.let {
