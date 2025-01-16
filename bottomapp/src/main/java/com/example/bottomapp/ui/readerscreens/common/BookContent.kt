@@ -2,6 +2,13 @@ package com.example.bottomapp.ui.readerscreens.common
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
@@ -18,7 +25,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.renderHelper.TOCEntry
@@ -69,16 +80,16 @@ fun BookContent(
 
     val actualMode = rememberUpdatedState(mode)
     val transformGesturesHandler =
-        { _: Offset, pan: Offset, zoom: Float, _: Float ->
+        { _: Offset, pan: Offset, zoom: Float, _: Float, _: PointerInputChange, changes: List<PointerInputChange> ->
             val newScale = zoom * scale
 
             if (abs(newScale - 1f) < 0.5f
                 || (actualMode.value == ReaderMode.Zoom && offsetX + pan.x == 0f)
             ) {
-/*                if (actualMode.value != ReaderMode.Reading) {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onToggleMode(ReaderMode.Reading)
-                }*/
+                /*                if (actualMode.value != ReaderMode.Reading) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onToggleMode(ReaderMode.Reading)
+                                }*/
             } else if (newScale < 0.5f) {
                 if (actualMode.value != ReaderMode.Carousel) {
                     Log.d("BookContent", "Updating mode from ${actualMode.value} to Carousel")
@@ -94,13 +105,13 @@ fun BookContent(
             scale = (scale * zoom)
             offsetX += pan.x
             offsetY += pan.y
+
+            if (changes.size > 1) {
+                changes.forEach { it.consume() }
+            }
         }
 
-    Box(modifier = modifier.pointerInput(Unit) {
-        detectTransformGestures { centroid, pan, zoom, rotation ->
-            transformGesturesHandler(centroid, pan, zoom, rotation)
-        }
-    })
+    Box()
     {
         when (mode) {
             ReaderMode.Carousel -> {
@@ -123,7 +134,8 @@ fun BookContent(
                     bookContent = getPage,
                     title = title,
                     onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
-                    onChaptersClick = { onToggleMode(ReaderMode.Chapters) }
+                    onChaptersClick = { onToggleMode(ReaderMode.Chapters) },
+                    transformGestureHandler = transformGesturesHandler
                 )
                 if (showSettingsModal.value) {
                     if (showSettingsModal.value) {
@@ -151,7 +163,8 @@ fun BookContent(
                         getPage = getPage,
                         documentTheme = documentTheme,
                         modifier = modifier,
-                        persistentZoom = persistentZoom
+                        persistentZoom = persistentZoom,
+                        transformGestureHandler = transformGesturesHandler
                     )
 
                     FlipMode.VerticalScroll -> VerticalBookScroll(
@@ -159,7 +172,8 @@ fun BookContent(
                         initialPage = currentPage,
                         onPageChange = onPageChange,
                         applyInversion = documentTheme == DocThemeMode.Invert,
-                        getPage = getPage
+                        getPage = getPage,
+                        transformGestureHandler = transformGesturesHandler
                     )
 
                     FlipMode.Casual -> CasualCurl(
@@ -168,7 +182,8 @@ fun BookContent(
                         onPageChange = onPageChange,
                         applyInversion = documentTheme == DocThemeMode.Invert,
                         getPage = getPage,
-                        persistentZoom = persistentZoom
+                        persistentZoom = persistentZoom,
+                        transformGestureHandler = transformGesturesHandler
                     )
                 }
             }
@@ -180,7 +195,13 @@ fun BookContent(
                     documentTheme = documentTheme,
                     modifier = modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
+                        .background(MaterialTheme.colorScheme.background)
+                        .pointerInput(Unit) {
+                        detectCustomTransformGestures(
+                            onGesture = transformGesturesHandler,
+                            consume = false
+                        )
+                    },
                     scale = scale,
                     offsetX = offsetX,
                     offsetY = offsetY,
@@ -208,4 +229,112 @@ fun BookContent(
     }
 }
 
+suspend fun PointerInputScope.detectCustomTransformGestures(
+    panZoomLock: Boolean = false,
+    consume: Boolean = true,
+    pass: PointerEventPass = PointerEventPass.Main,
+    onGestureStart: (PointerInputChange) -> Unit = {},
+    onGesture: (
+        centroid: Offset,
+        pan: Offset,
+        zoom: Float,
+        rotation: Float,
+        mainPointer: PointerInputChange,
+        changes: List<PointerInputChange>
+    ) -> Unit,
+    onGestureEnd: (PointerInputChange) -> Unit = {}
+) {
+    awaitEachGesture {
+        var rotation = 0f
+        var zoom = 1f
+        var pan = Offset.Zero
+        var pastTouchSlop = false
+        val touchSlop = viewConfiguration.touchSlop
+        var lockedToPanZoom = false
 
+        // Wait for at least one pointer to press down, and set first contact position
+        val down: PointerInputChange = awaitFirstDown(
+            requireUnconsumed = false,
+            pass = pass
+        )
+        onGestureStart(down)
+
+        var pointer = down
+        // Main pointer is the one that is down initially
+        var pointerId = down.id
+
+        do {
+            val event = awaitPointerEvent(pass = pass)
+
+            // If any position change is consumed from another PointerInputChange
+            // or pointer count requirement is not fulfilled
+            val canceled =
+                event.changes.any { it.isConsumed }
+
+            if (!canceled) {
+
+                // Get pointer that is down, if first pointer is up
+                // get another and use it if other pointers are also down
+                // event.changes.first() doesn't return same order
+                val pointerInputChange =
+                    event.changes.firstOrNull { it.id == pointerId }
+                        ?: event.changes.first()
+
+                // Next time will check same pointer with this id
+                pointerId = pointerInputChange.id
+                pointer = pointerInputChange
+
+                val zoomChange = event.calculateZoom()
+                val rotationChange = event.calculateRotation()
+                val panChange = event.calculatePan()
+
+                if (!pastTouchSlop) {
+                    zoom *= zoomChange
+                    rotation += rotationChange
+                    pan += panChange
+
+                    val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                    val zoomMotion = abs(1 - zoom) * centroidSize
+                    val rotationMotion =
+                        abs(rotation * kotlin.math.PI.toFloat() * centroidSize / 180f)
+                    val panMotion = pan.getDistance()
+
+                    if (zoomMotion > touchSlop ||
+                        rotationMotion > touchSlop ||
+                        panMotion > touchSlop
+                    ) {
+                        pastTouchSlop = true
+                        lockedToPanZoom = panZoomLock && rotationMotion < touchSlop
+                    }
+                }
+
+                if (pastTouchSlop) {
+                    val centroid = event.calculateCentroid(useCurrent = false)
+                    val effectiveRotation = if (lockedToPanZoom) 0f else rotationChange
+                    if (effectiveRotation != 0f ||
+                        zoomChange != 1f ||
+                        panChange != Offset.Zero
+                    ) {
+                        onGesture(
+                            centroid,
+                            panChange,
+                            zoomChange,
+                            effectiveRotation,
+                            pointer,
+                            event.changes
+                        )
+                    }
+
+                    if (consume) {
+                        event.changes.forEach {
+                            if (it.positionChanged()) {
+                                it.consume()
+                            }
+                        }
+                    }
+                }
+            }
+        } while (!canceled && event.changes.any { it.pressed })
+        onGestureEnd(pointer)
+    }
+}

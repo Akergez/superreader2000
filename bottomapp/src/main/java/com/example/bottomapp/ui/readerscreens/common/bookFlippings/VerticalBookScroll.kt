@@ -14,9 +14,13 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -27,6 +31,7 @@ fun VerticalBookScroll(
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     getPage: (Int) -> StateFlow<IBookContent>,
+    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
@@ -48,7 +53,13 @@ fun VerticalBookScroll(
                             ) {
                                 BookPage(
                                     applyInversion = applyInversion,
-                                    bookContent = getPage(page)
+                                    bookContent = getPage(page),
+                                    modifier = Modifier.pointerInput(Unit) {
+                                        detectCustomTransformGestures(
+                                            onGesture = transformGestureHandler,
+                                            consume = false
+                                        )
+                                    },
                                 )
                             }
                         }

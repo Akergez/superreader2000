@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.bottomapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.bottomapp"
@@ -48,6 +48,7 @@ android {
 }
 
 dependencies {
+    implementation("net.engawapg.lib:zoomable:2.0.0")
     implementation("androidx.compose.material3:material3:1.3.0")
     implementation("androidx.compose.material:material:1.7.2")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")

@@ -35,9 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -56,6 +60,7 @@ fun PageCarousel(
     title: String,
     onSettingsClick: () -> Unit,
     onChaptersClick: () -> Unit,
+    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
 ) {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
@@ -101,7 +106,13 @@ fun PageCarousel(
                             ) {
                                 BookPage(
                                     bookContent = bookContent(page),
-                                    applyInversion = applyInversion
+                                    applyInversion = applyInversion,
+                                    Modifier.pointerInput(Unit) {
+                                        detectCustomTransformGestures(
+                                            onGesture = transformGestureHandler,
+                                            consume = false
+                                        )
+                                    },
                                 )
                             }
                         }

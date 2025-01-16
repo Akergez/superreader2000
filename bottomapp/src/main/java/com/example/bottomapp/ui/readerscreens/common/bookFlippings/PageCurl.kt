@@ -12,12 +12,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.pointerInput
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
 import com.example.bottomapp.ui.readerscreens.common.TransformState
 import com.example.bottomapp.ui.readerscreens.common.basePageBoxModifier
+import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurlState
@@ -32,7 +36,8 @@ fun PageCurl(
     getPage: (Int) -> StateFlow<IBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
-    persistentZoom: TransformState
+    persistentZoom: TransformState,
+    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
 ) {
     Log.d("BookContent", "currentPage = $currentPage")
     val pagerState = remember { PageCurlState(initialCurrent = currentPage, initialMax = 0) }
@@ -60,7 +65,13 @@ fun PageCurl(
                     bookContent = getPage(index),
                     applyInversion = documentTheme == DocThemeMode.Invert,
                     modifier = modifier
-                        .basePageBoxModifier(),
+                        .basePageBoxModifier()
+                        .pointerInput(Unit) {
+                            detectCustomTransformGestures(
+                                onGesture = transformGestureHandler,
+                                consume = false
+                            )
+                        },
                 )
             }
         }

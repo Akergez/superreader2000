@@ -16,10 +16,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
 import com.example.bottomapp.ui.readerscreens.common.TransformState
+import com.example.bottomapp.ui.readerscreens.common.detectCustomTransformGestures
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -34,7 +38,8 @@ fun CasualCurl(
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     getPage: (Int) -> StateFlow<IBookContent>,
-    persistentZoom: TransformState
+    persistentZoom: TransformState,
+    transformGestureHandler: (Offset, Offset, Float, Float, PointerInputChange, List<PointerInputChange>) -> Unit
 ) {
     val lazyListState = rememberPagerState(initialPage)
     val totalPagesState by totalPages.collectAsState()
@@ -51,7 +56,13 @@ fun CasualCurl(
                     BookPage(
                         transformState = persistentZoom,
                         applyInversion = applyInversion,
-                        bookContent = pageState
+                        bookContent = pageState,
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectCustomTransformGestures(
+                                onGesture = transformGestureHandler,
+                                consume = false
+                            )
+                        },
                     )
                 }
 
