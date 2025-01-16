@@ -186,7 +186,7 @@ class Fb2RenderHelper(
 
     fun getPageIndexByWordOffset(offset: Int): Int {
         var index = 0
-        while (true) {
+        while (!isAllPageSliced) {
             // если страница прогрузилась
             if (pageWordSum.size > index && pageWordSum[index] > offset) {
                 return index
@@ -194,6 +194,7 @@ class Fb2RenderHelper(
                 generatePagesUpTo(++index)
             }
         }
+        return 0
     }
 
     private fun parseFb2Content(fb2File: File): List<FB2Element> {
