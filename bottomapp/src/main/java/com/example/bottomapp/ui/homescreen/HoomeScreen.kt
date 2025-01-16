@@ -144,7 +144,7 @@ fun HomeScreen(
                 .padding(padding),
             state = lazyListState
         ) {
-            items(books, key = { it.bundleName }) { bookLink ->
+            items(books.sortedBy { x -> x.title }, key = { it.bundleName }) { bookLink ->
                 val isSelected = bookLink in selectedBooks
                 val isSelectedAny = selectedBooks.isNotEmpty()
                 BookItem(
