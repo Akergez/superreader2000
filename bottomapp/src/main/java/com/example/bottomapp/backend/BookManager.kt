@@ -4,7 +4,9 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat.getString
 import coil.ImageLoader
+import com.example.bottomapp.R
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toMimeType
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +50,7 @@ class BookManager(
 
     suspend fun getBookFile(bundleName: String): Result<File> {
         val meta = bookCache.findBook(bundleName)
-            ?: return Result.failure(Exception("Book not found"))
+            ?: return Result.failure(Exception(getString(context, R.string.exception_book_not_found)))
         return storageManager.getBookFile(bundleName, meta.bookMetaInfo)
     }
 
@@ -71,7 +73,7 @@ class BookManager(
             }
             return Result.success(Unit)
         }.onFailure {
-            Toast.makeText(context, "Book already exists", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, getString(context, R.string.error_book_already_exists), Toast.LENGTH_LONG).show()
             return Result.failure(it)
         }
         return Result.success(Unit)
@@ -105,7 +107,7 @@ class BookManager(
 
     suspend fun renameBook(bundleName: String, newNameForBundle: String): Result<Unit> {
         val meta = bookCache.findBook(bundleName)
-            ?: return Result.failure(Exception("Book not found"))
+            ?: return Result.failure(Exception(getString(context, R.string.exception_book_not_found)))
 
         storageManager.renameBundle(bundleName, newNameForBundle, meta.bookMetaInfo)
             .onSuccess {
@@ -121,7 +123,7 @@ class BookManager(
                 }
             }
             .onFailure {
-                Result.failure<Unit>(it.cause ?: Exception("Failed to rename book"))
+                Result.failure<Unit>(it.cause ?: Exception(getString(context, R.string.exception_rename_book)))
             }
         return Result.success(Unit)
     }
@@ -129,7 +131,7 @@ class BookManager(
     suspend fun updateAuthor(bundleName: String, author: String?): Result<Unit> {
         Log.d("BookManager", "updateAuthor: $author")
         val meta = bookCache.findBook(bundleName)
-            ?: return Result.failure(Exception("Book not found"))
+            ?: return Result.failure(Exception(getString(context, R.string.exception_book_not_found)))
 
         storageManager.updateBundleMeta(bundleName, meta.bookMetaInfo.copy(author = author))
             .onSuccess {
@@ -137,7 +139,7 @@ class BookManager(
                     Result.success(Unit)
             }
             .onFailure {
-                Result.failure<Unit>(it.cause ?: Exception("Failed to update author"))
+                Result.failure<Unit>(it.cause ?: Exception(getString(context, R.string.exception_update_author)))
             }
         return Result.success(Unit)
     }
@@ -151,7 +153,7 @@ class BookManager(
         }.onFailure {
             Result.failure<Uri>(it.cause!!)
         }
-        return Result.failure(Exception("Failed to update preview"))
+        return Result.failure(Exception(getString(context, R.string.exception_update_preview)))
     }
 
     suspend fun saveBookLinks() {

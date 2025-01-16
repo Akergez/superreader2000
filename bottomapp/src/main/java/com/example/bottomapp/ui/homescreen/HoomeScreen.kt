@@ -75,7 +75,7 @@ fun HomeScreen(
                     else -> {
                         Toast.makeText(
                             context,
-                            "Только файлы формата PDF и FB2 поддерживаются приложением",
+                            getString(context, R.string.error_not_supported_format),
                             Toast.LENGTH_LONG
                         ).show()
                     }

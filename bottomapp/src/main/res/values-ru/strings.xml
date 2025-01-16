@@ -21,6 +21,9 @@
     <string name="settings_group_general">Общие настройки</string>
     <string name="settings_group_reading">Настройки чтения</string>
     <string name="scrolling_mode">Режим листания</string>
+    <string name="table_of_contents">Оглавление</string>
+    <string name="page">Страница</string>
+    <string name="paging_mode_casual">Обычный</string>
 
     <!-- Commons-->
     <string name="save">Сохранить</string>
@@ -45,7 +48,10 @@
     <string name="error_book_already_exists">Книга уже существует</string>
     <string name="error_invalid_storage_directory">Выбрана неверная директория</string>
     <string name="error_storage_not_set">Выберите сначала хранилище</string>
-    <string name="table_of_contents">Оглавление</string>
-    <string name="page">Страница</string>
-    <string name="paging_mode_casual">Обычный</string>
+    <string name="error_not_supported_format">Только файлы формата PDF и FB2 поддерживаются приложением</string>
+    <string name="exception_book_not_found">Книга не найдена</string>
+    <string name="exception_update_author">Ошибка при сохранении автора</string>
+    <string name="exception_rename_book">Ошибка переименования книги</string>
+    <string name="exception_update_preview">Ошибка при сохранении обложки</string>
+
 </resources>
