@@ -31,7 +31,7 @@ class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> 
     }
 
     override fun previewFilename(bundleName: String): String {
-        return "${bundleName}_preview.jpg"
+        return ".${bundleName}_preview.jpg"
     }
 
     override fun fileName(bundleName: String, meta: BookMetaInfo): String {
