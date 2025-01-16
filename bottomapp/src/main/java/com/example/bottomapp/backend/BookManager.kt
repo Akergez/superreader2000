@@ -53,18 +53,17 @@ class BookManager(
     suspend fun addNewBook(
         fileUri: Uri, fileName: String, progress: Progress, fileType: FileType
     ): Result<Unit> {
-        val shortFileName = fileName.substring(0, fileName.length - 4)
         storageManager.createBundle(
             fileName,
             fileUri,
-            BookMetaInfo(shortFileName, progress, null),
+            BookMetaInfo(fileName, progress, null),
             context.contentResolver,
             fileType.toMimeType()
         ).onSuccess {
             CoroutineScope(Dispatchers.IO).launch {
                 bookCache.addBook(
                     BookStorageEntry(
-                        shortFileName, it.previewUri, fileName, null, it.meta
+                        fileName, it.previewUri, fileName, null, it.meta
                     )
                 )
             }

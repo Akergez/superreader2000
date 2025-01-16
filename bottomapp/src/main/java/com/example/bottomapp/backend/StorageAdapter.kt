@@ -36,8 +36,8 @@ class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> 
 
     override fun fileName(bundleName: String, meta: BookMetaInfo): String {
         return when (meta.progress) {
-            is PdfProgress -> bundleName
-            is Fb2Progress -> bundleName
+            is PdfProgress -> "${bundleName}.pdf"
+            is Fb2Progress -> "${bundleName}.fb2"
             else -> {
                 throw IllegalArgumentException("Unknown progress type")
             }
