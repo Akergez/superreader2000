@@ -46,6 +46,7 @@
 
     <!-- Error messages-->
     <string name="error_book_already_exists">Книга уже существует</string>
+    <string name="error_book_with_title_already_exists">Книга с таким названием уже существует</string>
     <string name="error_invalid_storage_directory">Выбрана неверная директория</string>
     <string name="error_storage_not_set">Выберите сначала хранилище</string>
     <string name="error_not_supported_format">Только файлы формата PDF и FB2 поддерживаются приложением</string>

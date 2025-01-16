@@ -46,6 +46,7 @@
 
     <!-- Error messages-->
     <string name="error_book_already_exists">Book already exists</string>
+    <string name="error_book_with_title_already_exists">Book with that title already exists</string>
     <string name="error_invalid_storage_directory">Invalid storage directory</string>
     <string name="error_storage_not_set">Storage not set</string>
     <string name="error_not_supported_format">Only PDF and FB2 files are supported by the application</string>

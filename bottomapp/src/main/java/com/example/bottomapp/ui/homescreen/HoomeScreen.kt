@@ -175,13 +175,17 @@ fun HomeScreen(
                 }
             },
             onSave = { updatedBook, changed, previewChanged ->
-                hoomeScreenViewModel.onSaveEditModal(
-                    book,
-                    updatedBook,
-                    changed,
-                    previewChanged,
-                    context
-                )
+                if (books.all { x -> x.title != updatedBook.title }) {
+                    hoomeScreenViewModel.onSaveEditModal(
+                        book,
+                        updatedBook,
+                        changed,
+                        previewChanged,
+                        context
+                    )
+                } else {
+                    Toast.makeText(context, getString(context, R.string.error_book_with_title_already_exists), Toast.LENGTH_LONG).show()
+                }
             },
             editModalViewModel = koinViewModel(
                 key = Uuid.random().toString(),
