@@ -47,7 +47,10 @@ class ReaderApp : Application() {
 
             single {
                 ImageLoader.Builder(androidContext())
-                    .memoryCachePolicy(CachePolicy.DISABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .memoryCache {
+                        MemoryCache.Builder(androidContext()).maxSizePercent(0.25).build()
+                    }
                     .build()
             }
             single {

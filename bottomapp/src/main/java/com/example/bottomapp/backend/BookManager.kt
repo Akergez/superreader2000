@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import coil.ImageLoader
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toMimeType
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,8 @@ data class BookStorageEntry(
 class BookManager(
     val context: Context,
     private val storageManager: BookStorage,
-    private val bookCache: BookStorageRepository
+    private val bookCache: BookStorageRepository,
+    private val imageBuilder: ImageLoader
 ) {
     private val _bookLinks = MutableStateFlow<List<BookStorageEntry>>(emptyList())
     val bookFlow = _bookLinks
@@ -144,6 +146,7 @@ class BookManager(
         val newPreview = storageManager.updateBundlePreview(newPreviewUri, bundleName)
         newPreview.onSuccess {
             refreshBooksLinks()
+            imageBuilder.memoryCache?.clear()
             Result.success(it)
         }.onFailure {
             Result.failure<Uri>(it.cause!!)
