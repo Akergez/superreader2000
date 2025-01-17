@@ -179,7 +179,7 @@ fun HomeScreen(
                 if (updatedBook.bundleName.isEmpty()) {
                     toast.setText(getString(context, R.string.error_book_title_empty))
                     toast?.show()
-                } else if (books.all { x -> x.bundleName != updatedBook.bundleName }) {
+                } else if (books.all { x -> x == book || x.bundleName != updatedBook.bundleName }) {
                     hoomeScreenViewModel.onSaveEditModal(
                         book,
                         updatedBook,
