@@ -123,7 +123,10 @@ fun PageCarousel(
                     derivedStateOf { lazyListState.firstVisibleItemIndex }
                 }
 
+                val sliderValue = remember { mutableStateOf(firstVisibleItemIndex.toFloat()) }
+
                 LaunchedEffect(firstVisibleItemIndex) {
+                    sliderValue.value = firstVisibleItemIndex.toFloat()
                     onPageChange(firstVisibleItemIndex)
                 }
 
@@ -141,7 +144,6 @@ fun PageCarousel(
 
                     Column(
                     ) {
-                        val sliderValue = remember { mutableStateOf(firstVisibleItemIndex.toFloat()) }
                         Slider(
                             modifier = Modifier
                                 .fillMaxWidth(0.8f)
