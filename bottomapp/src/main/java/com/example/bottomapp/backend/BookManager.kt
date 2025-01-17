@@ -167,9 +167,9 @@ class BookManager(
     }
 
     private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
-        return storageManager.listAllBundles().map {
+        return storageManager.listAllBundles().filterNotNull().map {
             BookStorageEntry(
-                it?.meta?.title!!, it.previewUri, it.bundleName, it.meta.progress.getProgressInPercent(), it.meta
+                it.meta.title, it.previewUri, it.bundleName, it.meta.progress.getProgressInPercent(), it.meta
             )
         }
     }
