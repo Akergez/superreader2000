@@ -55,5 +55,8 @@
     <string name="exception_update_author">Ошибка при сохранении автора</string>
     <string name="exception_rename_book">Ошибка переименования книги</string>
     <string name="exception_update_preview">Ошибка при сохранении обложки</string>
+    <string name="choose_storage">Выберите хранилище</string>
+    <string name="choose_storage_description">Для использования приложения необходимо выбрать место, где будут храниться книги и дополнительная информация. Выберите пустую директорию, если не использовали приложение ранее.</string>
+    <string name="choose">Выбрать</string>
 
 </resources>

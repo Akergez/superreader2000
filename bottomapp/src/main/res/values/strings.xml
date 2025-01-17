@@ -56,4 +56,7 @@
     <string name="exception_update_author">Failed to update author</string>
     <string name="exception_rename_book">Failed to rename book</string>
     <string name="exception_update_preview">Failed to update preview</string>
+    <string name="choose_storage">Choose storage</string>
+    <string name="choose_storage_description">To use the application, you need to select a location where books and additional information will be stored. Select an empty directory if you have not used the application before.</string>
+    <string name="choose">Choose</string>
 </resources>

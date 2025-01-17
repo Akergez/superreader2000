@@ -237,19 +237,19 @@ fun StorageSelectionDialog(
         onDismissRequest = { },
         title = {
             Text(
-                text = "Выберите хранилище",
+                text = getString(LocalContext.current, R.string.choose_storage),
                 style = MaterialTheme.typography.headlineSmall
             )
         },
         text = {
             Text(
-                text = "Для использования приложения необходимо выбрать место, где будет храниться прогресс чтения.",
+                text = getString(LocalContext.current, R.string.choose_storage_description),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
         confirmButton = {
             TextButton(onClick = { onChoose() }) {
-                Text(text = "Выбрать")
+                Text(text = getString(LocalContext.current, R.string.choose))
             }
         },
         tonalElevation = 8.dp
