@@ -49,16 +49,20 @@ abstract class StorageManager<T>(
     suspend fun updateBundlePreview(newBundlePreview: Uri, bundleName: String): Result<Uri> =
         withContext(Dispatchers.IO) {
             Log.i("StorageManager", "Updating preview for $bundleName")
-            val storageUri = settingsManager.getStorageUri()
-                ?: return@withContext Result.failure(Exception("Storage directory not set"))
-            val storageDir = DocumentFile.fromTreeUri(context, storageUri)
-                ?: return@withContext Result.failure(Exception("Invalid storage directory"))
-            val bundleDir = storageDir.findFile(bundleName)
-                ?: return@withContext Result.failure(Exception("Bundle not found"))
+            val storageUri = settingsManager.getStorageUri() ?: return@withContext Result.failure(
+                Exception("Storage directory not set")
+            )
+            val storageDir =
+                DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
+                    Exception("Invalid storage directory")
+                )
+            val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
+                Exception("Bundle not found")
+            )
             val fileName = nameProvider.previewFilename(bundleName)
 
-            val existingFile = bundleDir.findFile(fileName)
-                ?: bundleDir.createFile("image/jpeg", fileName)
+            val existingFile =
+                bundleDir.findFile(fileName) ?: bundleDir.createFile("image/jpeg", fileName)
                 ?: return@withContext Result.failure(Exception("Failed to create preview file"))
 
             context.contentResolver.openInputStream(newBundlePreview)?.use { inputStream ->
@@ -70,17 +74,16 @@ abstract class StorageManager<T>(
         }
 
     suspend fun createBundle(
-        bundleName: String,
-        file: Uri,
-        meta: T,
-        contentResolver: ContentResolver,
-        mimeType: String
+        bundleName: String, file: Uri, meta: T, contentResolver: ContentResolver, mimeType: String
     ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
         Log.i("StorageManager", "Creating bundle $bundleName")
-        val storageUri = settingsManager.getStorageUri()
-            ?: return@withContext Result.failure(Exception("Storage directory not set"))
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri)
-            ?: return@withContext Result.failure(Exception("Invalid storage directory"))
+        val storageUri = settingsManager.getStorageUri() ?: return@withContext Result.failure(
+            Exception("Storage directory not set")
+        )
+        val storageDir =
+            DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
+                Exception("Invalid storage directory")
+            )
 
         val existingFile = storageDir.findFile(bundleName)
         if (existingFile != null) {
@@ -119,8 +122,8 @@ abstract class StorageManager<T>(
         getBookFile(bundleName, meta).onSuccess { bookFile = it }
             .onFailure { return@withContext Result.failure(it) }
 
-        val previewBitmap =
-            previewGeneratorProvider(meta).generatePreviewBitmap(bookFile!!) ?: return@withContext Result.failure(
+        val previewBitmap = previewGeneratorProvider(meta).generatePreviewBitmap(bookFile!!)
+            ?: return@withContext Result.failure(
                 Exception("Failed to generate preview bitmap")
             )
         contentResolver.openOutputStream(previewFile.uri)?.use { output ->
@@ -139,15 +142,16 @@ abstract class StorageManager<T>(
     }
 
     suspend fun renameBundle(
-        old: String,
-        new: String,
-        meta: T
+        old: String, new: String, meta: T
     ): Result<BundleEditResult<T>> = withContext(Dispatchers.IO) {
         Log.i("StorageManager", "Renaming bundle $old to $new")
-        val storageUri = settingsManager.getStorageUri()
-            ?: return@withContext Result.failure(Exception("Storage directory not set"))
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri)
-            ?: return@withContext Result.failure(Exception("Invalid storage directory"))
+        val storageUri = settingsManager.getStorageUri() ?: return@withContext Result.failure(
+            Exception("Storage directory not set")
+        )
+        val storageDir =
+            DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
+                Exception("Invalid storage directory")
+            )
 
         val bundleDir = storageDir.findFile(old)
             ?: return@withContext Result.failure(Exception("Bundle not found"))
@@ -176,24 +180,24 @@ abstract class StorageManager<T>(
         )
     }
 
-    suspend fun deleteBundle(bundleName: String): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            Log.i("StorageManager", "Deleting bundle $bundleName")
-            val storageUri = settingsManager.getStorageUri()
-                ?: return@withContext Result.failure(Exception("Storage directory not set"))
-            val storageDir =
-                DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                    InvalidStorageDirectoryException()
-                )
-
-            val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
-                Exception("Bundle not found")
+    suspend fun deleteBundle(bundleName: String): Result<Unit> = withContext(Dispatchers.IO) {
+        Log.i("StorageManager", "Deleting bundle $bundleName")
+        val storageUri = settingsManager.getStorageUri() ?: return@withContext Result.failure(
+            Exception("Storage directory not set")
+        )
+        val storageDir =
+            DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
+                InvalidStorageDirectoryException()
             )
 
-            bundleDir.delete()
+        val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
+            Exception("Bundle not found")
+        )
 
-            return@withContext Result.success(Unit)
-        }
+        bundleDir.delete()
+
+        return@withContext Result.success(Unit)
+    }
 
     private fun getPreviewUri(bundleName: String): Result<Uri?> {
         Log.i("StorageManager", "Getting preview for $bundleName")
@@ -215,8 +219,9 @@ abstract class StorageManager<T>(
     suspend fun updateBundleMeta(bundleName: String, meta: T): Result<Unit> =
         withContext(Dispatchers.IO) {
             Log.i("StorageManager", "Updating metadata for $bundleName")
-            val storageUri = settingsManager.getStorageUri()
-                ?: return@withContext Result.failure(Exception("Storage directory not set"))
+            val storageUri = settingsManager.getStorageUri() ?: return@withContext Result.failure(
+                Exception("Storage directory not set")
+            )
             val storageDir =
                 DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
                     InvalidStorageDirectoryException()
@@ -263,12 +268,11 @@ abstract class StorageManager<T>(
                         val bookFile = file.findFile(nameProvider.previewFilename(file.name!!))
                         val previewFile =
                             file.findFile(nameProvider.fileName(file.name!!, bookMetaInfo))
+                                ?: return@async null
+                        val name = file?.name ?: return@async null
+                        val bookFileUri = bookFile?.uri ?: return@async null
                         BundleEditResult(
-                            previewFile?.uri!!,
-                            file.name!!,
-                            metaFile.uri,
-                            bookFile?.uri!!,
-                            bookMetaInfo
+                            previewFile.uri, name, metaFile.uri, bookFileUri, bookMetaInfo
                         )
                     } else {
                         null
@@ -295,8 +299,10 @@ abstract class StorageManager<T>(
         val bundleDir = storageDir.findFile(bundleName) ?: return Result.failure(
             Exception("Bundle not found")
         )
-        val documentFile = bundleDir.findFile(nameProvider.fileName(bundleName, meta))
-            ?: return Result.failure(Exception("File not found in storage directory"))
+        val documentFile =
+            bundleDir.findFile(nameProvider.fileName(bundleName, meta)) ?: return Result.failure(
+                Exception("File not found in storage directory")
+            )
 
         val destFile = File(context.filesDir, nameProvider.fileName(bundleName, meta))
         context.contentResolver.openInputStream(documentFile.uri)?.use { input ->
