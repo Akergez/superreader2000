@@ -8,11 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorageEntry
-import com.example.bottomapp.backend.DjvuProgress
-import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
-import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,9 +43,8 @@ class HoomeScreenViewModel(
         }
     }
 
-    fun addBook(uri: Uri, context: Context) {
+    fun addBook(uri: Uri, context: Context, fileType: FileType) {
         val fileName = getFileName(context, uri)
-        val fileType = getFileType(fileName)
         val factory = factories[fileType]
         if (factory == null) {
             if (fileType != FileType.unknown) {
@@ -201,14 +196,4 @@ private fun getFileName(context: Context, uri: Uri): String {
         }
     }
     return result ?: "unknown"
-}
-
-private fun getFileType(fileName: String): FileType {
-    val strType = fileName.substringAfterLast('.', "").lowercase()
-    val fileTypeEnum: FileType = try {
-        enumValueOf<FileType>(strType)
-    } catch (e: IllegalArgumentException) {
-        FileType.unknown
-    }
-    return fileTypeEnum
 }

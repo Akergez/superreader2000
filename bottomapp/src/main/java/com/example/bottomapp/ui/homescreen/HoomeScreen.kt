@@ -39,6 +39,7 @@ import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.constants.toFileExtension
 import com.example.bottomapp.constants.toMimeType
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
@@ -66,18 +67,34 @@ fun HomeScreen(
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val type = getFileType(result.data?.data.toString())
-                val supportedTypesList = FileType.entries.map { it.toMimeType() }
-                if (supportedTypesList.contains(type)) {
-                    result.data?.data?.let { uri ->
-                        hoomeScreenViewModel.addBook(uri, context)
+                result.data?.data?.let { uri ->
+                    val extension = getFileType(result.data?.data.toString())
+                    val mimeType = context.contentResolver.getType(uri)
+                    val supportedTypesList = FileType.entries.filter { it != FileType.unknown }
+                        .map { it to it.toFileExtension() }
+                    val supportedMimeTypesList = FileType.entries.filter { it != FileType.unknown }
+                        .map { it to it.toMimeType() }
+                    if (supportedTypesList.map { it.second }.contains(extension)) {
+                        hoomeScreenViewModel.addBook(
+                            uri,
+                            context,
+                            supportedTypesList.firstOrNull() { it.second == extension }?.first
+                                ?: FileType.unknown
+                        )
+                    } else if (supportedMimeTypesList.map { it.second }.flatten()
+                            .contains(mimeType)
+                    ) {
+                        val type = supportedMimeTypesList
+                            .firstOrNull { it.second.contains(mimeType) }?.first
+                            ?: FileType.unknown
+                        hoomeScreenViewModel.addBook(uri, context, type)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            getString(context, R.string.error_not_supported_format),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
-                } else {
-                    Toast.makeText(
-                        context,
-                        getString(context, R.string.error_not_supported_format),
-                        Toast.LENGTH_LONG
-                    ).show()
                 }
             }
         }
@@ -153,11 +170,12 @@ fun HomeScreen(
 
     state.editingBook?.let { book ->
         val toast = Toast.makeText(context, "", Toast.LENGTH_SHORT)
-        EditBookModal(onClose = {
-            coroutineScope.launch {
-                hoomeScreenViewModel.updateEditingBook(null)
-            }
-        },
+        EditBookModal(
+            onClose = {
+                coroutineScope.launch {
+                    hoomeScreenViewModel.updateEditingBook(null)
+                }
+            },
             onSave = { updatedBook, changed, previewChanged ->
                 if (updatedBook.bundleName.isEmpty()) {
                     toast.setText(getString(context, R.string.error_book_title_empty))
@@ -185,6 +203,9 @@ private fun getFileType(fileName: String): String {
 private fun openFilePicker(): Intent {
     return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
-        type = "*/*"
+        type = "*/*"/*        putExtra(
+                    Intent.EXTRA_MIME_TYPES,
+                    arrayOf("application/pdf", "text/fb2+xml", "application/fb2")
+                )*/
     }
 }

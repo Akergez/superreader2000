@@ -8,7 +8,7 @@ import androidx.core.content.ContextCompat.getString
 import coil.ImageLoader
 import com.example.bottomapp.R
 import com.example.bottomapp.constants.FileType
-import com.example.bottomapp.constants.toMimeType
+import com.example.bottomapp.constants.toFileExtension
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +62,7 @@ class BookManager(
             fileUri,
             BookMetaInfo(fileName, progress, null),
             context.contentResolver,
-            fileType.toMimeType()
+            fileType.toFileExtension()
         ).onSuccess {
             CoroutineScope(Dispatchers.IO).launch {
                 bookCache.addBook(
