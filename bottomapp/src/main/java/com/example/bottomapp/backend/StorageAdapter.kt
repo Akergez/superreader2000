@@ -13,6 +13,7 @@ class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> 
     private val progressAdapterFactory = RuntimeTypeAdapterFactory.of(Progress::class.java, "type")
         .registerSubtype(PdfProgress::class.java, "pdf")
         .registerSubtype(Fb2Progress::class.java, "fb2")
+        .registerSubtype(DjvuProgress::class.java, "djvu")
 
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapterFactory(progressAdapterFactory)
@@ -38,6 +39,7 @@ class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> 
         return when (meta.progress) {
             is PdfProgress -> "${bundleName}.pdf"
             is Fb2Progress -> "${bundleName}.fb2"
+            is DjvuProgress -> "${bundleName}.djvu"
             else -> {
                 throw IllegalArgumentException("Unknown progress type")
             }

@@ -1,6 +1,8 @@
 package com.example.bottomapp
 
 import com.example.bottomapp.backend.BookMetaInfo
+import com.example.bottomapp.backend.DjvuBookAuthorExtractor
+import com.example.bottomapp.backend.DjvuProgress
 import com.example.bottomapp.backend.Fb2BookAuthorExtractor
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.IBookInfoExtractor
@@ -16,6 +18,7 @@ class BookInfoExtractorFactory : IBookInfoExtractorFactory<BookMetaInfo> {
         return when (meta.progress) {
             is PdfProgress -> PdfBookAuthorExtractor()
             is Fb2Progress -> Fb2BookAuthorExtractor()
+            is DjvuProgress -> DjvuBookAuthorExtractor()
             else -> throw IllegalArgumentException("Unknown progress type")
         }
     }

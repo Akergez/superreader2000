@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.backend.DjvuProgress
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
@@ -51,10 +52,7 @@ class HoomeScreenViewModel(
                 val bookLink = Fb2Progress(0, null)
                 viewModelScope.launch {
                     bookManager.addNewBook(
-                        uri,
-                        fileName.replace(".pdf", "").replace(".fb2", ""),
-                        bookLink,
-                        fileType
+                        uri, fileName.replace(".pdf", "").replace(".fb2", ""), bookLink, fileType
                     )
                 }
             }
@@ -63,12 +61,8 @@ class HoomeScreenViewModel(
                 val bookLink = PdfProgress(0, null)
                 viewModelScope.launch {
                     bookManager.addNewBook(
-                        uri,
-                        fileName.replace(".pdf", "").replace(".fb2", ""),
-                        bookLink,
-                        fileType
-                    )
-                        .onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
+                        uri, fileName.replace(".pdf", "").replace(".fb2", ""), bookLink, fileType
+                    ).onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
                 }
             }
 
@@ -78,6 +72,15 @@ class HoomeScreenViewModel(
                     "Только файлы формата PDF и FB2 поддерживаются приложением",
                     Toast.LENGTH_LONG
                 ).show()
+            }
+
+            FileType.djvu -> {
+                val bookLink = DjvuProgress(0, null)
+                viewModelScope.launch {
+                    bookManager.addNewBook(
+                        uri, fileName.replace(".djvu", "").replace(".fb2", ""), bookLink, fileType
+                    ).onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
+                }
             }
         }
     }
@@ -104,8 +107,7 @@ class HoomeScreenViewModel(
     }
 
     fun clearTemporaryState() {
-        _hoomeScreenState.value =
-            _hoomeScreenState.value.copy(editingBook = null)
+        _hoomeScreenState.value = _hoomeScreenState.value.copy(editingBook = null)
         clearSelectedBooks()
     }
 
@@ -143,8 +145,7 @@ class HoomeScreenViewModel(
                             if (newBook.bookMetaInfo.author != oldBook.bookMetaInfo.author) {
                                 viewModelScope.launch {
                                     bookManager.updateAuthor(
-                                        newBook.bundleName,
-                                        newBook.bookMetaInfo.author
+                                        newBook.bundleName, newBook.bookMetaInfo.author
                                     )
                                 }
                             }
@@ -164,8 +165,7 @@ class HoomeScreenViewModel(
                     if (newBook.bookMetaInfo.author != oldBook.bookMetaInfo.author) {
                         viewModelScope.launch {
                             bookManager.updateAuthor(
-                                newBook.bundleName,
-                                newBook.bookMetaInfo.author
+                                newBook.bundleName, newBook.bookMetaInfo.author
                             )
                         }
                     }
@@ -182,13 +182,11 @@ class HoomeScreenViewModel(
     }
 
     fun onDeleteBooks(
-        books: List<BookStorageEntry>,
-        context: Context
+        books: List<BookStorageEntry>, context: Context
     ) {
         viewModelScope.launch {
             books.map { book ->
-                bookManager.deleteBook(book.bundleName)
-                    .onFailure {
+                bookManager.deleteBook(book.bundleName).onFailure {
                         Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
                     }
             }

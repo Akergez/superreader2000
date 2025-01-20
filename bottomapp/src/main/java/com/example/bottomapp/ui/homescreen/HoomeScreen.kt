@@ -66,7 +66,7 @@ fun HomeScreen(
             if (result.resultCode == Activity.RESULT_OK) {
                 val type = getFileType(result.data?.data.toString())
                 when (type) {
-                    "pdf", "fb2" -> {
+                    "pdf", "fb2", "djvu" -> {
                         result.data?.data?.let { uri ->
                             hoomeScreenViewModel.addBook(uri, context)
                         }

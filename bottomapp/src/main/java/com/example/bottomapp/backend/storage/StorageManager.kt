@@ -1,6 +1,6 @@
 package com.example.bottomapp.backend.storage
 
-import PreviewGenerator
+import com.example.bottomapp.backend.PreviewGenerator
 import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap

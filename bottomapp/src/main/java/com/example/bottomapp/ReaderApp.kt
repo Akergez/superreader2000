@@ -13,6 +13,7 @@ import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageAdapter
 import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
+import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuScreenViewModel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -39,6 +40,13 @@ class ReaderApp : Application() {
             viewModel { HoomeScreenViewModel(get()) }
             viewModel { parameters ->
                 PdfScreenViewModel(
+                    get(),
+                    parameters.get(),
+                    parameters.get()
+                )
+            }
+            viewModel { parameters ->
+                DjvuScreenViewModel(
                     get(),
                     parameters.get(),
                     parameters.get()

@@ -59,6 +59,7 @@ class BookStorageRepository(private val dao: UserDao) {
         .of(Progress::class.java, "type")
         .registerSubtype(PdfProgress::class.java, "pdf")
         .registerSubtype(Fb2Progress::class.java, "fb2")
+        .registerSubtype(DjvuProgress::class.java, "djvu")
 
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapterFactory(progressAdapterFactory)

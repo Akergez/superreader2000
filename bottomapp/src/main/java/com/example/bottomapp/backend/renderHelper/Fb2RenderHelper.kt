@@ -33,6 +33,7 @@ import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.w3c.dom.Node
@@ -203,6 +204,10 @@ class Fb2RenderHelper(
 
     override fun getBookType(): FormatType {
         return FormatType.FB2
+    }
+
+    override fun getTableOfContents(): StateFlow<List<TOCEntry>> {
+        TODO("Not yet implemented")
     }
 
     fun getPageIndexByWordOffset(offset: Int): Int {

@@ -131,7 +131,7 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
         return FormatType.PDF
     }
 
-    fun getTableOfContents(): StateFlow<List<TOCEntry>> = tableOfContents
+    override fun getTableOfContents(): StateFlow<List<TOCEntry>> = tableOfContents
 
     private fun extractTableOfContents() {
         CoroutineScope(Dispatchers.IO).launch {

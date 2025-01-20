@@ -73,7 +73,7 @@ class BookManager(
             }
             return Result.success(Unit)
         }.onFailure {
-            Toast.makeText(context, getString(context, R.string.error_book_already_exists), Toast.LENGTH_LONG).show()
+            Toast.makeText(context, it.cause?.message, Toast.LENGTH_LONG).show()
             return Result.failure(it)
         }
         return Result.success(Unit)

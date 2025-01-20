@@ -4,7 +4,8 @@ import java.io.File
 
 enum class FormatType {
     PDF,
-    FB2
+    FB2,
+    DJVU
 }
 
 abstract class Progress(val formatType: FormatType)

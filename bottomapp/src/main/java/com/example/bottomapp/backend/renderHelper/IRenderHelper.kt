@@ -8,4 +8,5 @@ interface IRenderHelper {
     fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<IBookContent>
     fun close()
     fun getBookType(): FormatType
+    fun getTableOfContents(): StateFlow<List<TOCEntry>>
 }

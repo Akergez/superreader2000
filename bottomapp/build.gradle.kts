@@ -13,7 +13,7 @@ android {
     defaultConfig {
         applicationId = "com.example.bottomapp"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -48,10 +48,11 @@ android {
 }
 
 dependencies {
-    implementation("net.engawapg.lib:zoomable:2.0.0")
-    implementation("androidx.compose.material3:material3:1.3.0")
-    implementation("androidx.compose.material:material:1.7.2")
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation(libs.djvulibre)
+    implementation(libs.zoomable)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material)
+    implementation(libs.pdfbox.android)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.navigation.compose.v240alpha10)
@@ -93,39 +94,27 @@ dependencies {
     implementation(libs.oleksandrbalan.pagecurl)
     implementation(libs.accompanist.pager)
     implementation(libs.gson)
-    // Enables FileKit with Composable utilities
-    implementation("io.github.vinceglb:filekit-compose:0.8.7")
-    implementation("com.google.accompanist:accompanist-navigation-animation:0.36.0")
-    implementation("io.coil-kt:coil-compose:2.1.0")
-    implementation("io.insert-koin:koin-androidx-compose:4.0.0")
-    implementation("io.insert-koin:koin-androidx-compose-navigation:4.0.0")
-    val room_version = "2.6.1"
-
-    implementation("androidx.room:room-runtime:$room_version")
-
+    implementation(libs.accompanist.navigation.animation)
+    implementation(libs.coil.compose.v210)
+    implementation(libs.koin.androidx.compose.v400)
+    implementation(libs.koin.androidx.compose.navigation)
+    implementation(libs.androidx.room.runtime)
     // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
     // See Add the KSP plugin to your project
     // If this project only uses Java source, use the Java annotationProcessor
     // No additional plugins are necessary
     //annotationProcessor("androidx.room:room-compiler:$room_version")
-    ksp("androidx.room:room-compiler:$room_version")
-
-
+    ksp(libs.androidx.room.compiler)
     // optional - Kotlin Extensions and Coroutines support for Room
-    implementation("androidx.room:room-ktx:$room_version")
-
+    implementation(libs.androidx.room.ktx)
     // optional - RxJava2 support for Room
-    implementation("androidx.room:room-rxjava2:$room_version")
-
+    implementation(libs.androidx.room.rxjava2)
     // optional - RxJava3 support for Room
-    implementation("androidx.room:room-rxjava3:$room_version")
-
+    implementation(libs.androidx.room.rxjava3)
     // optional - Guava support for Room, including Optional and ListenableFuture
-    implementation("androidx.room:room-guava:$room_version")
-
+    implementation(libs.androidx.room.guava)
     // optional - Test helpers
-    testImplementation("androidx.room:room-testing:$room_version")
-
+    testImplementation(libs.androidx.room.testing)
     // optional - Paging 3 Integration
-    implementation("androidx.room:room-paging:$room_version")
+    implementation(libs.androidx.room.paging)
 }

@@ -1,3 +1,5 @@
+package com.example.bottomapp.backend
+
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -10,6 +12,7 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.collection.LruCache
+import com.github.axet.djvulibre.DjvuLibre
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
@@ -17,7 +20,7 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.util.Locale
 
-class PreviewGenerator(private val cacheSize: Int = 10) {
+class PreviewGenerator(cacheSize: Int = 10) {
 
     private val bitmapCache: LruCache<String, Bitmap> = LruCache(cacheSize)
 
@@ -32,10 +35,29 @@ class PreviewGenerator(private val cacheSize: Int = 10) {
         return when (file.extension.lowercase(Locale.getDefault())) {
             "pdf" -> generatePdfPreview(file)
             "fb2" -> generateFb2Preview(file)
+            "djvu" -> generateDjvuPreview(file)
             else -> null
         }
     }
 
+    private fun generateDjvuPreview(file: File): Bitmap {
+        val render = DjvuLibre(FileInputStream(file).fd)
+        val page = render.getPageInfo(0)
+        val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+        render.renderPage(
+            bitmap,
+            0,
+            0,
+            0,
+            page.width,
+            page.height,
+            0,
+            0,
+            page.width,
+            page.height
+        )
+        return bitmap
+    }
     private fun generatePdfPreview(file: File): Bitmap? {
         var pdfRenderer: PdfRenderer? = null
         var parcelFileDescriptor: ParcelFileDescriptor? = null

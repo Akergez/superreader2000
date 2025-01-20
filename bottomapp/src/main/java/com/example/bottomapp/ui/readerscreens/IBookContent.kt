@@ -7,5 +7,6 @@ import androidx.compose.ui.text.AnnotatedString
 interface IBookContent
 
 data class PdfBookContent(val bitmap: Bitmap?): IBookContent
+data class DjvuBookContent(val bitmap: Bitmap?): IBookContent
 
 data class Fb2BookContent(val text: AnnotatedString?, val extraContent: MutableMap<String, InlineTextContent>): IBookContent

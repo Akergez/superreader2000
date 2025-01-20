@@ -44,14 +44,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookManager
+import com.example.bottomapp.backend.DjvuBookDomainModel
+import com.example.bottomapp.backend.DjvuProgress
 import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
+import com.example.bottomapp.backend.renderHelper.DJVURenderHelper
 import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
 import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
+import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuReaderScreen
+import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuScreenViewModel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
@@ -71,8 +76,7 @@ import java.nio.charset.StandardCharsets
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
-    bookManager: BookManager = koinInject(),
-    settingsManager: SettingsManager = koinInject()
+    bookManager: BookManager = koinInject(), settingsManager: SettingsManager = koinInject()
 ) {
     val context = LocalContext.current
 
@@ -81,26 +85,21 @@ fun MainScreen(
 
     KoinContext() {
         PDFReaderJetpackComposeTheme(
-            darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme())
-                    || currentTheme == AppThemeMode.Dark)
+            darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme == AppThemeMode.Dark)
         ) {
-            NavHost(
-                navController = navController,
+            NavHost(navController = navController,
                 startDestination = Route.Main,
 
                 enterTransition = { fadeIn(animationSpec = tween(300)) },
-                exitTransition = { fadeOut(animationSpec = tween(300)) }
-            ) {
+                exitTransition = { fadeOut(animationSpec = tween(300)) }) {
                 composable(Route.Main) {
                     HomeScreen(
                         onItemClick = { bookLink ->
                             val encodedFileName = URLEncoder.encode(
-                                bookLink.bundleName,
-                                StandardCharsets.UTF_8.toString()
+                                bookLink.bundleName, StandardCharsets.UTF_8.toString()
                             )
                             navController.navigate("bookReader/$encodedFileName")
-                        },
-                        navController = navController
+                        }, navController = navController
                     )
                 }
                 composable(Route.Settings) {
@@ -111,24 +110,18 @@ fun MainScreen(
                 composable(
                     "bookReader/{fileName}",
                     enterTransition = {
-                        slideInHorizontally(
-                            initialOffsetX = { fullWidth -> fullWidth }
-                        )
+                        slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth })
                     },
                     exitTransition = {
-                        slideOutHorizontally(
-                            targetOffsetX = { fullWidth -> fullWidth }
-                        )
+                        slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
                     },
                 ) { backStackEntry ->
                     val fileName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         URLDecoder.decode(
-                            backStackEntry.arguments?.getString("fileName"),
-                            StandardCharsets.UTF_8
+                            backStackEntry.arguments?.getString("fileName"), StandardCharsets.UTF_8
                         )
                     } else {
-                        @Suppress("DEPRECATION")
-                        URLDecoder.decode(
+                        @Suppress("DEPRECATION") URLDecoder.decode(
                             backStackEntry.arguments?.getString("fileName")
                         )
                     }
@@ -136,49 +129,57 @@ fun MainScreen(
                         val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
                         if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
                             bookLink.let {
-                                val pdfBookDomainModel = PdfBookDomainModel(
-                                    updateProgress = { updatedBookLink ->
+                                val pdfBookDomainModel =
+                                    PdfBookDomainModel(updateProgress = { updatedBookLink ->
                                         bookManager.updateProgress(
-                                            bookLink.bundleName,
-                                            updatedBookLink
+                                            bookLink.bundleName, updatedBookLink
                                         )
-                                    },
-                                    bookMetaInfo = it.bookMetaInfo,
-                                    getFileFromStorage = {
-                                        bookManager.getBookFile(it.bundleName)
-                                            .getOrThrow()
-                                    }
-                                )
+                                    }, bookMetaInfo = it.bookMetaInfo, getFileFromStorage = {
+                                        bookManager.getBookFile(it.bundleName).getOrThrow()
+                                    })
 
                                 PdfReaderScreen(
                                     pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
                                         parameters = {
-                                            parametersOf(
-                                                pdfBookDomainModel,
-                                                PdfRendererHelper { pdfBookDomainModel.getFile() }
-                                            )
+                                            parametersOf(pdfBookDomainModel,
+                                                PdfRendererHelper { pdfBookDomainModel.getFile() })
                                         })
                                 )
                             }
                         } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
                             bookLink.let {
-                                val book = Fb2BookDomainModel(
-                                    it.bookMetaInfo,
+                                val book = Fb2BookDomainModel(it.bookMetaInfo,
                                     updateProgress = { updatedBookLink ->
                                         CoroutineScope(Dispatchers.IO).launch {
                                             bookManager.updateProgress(
-                                                bookLink.bundleName,
-                                                updatedBookLink
+                                                bookLink.bundleName, updatedBookLink
                                             )
                                         }
                                     },
                                     getFileFromStorage = {
-                                        bookManager.getBookFile(it.bundleName)
-                                            .getOrThrow()
-                                    }
-                                )
+                                        bookManager.getBookFile(it.bundleName).getOrThrow()
+                                    })
                                 Fb2ReaderScreen(book)
 
+                            }
+                        } else if (bookLink?.bookMetaInfo?.progress is DjvuProgress) {
+                            bookLink.let {
+                                val pdfBookDomainModel =
+                                    DjvuBookDomainModel(updateProgress = { updatedBookLink ->
+                                        bookManager.updateProgress(
+                                            bookLink.bundleName, updatedBookLink
+                                        )
+                                    }, bookMetaInfo = it.bookMetaInfo, getFileFromStorage = {
+                                        bookManager.getBookFile(it.bundleName).getOrThrow()
+                                    })
+
+                                DjvuReaderScreen(
+                                    pdfScreenViewModel = koinViewModel<DjvuScreenViewModel>(
+                                        parameters = {
+                                            parametersOf(pdfBookDomainModel,
+                                                DJVURenderHelper { pdfBookDomainModel.getFile() })
+                                        })
+                                )
                             }
                         }
                     }
@@ -208,13 +209,11 @@ fun MainScreen(
                 }
 
             if (settingsManager.getStorageUri() == null && isDialogVisible) {
-                StorageSelectionDialog(
-                    onChoose = {
-                        triggerEffect++
-                        isDialogVisible = false
-                        isNextScreenVisible = true
-                    }
-                )
+                StorageSelectionDialog(onChoose = {
+                    triggerEffect++
+                    isDialogVisible = false
+                    isNextScreenVisible = true
+                })
             }
 
             LaunchedEffect("storage_$triggerEffect") {
@@ -233,41 +232,33 @@ fun MainScreen(
 fun StorageSelectionDialog(
     onChoose: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = { },
-        title = {
-            Text(
-                text = getString(LocalContext.current, R.string.choose_storage),
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = getString(LocalContext.current, R.string.choose_storage_description),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { onChoose() }) {
-                Text(text = getString(LocalContext.current, R.string.choose))
-            }
-        },
-        tonalElevation = 8.dp
+    AlertDialog(onDismissRequest = { }, title = {
+        Text(
+            text = getString(LocalContext.current, R.string.choose_storage),
+            style = MaterialTheme.typography.headlineSmall
+        )
+    }, text = {
+        Text(
+            text = getString(LocalContext.current, R.string.choose_storage_description),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }, confirmButton = {
+        TextButton(onClick = { onChoose() }) {
+            Text(text = getString(LocalContext.current, R.string.choose))
+        }
+    }, tonalElevation = 8.dp
     )
 }
 
 @Preview
 @Composable
 fun PreviewStorageSelectionDialog() {
-    StorageSelectionDialog(
-        onChoose = {}
-    )
+    StorageSelectionDialog(onChoose = {})
 }
 
 @Composable
 fun BottomNavigationBar(
-    navController: NavController,
-    screen: Screen
+    navController: NavController, screen: Screen
 ) {
     NavigationBar {
         NavigationBarItem(icon = { Icon(Icons.Filled.Home, contentDescription = null) },
@@ -287,17 +278,14 @@ fun BottomNavigationBar(
             Icon(
                 Icons.Filled.Settings, contentDescription = null
             )
-        },
-            label = {
-                Text(
-                    getString(
-                        LocalContext.current,
-                        R.string.title_settings
-                    )
+        }, label = {
+            Text(
+                getString(
+                    LocalContext.current, R.string.title_settings
                 )
-            }, // TODO еще картинку поменять
-            selected = screen == Screen.SETTINGS_SCREEN,
-            onClick = {
+            )
+        },
+            selected = screen == Screen.SETTINGS_SCREEN, onClick = {
                 if (navController.currentDestination?.route != Route.Settings) {
                     navController.navigate(Route.Settings) {
                         launchSingleTop = true // Предотвратить дублирование "Settings" в стеке
