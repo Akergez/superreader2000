@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.IViewerProvider
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -25,15 +26,16 @@ import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun CasualCurl(
+fun <TBookContent>CasualCurl(
     totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
-    getPage: (Int) -> StateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<TBookContent>,
+    viewerProvider: IViewerProvider<TBookContent>,
     zoomState: (ZoomState) -> Unit
-) {
+) where TBookContent : IBookContent {
     val lazyListState = rememberPagerState(initialPage)
     val totalPagesState by totalPages.collectAsState()
     val zoomS = rememberZoomState()
@@ -51,6 +53,7 @@ fun CasualCurl(
                     BookPage(
                         bookContent = pageState,
                         applyInversion = applyInversion,
+                        viewerProvider = viewerProvider
                     )
                 }
 

@@ -17,21 +17,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.IViewerProvider
 import kotlinx.coroutines.flow.StateFlow
 import net.engawapg.lib.zoomable.ZoomState
 import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.zoomable
 
 @Composable
-fun VerticalBookScroll(
+fun <TBookContent>VerticalBookScroll(
     totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
-    getPage: (Int) -> StateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<TBookContent>,
+    viewerProvider: IViewerProvider<TBookContent>,
     zoomState: (ZoomState) -> Unit
-) {
+) where TBookContent : IBookContent {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
     val zoomS = rememberZoomState()
@@ -55,7 +57,8 @@ fun VerticalBookScroll(
                             ) {
                                 BookPage(
                                     bookContent = getPage(page),
-                                    applyInversion = applyInversion
+                                    applyInversion = applyInversion,
+                                    viewerProvider = viewerProvider
                                 )
                             }
                         }

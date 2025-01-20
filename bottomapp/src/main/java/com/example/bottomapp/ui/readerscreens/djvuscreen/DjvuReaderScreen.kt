@@ -23,6 +23,7 @@ fun DjvuReaderScreen(pdfScreenViewModel: DjvuScreenViewModel) {
         updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
         updateFlipMode = { pdfScreenViewModel.updateFlipMode(it) },
         onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading) },
-        tableOfContent = pdfScreenViewModel.djvuRenderHelper.getTableOfContents()
+        tableOfContent = pdfScreenViewModel.djvuRenderHelper.getTableOfContents(),
+        viewerProvider = DjvuViewerProvider()
     )
 }

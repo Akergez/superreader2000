@@ -1,6 +1,5 @@
 package com.example.bottomapp.ui.mainscreen
 
-import Fb2ReaderScreen
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
@@ -44,30 +43,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.DjvuBookDomainModel
-import com.example.bottomapp.backend.DjvuProgress
-import com.example.bottomapp.backend.Fb2BookDomainModel
-import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.PdfBookDomainModel
-import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.backend.renderHelper.DJVURenderHelper
-import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
 import com.example.bottomapp.constants.Route
 import com.example.bottomapp.ui.homescreen.HomeScreen
-import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuReaderScreen
-import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuScreenViewModel
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
+import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenProvider
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
 import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
+import org.koin.core.qualifier.qualifier
+import org.koin.java.KoinJavaComponent.inject
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -127,60 +115,11 @@ fun MainScreen(
                     }
                     fileName?.let {
                         val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
-                        if (bookLink?.bookMetaInfo?.progress is PdfProgress) {
-                            bookLink.let {
-                                val pdfBookDomainModel =
-                                    PdfBookDomainModel(updateProgress = { updatedBookLink ->
-                                        bookManager.updateProgress(
-                                            bookLink.bundleName, updatedBookLink
-                                        )
-                                    }, bookMetaInfo = it.bookMetaInfo, getFileFromStorage = {
-                                        bookManager.getBookFile(it.bundleName).getOrThrow()
-                                    })
-
-                                PdfReaderScreen(
-                                    pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
-                                        parameters = {
-                                            parametersOf(pdfBookDomainModel,
-                                                PdfRendererHelper { pdfBookDomainModel.getFile() })
-                                        })
-                                )
-                            }
-                        } else if (bookLink?.bookMetaInfo?.progress is Fb2Progress) {
-                            bookLink.let {
-                                val book = Fb2BookDomainModel(it.bookMetaInfo,
-                                    updateProgress = { updatedBookLink ->
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            bookManager.updateProgress(
-                                                bookLink.bundleName, updatedBookLink
-                                            )
-                                        }
-                                    },
-                                    getFileFromStorage = {
-                                        bookManager.getBookFile(it.bundleName).getOrThrow()
-                                    })
-                                Fb2ReaderScreen(book)
-
-                            }
-                        } else if (bookLink?.bookMetaInfo?.progress is DjvuProgress) {
-                            bookLink.let {
-                                val pdfBookDomainModel =
-                                    DjvuBookDomainModel(updateProgress = { updatedBookLink ->
-                                        bookManager.updateProgress(
-                                            bookLink.bundleName, updatedBookLink
-                                        )
-                                    }, bookMetaInfo = it.bookMetaInfo, getFileFromStorage = {
-                                        bookManager.getBookFile(it.bundleName).getOrThrow()
-                                    })
-
-                                DjvuReaderScreen(
-                                    pdfScreenViewModel = koinViewModel<DjvuScreenViewModel>(
-                                        parameters = {
-                                            parametersOf(pdfBookDomainModel,
-                                                DJVURenderHelper { pdfBookDomainModel.getFile() })
-                                        })
-                                )
-                            }
+                        bookLink?.bookMetaInfo?.progress?.let {
+                            val provider: IReaderScreenProvider = koinInject(
+                                qualifier = named(bookLink.bookMetaInfo.progress.formatType),
+                            )
+                            provider.getReaderScreen(bookLink)()
                         }
                     }
                 }

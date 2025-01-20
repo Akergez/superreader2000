@@ -48,7 +48,7 @@ class Fb2RenderHelper(
     private val maxHeight: Int,
     private val textMeasurer: TextMeasurer,
     private val fb2File: File
-) : IRenderHelper {
+) : IRenderHelper<Fb2BookContent> {
     private var cachedContent: Queue<FB2Element>? = null
     private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
     val pageWordSum = mutableListOf<Int>()

@@ -19,13 +19,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 
-class DJVURenderHelper(val pdfFile: suspend () -> File) : IRenderHelper {
+class DJVURenderHelper(val pdfFile: suspend () -> File) : IRenderHelper<DjvuBookContent> {
     private val tableOfContents = MutableStateFlow<List<TOCEntry>>(emptyList())
     private val _pagesCount = MutableStateFlow<Int?>(null)
     val pagesCount: StateFlow<Int?> = _pagesCount
     private val bitmapCache =
-        object : LinkedHashMap<bitmapKey, MutableStateFlow<IBookContent>>(10, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<bitmapKey, MutableStateFlow<IBookContent>>?): Boolean {
+        object : LinkedHashMap<bitmapKey, MutableStateFlow<DjvuBookContent>>(10, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<bitmapKey, MutableStateFlow<DjvuBookContent>>?): Boolean {
                 return size > 10
             }
         }
@@ -40,11 +40,11 @@ class DJVURenderHelper(val pdfFile: suspend () -> File) : IRenderHelper {
         }
     }
 
-    override fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<IBookContent> {
+    override fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<DjvuBookContent> {
         if (bitmapCache.contains(bitmapKey(applyInversion, pageIndex))) {
             return bitmapCache[bitmapKey(applyInversion, pageIndex)]!!
         }
-        val msf = MutableStateFlow<IBookContent>(DjvuBookContent(null))
+        val msf = MutableStateFlow(DjvuBookContent(null))
         bitmapCache[bitmapKey(applyInversion, pageIndex)] = msf
         var bitmap: Bitmap?
         CoroutineScope(Dispatchers.IO).launch {

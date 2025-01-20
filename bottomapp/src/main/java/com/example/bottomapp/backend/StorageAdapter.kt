@@ -2,23 +2,17 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import com.example.bottomapp.BookInfoExtractorFactory
+import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.storage.IDeserializer
 import com.example.bottomapp.backend.storage.INameProvider
 import com.example.bottomapp.backend.storage.StorageManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import org.koin.compose.getKoin
+import org.koin.compose.koinInject
 
-class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> {
-
-    private val progressAdapterFactory = RuntimeTypeAdapterFactory.of(Progress::class.java, "type")
-        .registerSubtype(PdfProgress::class.java, "pdf")
-        .registerSubtype(Fb2Progress::class.java, "fb2")
-        .registerSubtype(DjvuProgress::class.java, "djvu")
-
-    private val gson: Gson = GsonBuilder()
-        .registerTypeAdapterFactory(progressAdapterFactory)
-        .create()
-
+class StorageAdapter(private val gson: Gson) : IDeserializer<BookMetaInfo>,
+    INameProvider<BookMetaInfo> {
     override fun deserialize(jsonString: String): BookMetaInfo {
         return gson.fromJson(jsonString, BookMetaInfo::class.java)
     }
@@ -36,13 +30,10 @@ class StorageAdapter : IDeserializer<BookMetaInfo>, INameProvider<BookMetaInfo> 
     }
 
     override fun fileName(bundleName: String, meta: BookMetaInfo): String {
-        return when (meta.progress) {
-            is PdfProgress -> "${bundleName}.pdf"
-            is Fb2Progress -> "${bundleName}.fb2"
-            is DjvuProgress -> "${bundleName}.djvu"
-            else -> {
-                throw IllegalArgumentException("Unknown progress type")
-            }
+        return when (meta.progress.formatType) {
+            FormatType.PDF -> "${bundleName}.pdf"
+            FormatType.FB2 -> "${bundleName}.fb2"
+            FormatType.DJVU -> "${bundleName}.djvu"
         }
     }
 }
@@ -51,5 +42,16 @@ class BookStorage(
     context: Context,
     settingsManager: SettingsManager,
     adapter: StorageAdapter,
-    infoExtractorFactory: BookInfoExtractorFactory
-) : StorageManager<BookMetaInfo>(context, settingsManager, adapter, adapter, infoExtractorFactory)
+    infoExtractorFactory: BookInfoExtractorFactory,
+    previewGeneratorMap: Map<FormatType, IPreviewGenerator>
+) : StorageManager<BookMetaInfo>(
+    context,
+    settingsManager,
+    adapter,
+    adapter,
+    infoExtractorFactory,
+    {
+        previewGeneratorMap[it.progress.formatType]
+            ?: throw NotImplementedError("PreviewGenerator for ${it.progress.formatType} not found, check your DI config")
+    }
+)

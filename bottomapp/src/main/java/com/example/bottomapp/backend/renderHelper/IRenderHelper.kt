@@ -4,8 +4,9 @@ import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import kotlinx.coroutines.flow.StateFlow
 
-interface IRenderHelper {
-    fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<IBookContent>
+interface IRenderHelper<T>
+        where T : IBookContent {
+    fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<T>
     fun close()
     fun getBookType(): FormatType
     fun getTableOfContents(): StateFlow<List<TOCEntry>>

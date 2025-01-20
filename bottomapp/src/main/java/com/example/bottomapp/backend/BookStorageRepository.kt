@@ -54,18 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
 }
 
-class BookStorageRepository(private val dao: UserDao) {
-    private val progressAdapterFactory = RuntimeTypeAdapterFactory
-        .of(Progress::class.java, "type")
-        .registerSubtype(PdfProgress::class.java, "pdf")
-        .registerSubtype(Fb2Progress::class.java, "fb2")
-        .registerSubtype(DjvuProgress::class.java, "djvu")
-
-    private val gson: Gson = GsonBuilder()
-        .registerTypeAdapterFactory(progressAdapterFactory)
-        .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
-        .create()
-
+class BookStorageRepository(private val dao: UserDao, private val gson: Gson) {
     private val _bookFlow = MutableStateFlow(emptyList<BookStorageEntry>())
     val bookFlow: StateFlow<List<BookStorageEntry>> = _bookFlow
 

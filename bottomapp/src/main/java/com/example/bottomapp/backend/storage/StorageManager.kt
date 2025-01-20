@@ -1,6 +1,5 @@
 package com.example.bottomapp.backend.storage
 
-import com.example.bottomapp.backend.PreviewGenerator
 import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
@@ -11,6 +10,7 @@ import com.example.bottomapp.IBookInfoExtractorFactory
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
+import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -42,6 +42,7 @@ abstract class StorageManager<T>(
     private val deserializer: IDeserializer<T>,
     private val nameProvider: INameProvider<T>,
     private val infoExtractor: IBookInfoExtractorFactory<T>,
+    private val previewGeneratorProvider: (T) -> IPreviewGenerator
 ) {
     private val fileCache = HashMap<String, File>()
 
@@ -119,7 +120,7 @@ abstract class StorageManager<T>(
             .onFailure { return@withContext Result.failure(it) }
 
         val previewBitmap =
-            PreviewGenerator().getPreviewBitmap(bookFile!!) ?: return@withContext Result.failure(
+            previewGeneratorProvider(meta).generatePreviewBitmap(bookFile!!) ?: return@withContext Result.failure(
                 Exception("Failed to generate preview bitmap")
             )
         contentResolver.openOutputStream(previewFile.uri)?.use { output ->

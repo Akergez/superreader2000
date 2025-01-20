@@ -24,6 +24,7 @@ fun PdfReaderScreen(pdfScreenViewModel: PdfScreenViewModel) {
         updateDocumentThemeMode = { pdfScreenViewModel.updateDocumentThemeMode(it) },
         updateFlipMode = { pdfScreenViewModel.updateFlipMode(it) },
         onCarouselBack = { pdfScreenViewModel.switchReaderMode(ReaderMode.Reading) },
-        tableOfContent = pdfScreenViewModel.pdfRendererHelper.getTableOfContents()
+        tableOfContent = pdfScreenViewModel.pdfRendererHelper.getTableOfContents(),
+        viewerProvider = PdfViewerProvider()
     )
 }

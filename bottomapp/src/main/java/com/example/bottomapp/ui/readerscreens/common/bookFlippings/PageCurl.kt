@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.IViewerProvider
 import eu.wewox.pagecurl.ExperimentalPageCurlApi
 import eu.wewox.pagecurl.config.rememberPageCurlConfig
 import eu.wewox.pagecurl.page.PageCurlState
@@ -26,15 +27,16 @@ import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
-fun PageCurl(
+fun <TBookContent> PageCurl(
     totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     currentPage: Int,
-    getPage: (Int) -> StateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<TBookContent>,
+    viewerProvider: IViewerProvider<TBookContent>,
     documentTheme: DocThemeMode,
     modifier: Modifier = Modifier,
     zoomState: (ZoomState) -> Unit
-) {
+) where TBookContent : IBookContent {
     Log.d("BookContent", "currentPage = $currentPage")
     val pagerState = remember { PageCurlState(initialCurrent = currentPage, initialMax = 0) }
     val totalPagesState by totalPages.collectAsState()
@@ -51,8 +53,7 @@ fun PageCurl(
                 count = it,
                 state = pagerState,
                 config = rememberPageCurlConfig(
-                    backPageContentAlpha = 0.5f,
-                    backPageColor = Color.Black
+                    backPageContentAlpha = 0.5f, backPageColor = Color.Black
                 ),
                 modifier = modifier
                     .fillMaxSize()
@@ -64,7 +65,8 @@ fun PageCurl(
                 BookPage(
                     bookContent = getPage(index),
                     applyInversion = documentTheme == DocThemeMode.Invert,
-                    modifier = modifier
+                    modifier = modifier,
+                    viewerProvider = viewerProvider
                 )
             }
         }

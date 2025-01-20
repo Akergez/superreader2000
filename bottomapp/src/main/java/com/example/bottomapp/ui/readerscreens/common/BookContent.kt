@@ -28,7 +28,7 @@ import net.engawapg.lib.zoomable.ZoomState
 
 @OptIn(ExperimentalPageCurlApi::class)
 @Composable
-fun BookContent(
+fun <TBookContent>BookContent(
     currentPage: Int,
     title: String,
     totalPages: StateFlow<Int?>,
@@ -39,11 +39,12 @@ fun BookContent(
     onToggleMode: (ReaderMode) -> Unit,
     onCarouselBack: () -> Unit,
     modifier: Modifier = Modifier,
-    getPage: (Int) -> StateFlow<IBookContent>,
+    getPage: (Int) -> StateFlow<TBookContent>,
+    viewerProvider: IViewerProvider<TBookContent>,
     documentTheme: DocThemeMode,
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
     updateFlipMode: (FlipMode) -> Unit
-) {
+) where TBookContent : IBookContent {
     Log.d("BookContent", "mode = $mode, flipMode = $flipMode, currentPage = $currentPage")
 
     val haptic = LocalHapticFeedback.current
@@ -96,7 +97,8 @@ fun BookContent(
                     title = title,
                     onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
                     onChaptersClick = { onToggleMode(ReaderMode.Chapters) },
-                    zoomState = handleZoomState
+                    zoomState = handleZoomState,
+                    viewerProvider = viewerProvider
                 )
                 if (showSettingsModal.value) {
                     if (showSettingsModal.value) {
@@ -124,7 +126,8 @@ fun BookContent(
                         getPage = getPage,
                         documentTheme = documentTheme,
                         modifier = modifier,
-                        zoomState = handleZoomState
+                        zoomState = handleZoomState,
+                        viewerProvider = viewerProvider
                     )
 
                     FlipMode.VerticalScroll -> VerticalBookScroll(
@@ -133,7 +136,8 @@ fun BookContent(
                         onPageChange = onPageChange,
                         applyInversion = documentTheme == DocThemeMode.Invert,
                         getPage = getPage,
-                        zoomState = handleZoomState
+                        zoomState = handleZoomState,
+                        viewerProvider = viewerProvider
                     )
 
                     FlipMode.Casual -> CasualCurl(
@@ -142,7 +146,8 @@ fun BookContent(
                         applyInversion = documentTheme == DocThemeMode.Invert,
                         initialPage = currentPage,
                         getPage = getPage,
-                        zoomState = handleZoomState
+                        zoomState = handleZoomState,
+                        viewerProvider = viewerProvider
                     )
                 }
             }

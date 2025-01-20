@@ -23,6 +23,7 @@ import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
+import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2ViewerProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -115,7 +116,8 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 updateFlipMode = { flipMode -> settingsManager.setPdfFlipMode(flipMode) },
                 onCarouselBack = { mode = ReaderMode.Reading },
                 title = book.title,
-                tableOfContent = fb2RenderHelper.value!!.tableOfContents
+                tableOfContent = fb2RenderHelper.value!!.tableOfContents,
+                viewerProvider = Fb2ViewerProvider()
             )
         } else {
             Text(getString(LocalContext.current, R.string.loading))

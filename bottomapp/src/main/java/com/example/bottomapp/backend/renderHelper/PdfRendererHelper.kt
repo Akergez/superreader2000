@@ -24,11 +24,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
+class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBookContent> {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
     val pagesCount: MutableStateFlow<Int?> = MutableStateFlow(null)
-    private val bitmapCache = object : LinkedHashMap<bitmapKey, MutableStateFlow<IBookContent>>(10, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<bitmapKey, MutableStateFlow<IBookContent>>?): Boolean {
+    private val bitmapCache = object : LinkedHashMap<bitmapKey, MutableStateFlow<PdfBookContent>>(10, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<bitmapKey, MutableStateFlow<PdfBookContent>>?): Boolean {
             return size > 10
         }
     }
@@ -45,11 +45,11 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper {
         }
     }
 
-    override fun openPage(pageIndex: Int, applyInversion: Boolean): MutableStateFlow<IBookContent> {
+    override fun openPage(pageIndex: Int, applyInversion: Boolean): MutableStateFlow<PdfBookContent> {
         bitmapCache[bitmapKey(applyInversion, pageIndex)]?.let {
             return it
         }
-        val bitmapStateFlow = MutableStateFlow<IBookContent>(PdfBookContent(null))
+        val bitmapStateFlow = MutableStateFlow<PdfBookContent>(PdfBookContent(null))
         bitmapCache[bitmapKey(applyInversion, pageIndex)] = bitmapStateFlow
         CoroutineScope(Dispatchers.IO).launch {
             Log.d("PdfRendererHelper", "openPage: $pageIndex")

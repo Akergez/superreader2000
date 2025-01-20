@@ -38,6 +38,8 @@ import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.constants.toMimeType
 import com.example.bottomapp.ui.homescreen.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
@@ -65,20 +67,17 @@ fun HomeScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val type = getFileType(result.data?.data.toString())
-                when (type) {
-                    "pdf", "fb2", "djvu" -> {
-                        result.data?.data?.let { uri ->
-                            hoomeScreenViewModel.addBook(uri, context)
-                        }
+                val supportedTypesList = FileType.entries.map { it.toMimeType() }
+                if (supportedTypesList.contains(type)) {
+                    result.data?.data?.let { uri ->
+                        hoomeScreenViewModel.addBook(uri, context)
                     }
-
-                    else -> {
-                        Toast.makeText(
-                            context,
-                            getString(context, R.string.error_not_supported_format),
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                } else {
+                    Toast.makeText(
+                        context,
+                        getString(context, R.string.error_not_supported_format),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
@@ -92,110 +91,88 @@ fun HomeScreen(
         hoomeScreenViewModel.dumpBooks()
     }
 
-    Scaffold(
-        floatingActionButton = {
-            if (selectedBooks.size == 1) {
-                FloatingActionButton(onClick = {
-                    hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
-                    hoomeScreenViewModel.clearSelectedBooks()
-                }) {
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = getString(LocalContext.current, R.string.edit_book)
-                    )
-                }
-            }
-            else if (selectedBooks.isEmpty()) {
-                FloatingActionButton(onClick = { launcher.launch(openFilePicker()) }) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = getString(LocalContext.current, R.string.add_book)
-                    )
-                }
-            }
-        },
-        bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) },
-        topBar = {
-            if (selectedBooks.isNotEmpty()) {
-                TopEditBar(
-                    onClose = { hoomeScreenViewModel.clearSelectedBooks() },
-                    onDelete = {
-                        hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
-                    },
-                    selectedCount = selectedBooks.size
-                )
-            } else {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = getString(LocalContext.current, R.string.my_books),
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                    },
-                    scrollBehavior = scrollBehavior
+    Scaffold(floatingActionButton = {
+        if (selectedBooks.size == 1) {
+            FloatingActionButton(onClick = {
+                hoomeScreenViewModel.updateEditingBook(selectedBooks.first())
+                hoomeScreenViewModel.clearSelectedBooks()
+            }) {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = getString(LocalContext.current, R.string.edit_book)
                 )
             }
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else if (selectedBooks.isEmpty()) {
+            FloatingActionButton(onClick = { launcher.launch(openFilePicker()) }) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = getString(LocalContext.current, R.string.add_book)
+                )
+            }
+        }
+    }, bottomBar = { BottomNavigationBar(navController, Screen.HOME_SCREEN) }, topBar = {
+        if (selectedBooks.isNotEmpty()) {
+            TopEditBar(onClose = { hoomeScreenViewModel.clearSelectedBooks() }, onDelete = {
+                hoomeScreenViewModel.onDeleteBooks(selectedBooks, context)
+            }, selectedCount = selectedBooks.size
+            )
+        } else {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = getString(LocalContext.current, R.string.my_books),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }, scrollBehavior = scrollBehavior
+            )
+        }
+    }, modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            state = lazyListState
+                .padding(padding), state = lazyListState
         ) {
             items(books.sortedBy { x -> x.title }, key = { it.bundleName }) { bookLink ->
                 val isSelected = bookLink in selectedBooks
                 val isSelectedAny = selectedBooks.isNotEmpty()
-                BookItem(
-                    book = bookLink,
-                    isSelected = isSelected,
-                    onItemClick = { book ->
-                        if (isSelectedAny) {
-                            hoomeScreenViewModel.updateSelectedBook(bookLink)
-                        } else {
-                            onItemClick(book)
-                            hoomeScreenViewModel.clearTemporaryState()
-                        }
-                    },
-                    onLongClick = {
+                BookItem(book = bookLink, isSelected = isSelected, onItemClick = { book ->
+                    if (isSelectedAny) {
                         hoomeScreenViewModel.updateSelectedBook(bookLink)
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    } else {
+                        onItemClick(book)
+                        hoomeScreenViewModel.clearTemporaryState()
                     }
-                )
+                }, onLongClick = {
+                    hoomeScreenViewModel.updateSelectedBook(bookLink)
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                })
             }
         }
     }
 
     state.editingBook?.let { book ->
         val toast = Toast.makeText(context, "", Toast.LENGTH_SHORT)
-        EditBookModal(
-            onClose = {
-                coroutineScope.launch {
-                    hoomeScreenViewModel.updateEditingBook(null)
-                }
-            },
+        EditBookModal(onClose = {
+            coroutineScope.launch {
+                hoomeScreenViewModel.updateEditingBook(null)
+            }
+        },
             onSave = { updatedBook, changed, previewChanged ->
                 if (updatedBook.bundleName.isEmpty()) {
                     toast.setText(getString(context, R.string.error_book_title_empty))
                     toast?.show()
                 } else if (books.all { x -> x == book || x.bundleName != updatedBook.bundleName }) {
                     hoomeScreenViewModel.onSaveEditModal(
-                        book,
-                        updatedBook,
-                        changed,
-                        previewChanged,
-                        context
+                        book, updatedBook, changed, previewChanged, context
                     )
                 } else {
                     toast.setText(getString(context, R.string.error_book_with_title_already_exists))
                     toast?.show()
                 }
             },
-            editModalViewModel = koinViewModel(
-                key = Uuid.random().toString(),
-                parameters = { parametersOf(book) }
-            ),
+            editModalViewModel = koinViewModel(key = Uuid.random().toString(),
+                parameters = { parametersOf(book) }),
             isVisible = true
         )
     }

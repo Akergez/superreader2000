@@ -1,4 +1,4 @@
-package com.example.bottomapp.backend
+package com.example.bottomapp.backend.previewGenerators
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -8,85 +8,14 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
 import android.graphics.Typeface
-import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
 import android.util.Base64
-import androidx.collection.LruCache
-import com.github.axet.djvulibre.DjvuLibre
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
-import java.util.Locale
 
-class PreviewGenerator(cacheSize: Int = 10) {
-
-    private val bitmapCache: LruCache<String, Bitmap> = LruCache(cacheSize)
-
-    fun getPreviewBitmap(file: File): Bitmap? {
-        val cacheKey = file.absolutePath
-        return bitmapCache[cacheKey] ?: generatePreviewBitmap(file)?.also {
-            bitmapCache.put(cacheKey, it)
-        }
-    }
-
-    private fun generatePreviewBitmap(file: File): Bitmap? {
-        return when (file.extension.lowercase(Locale.getDefault())) {
-            "pdf" -> generatePdfPreview(file)
-            "fb2" -> generateFb2Preview(file)
-            "djvu" -> generateDjvuPreview(file)
-            else -> null
-        }
-    }
-
-    private fun generateDjvuPreview(file: File): Bitmap {
-        val render = DjvuLibre(FileInputStream(file).fd)
-        val page = render.getPageInfo(0)
-        val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-        render.renderPage(
-            bitmap,
-            0,
-            0,
-            0,
-            page.width,
-            page.height,
-            0,
-            0,
-            page.width,
-            page.height
-        )
-        return bitmap
-    }
-    private fun generatePdfPreview(file: File): Bitmap? {
-        var pdfRenderer: PdfRenderer? = null
-        var parcelFileDescriptor: ParcelFileDescriptor? = null
-        try {
-            parcelFileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            pdfRenderer = PdfRenderer(parcelFileDescriptor)
-            if (pdfRenderer.pageCount > 0) {
-                val page = pdfRenderer.openPage(0)
-                val width = page.width
-                val height = page.height
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                page.close()
-                return bitmap
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            try {
-                pdfRenderer?.close()
-                parcelFileDescriptor?.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-        return null
-    }
-
-    private fun generateFb2Preview(file: File): Bitmap? {
+class Fb2PreviewGenerator : IPreviewGenerator {
+    override fun generatePreviewBitmap(file: File): Bitmap? {
         try {
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = true
@@ -109,14 +38,20 @@ class PreviewGenerator(cacheSize: Int = 10) {
                                 // Ищем ссылку на обложку
                                 while (parser.next() != XmlPullParser.END_TAG) {
                                     if (parser.eventType == XmlPullParser.START_TAG && parser.name == "image") {
-                                        coverId = parser.getAttributeValue("http://www.w3.org/1999/xlink", "href")?.removePrefix("#")
+                                        coverId = parser.getAttributeValue(
+                                            "http://www.w3.org/1999/xlink",
+                                            "href"
+                                        )?.removePrefix("#")
                                         break
                                     }
                                 }
                             }
+
                             "binary" -> {
                                 val id = parser.getAttributeValue(null, "id")
-                                if (id == coverId && parser.getAttributeValue(null, "content-type").startsWith("image/")) {
+                                if (id == coverId && parser.getAttributeValue(null, "content-type")
+                                        .startsWith("image/")
+                                ) {
                                     coverData = parser.nextText()
                                     break
                                 }
@@ -140,9 +75,11 @@ class PreviewGenerator(cacheSize: Int = 10) {
             val canvas = Canvas(bitmap)
 
             // Заполняем фон градиентом
-            val gradient = LinearGradient(0f, 0f, 300f, 400f,
+            val gradient = LinearGradient(
+                0f, 0f, 300f, 400f,
                 intArrayOf(Color.rgb(240, 240, 240), Color.rgb(220, 220, 220)),
-                null, Shader.TileMode.CLAMP)
+                null, Shader.TileMode.CLAMP
+            )
             val paint = Paint()
             paint.shader = gradient
             canvas.drawRect(0f, 0f, 300f, 400f, paint)
@@ -209,5 +146,4 @@ class PreviewGenerator(cacheSize: Int = 10) {
             null
         }
     }
-
 }

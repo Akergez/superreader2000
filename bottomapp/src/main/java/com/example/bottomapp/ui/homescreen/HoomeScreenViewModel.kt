@@ -11,6 +11,7 @@ import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.DjvuProgress
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.PdfProgress
+import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.backend.exceptions.ExceptionsCatcher
 import com.example.bottomapp.constants.FileType
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HoomeScreenViewModel(
-    private val bookManager: BookManager
+    private val bookManager: BookManager,
+    private val factories: Map<FileType, IBookCreateFactory>
 ) : ViewModel() {
 
     private val _hoomeScreenState = MutableStateFlow(HoomeScreenState())
@@ -47,41 +49,24 @@ class HoomeScreenViewModel(
 
     fun addBook(uri: Uri, context: Context) {
         val fileName = getFileName(context, uri)
-        when (val fileType = getFileType(fileName)) {
-            FileType.fb2 -> {
-                val bookLink = Fb2Progress(0, null)
-                viewModelScope.launch {
-                    bookManager.addNewBook(
-                        uri, fileName.replace(".pdf", "").replace(".fb2", ""), bookLink, fileType
-                    )
-                }
-            }
-
-            FileType.pdf -> {
-                val bookLink = PdfProgress(0, null)
-                viewModelScope.launch {
-                    bookManager.addNewBook(
-                        uri, fileName.replace(".pdf", "").replace(".fb2", ""), bookLink, fileType
-                    ).onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
-                }
-            }
-
-            FileType.unknown -> {
+        val fileType = getFileType(fileName)
+        val factory = factories[fileType]
+        if (factory == null) {
+            if (fileType != FileType.unknown) {
                 Toast.makeText(
                     context,
-                    "Только файлы формата PDF и FB2 поддерживаются приложением",
+                    "Unsupported file type",
                     Toast.LENGTH_LONG
                 ).show()
+                return
             }
 
-            FileType.djvu -> {
-                val bookLink = DjvuProgress(0, null)
-                viewModelScope.launch {
-                    bookManager.addNewBook(
-                        uri, fileName.replace(".djvu", "").replace(".fb2", ""), bookLink, fileType
-                    ).onFailure { ExceptionsCatcher.makeToastByThrowable(context, it) }
-                }
-            }
+            throw NotImplementedError("IBookCreateFactory for $fileType file type is not found. Check your DI configuration")
+        }
+        viewModelScope.launch {
+            bookManager.addNewBook(
+                uri, factory.getNameFromFileName(fileName), factory.createProgress(), fileType
+            )
         }
     }
 
@@ -187,8 +172,8 @@ class HoomeScreenViewModel(
         viewModelScope.launch {
             books.map { book ->
                 bookManager.deleteBook(book.bundleName).onFailure {
-                        Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
-                    }
+                    Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                }
             }
         }
         clearSelectedBooks()

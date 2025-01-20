@@ -7,50 +7,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.bottomapp.ui.readerscreens.DjvuBookContent
-import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import com.example.bottomapp.ui.readerscreens.IBookContent
-import com.example.bottomapp.ui.readerscreens.PdfBookContent
-import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuViewer
-import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2Viewer
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfViewer
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
-fun BookPage(
-    bookContent: StateFlow<IBookContent>,
+fun <TBookContentType>BookPage(
+    bookContent: StateFlow<TBookContentType>,
+    viewerProvider: IViewerProvider<TBookContentType>,
     applyInversion: Boolean,
     modifier: Modifier = Modifier,
-) {
+) where TBookContentType : IBookContent {
     val content by bookContent.collectAsState()
     Box(modifier.background(color = if (applyInversion) Color.Black else Color.White)) {
-        when (content) {
-            is PdfBookContent -> {
-                val pdfContent = content as PdfBookContent
-                PdfViewer(
-                    bitmap = pdfContent.bitmap,
-                    applyInversion = applyInversion
-                )
-            }
-
-            is Fb2BookContent -> {
-                val fb2BookContent = content as Fb2BookContent
-                Fb2Viewer(
-                    content = fb2BookContent,
-                    applyInversion = applyInversion,
-                    scale = 1f,
-                    offsetX = 0f,
-                    offsetY = 0f
-                )
-            }
-
-            is DjvuBookContent -> {
-                val djvuProgress = content as DjvuBookContent
-                DjvuViewer(
-                    bitmap = djvuProgress.bitmap,
-                    applyInversion = applyInversion
-                )
-            }
-        }
+        viewerProvider.getViewer(bookContent = content, applyInversion = applyInversion)()
     }
 }

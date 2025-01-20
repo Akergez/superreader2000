@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import com.example.bottomapp.ui.readerscreens.common.BookPage
+import com.example.bottomapp.ui.readerscreens.common.IViewerProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -50,8 +51,9 @@ import net.engawapg.lib.zoomable.zoomable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PageCarousel(
-    bookContent: (Int) -> StateFlow<IBookContent>,
+fun <TBookContent> PageCarousel(
+    bookContent: (Int) -> StateFlow<TBookContent>,
+    viewerProvider: IViewerProvider<TBookContent>,
     totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     onBack: () -> Unit,
@@ -62,7 +64,7 @@ fun PageCarousel(
     onSettingsClick: () -> Unit,
     onChaptersClick: () -> Unit,
     zoomState: (ZoomState) -> Unit
-) {
+) where TBookContent : IBookContent {
     val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
 
@@ -89,7 +91,10 @@ fun PageCarousel(
         },
     ) { padding ->
         totalPagesState?.let { totalPagesNotNull ->
-            Column(modifier = modifier.padding(padding).zoomable(zoomS).padding(top = 16.dp)) {
+            Column(modifier = modifier
+                .padding(padding)
+                .zoomable(zoomS)
+                .padding(top = 16.dp)) {
                 LazyRow(
                     modifier = Modifier.weight(0.9f),
                     state = lazyListState,
@@ -112,7 +117,8 @@ fun PageCarousel(
                             ) {
                                 BookPage(
                                     bookContent = bookContent(page),
-                                    applyInversion = applyInversion
+                                    applyInversion = applyInversion,
+                                    viewerProvider = viewerProvider
                                 )
                             }
                         }
