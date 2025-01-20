@@ -73,7 +73,7 @@ class BookManager(
             }
             return Result.success(Unit)
         }.onFailure {
-            Toast.makeText(context, it.cause?.message, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
             return Result.failure(it)
         }
         return Result.success(Unit)
@@ -100,7 +100,7 @@ class BookManager(
                 refreshBooksLinks()
                 Result.success(Unit)
             }.onFailure {
-                Result.failure<Unit>(it.cause!!)
+                Result.failure<Unit>(it)
             }
         return Result.success(Unit)
     }
@@ -119,11 +119,11 @@ class BookManager(
                     Result.success(Unit)
                 }.onFailure {
                     storageManager.renameBundle(newNameForBundle, bundleName, meta.bookMetaInfo)
-                    Result.failure<Unit>(it.cause!!)
+                    Result.failure<Unit>(it)
                 }
             }
             .onFailure {
-                Result.failure<Unit>(it.cause ?: Exception(getString(context, R.string.exception_rename_book)))
+                Result.failure<Unit>(it)
             }
         return Result.success(Unit)
     }
@@ -139,7 +139,7 @@ class BookManager(
                     Result.success(Unit)
             }
             .onFailure {
-                Result.failure<Unit>(it.cause ?: Exception(getString(context, R.string.exception_update_author)))
+                Result.failure<Unit>(it)
             }
         return Result.success(Unit)
     }

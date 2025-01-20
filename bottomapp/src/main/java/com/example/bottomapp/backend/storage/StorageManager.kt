@@ -78,23 +78,25 @@ abstract class StorageManager<T>(
     ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
         Log.i("StorageManager", "Creating bundle $bundleName")
         val storageUri = settingsManager.getStorageUri() ?: return@withContext Result.failure(
-            Exception("Storage directory not set")
+            Error("Storage directory not set")
         )
         val storageDir =
             DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                Exception("Invalid storage directory")
+                Error("Invalid storage directory")
             )
 
         val existingFile = storageDir.findFile(bundleName)
         if (existingFile != null) {
-            return@withContext Result.failure(Exception("Bundle already exists"))
+            return@withContext Result.failure(Error("Bundle already exists"))
         }
 
         val bundleStorage = storageDir.createDirectory(bundleName)
-            ?: return@withContext Result.failure(Exception("Failed to create bundle directory"))
+            ?: return@withContext Result.failure(Error("Failed to create bundle directory"))
 
         val destFile = bundleStorage.createFile(mimeType, nameProvider.fileName(bundleName, meta))
-            ?: throw Exception("Failed to create destination file")
+            ?: return@withContext Result.failure(
+                Error("Failed to create destination file")
+            )
 
         contentResolver.openInputStream(file)?.use { input ->
             contentResolver.openOutputStream(destFile.uri)?.use { output ->
@@ -116,7 +118,7 @@ abstract class StorageManager<T>(
         val previewFile =
             bundleStorage.createFile("image/jpeg", nameProvider.previewFilename(bundleName))
                 ?: return@withContext Result.failure(
-                    Exception("Failed to create preview file")
+                    Error("Failed to create preview file")
                 )
         var bookFile: File? = null
         getBookFile(bundleName, meta).onSuccess { bookFile = it }
@@ -124,7 +126,7 @@ abstract class StorageManager<T>(
 
         val previewBitmap = previewGeneratorProvider(meta).generatePreviewBitmap(bookFile!!)
             ?: return@withContext Result.failure(
-                Exception("Failed to generate preview bitmap")
+                Error("Failed to generate preview bitmap")
             )
         contentResolver.openOutputStream(previewFile.uri)?.use { output ->
             previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
