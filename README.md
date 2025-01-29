@@ -12,7 +12,14 @@ A simple and modern Android application for reading PDF and FB2 files, built wit
 ## Roadmap
 
 - [x] Open and read PDF files.
-- [ ] Add support for FB2 files.
-- [ ] Implement reading progress saving.
-- [ ] Synchronize reading progress across devices via an open file format.
-- [ ] Improve UI for file management and book navigation.
+- [x] Add support for FB2 files.
+- [x] Implement reading progress saving.
+- [x] Synchronize reading progress across devices via an open file format.
+- [x] Improve UI for file management and book navigation.
+- [ ] Improve FB2 support
+    - [ ] Add table of contents support
+    - [ ] Improve performance
+    - [ ] Use byte offset to sync instead of word offset
+- [ ] Freeze sync formats and write docs
+- [ ] Write docs for format support creation
+- [ ] Create opensource self-hosted ready server and implement built-in sync support
