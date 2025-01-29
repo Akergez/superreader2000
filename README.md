@@ -23,3 +23,8 @@ A simple and modern Android application for reading PDF and FB2 files, built wit
 - [ ] Freeze sync formats and write docs
 - [ ] Write docs for format support creation
 - [ ] Create opensource self-hosted ready server and implement built-in sync support
+
+## Used libs
+- [DjvuLibre bindings](https://gitlab.com/axet/android-djvulibre)
+- [Zoomable](https://github.com/usuiat/Zoomable)
+- [Page Curl](https://github.com/oleksandrbalan/pagecurl)
