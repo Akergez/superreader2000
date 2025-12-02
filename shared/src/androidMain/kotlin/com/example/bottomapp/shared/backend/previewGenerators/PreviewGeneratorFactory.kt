@@ -1,0 +1,64 @@
+package com.example.bottomapp.shared.backend.previewGenerators
+
+import android.graphics.Bitmap
+import com.example.bottomapp.shared.platform.PlatformBitmap
+import com.github.axet.djvulibre.DjvuLibre
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.rendering.PDFRenderer
+import java.io.File
+import java.io.FileInputStream
+
+actual class PreviewGeneratorFactory {
+    actual fun createPdfPreviewGenerator(): IPreviewGenerator = AndroidPdfPreviewGenerator()
+    actual fun createDjvuPreviewGenerator(): IPreviewGenerator = AndroidDjvuPreviewGenerator()
+    actual fun createFb2PreviewGenerator(): IPreviewGenerator = AndroidFb2PreviewGenerator()
+}
+
+private class AndroidPdfPreviewGenerator : IPreviewGenerator {
+    override suspend fun generatePreviewBitmap(filePath: String): PlatformBitmap? = withContext(Dispatchers.IO) {
+        try {
+            // Placeholder - PDF preview generation requires proper library setup
+            // For now, return null to gracefully handle missing implementation
+            null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun bufferedImageToBitmap(bufferedImage: java.awt.image.BufferedImage): Bitmap {
+        val bitmap = Bitmap.createBitmap(bufferedImage.width, bufferedImage.height, Bitmap.Config.ARGB_8888)
+        val pixels = IntArray(bufferedImage.width * bufferedImage.height)
+        bufferedImage.getRGB(0, 0, bufferedImage.width, bufferedImage.height, pixels, 0, bufferedImage.width)
+        bitmap.setPixels(pixels, 0, bufferedImage.width, 0, 0, bufferedImage.width, bufferedImage.height)
+        return bitmap
+    }
+}
+
+private class AndroidDjvuPreviewGenerator : IPreviewGenerator {
+    override suspend fun generatePreviewBitmap(filePath: String): PlatformBitmap? = withContext(Dispatchers.IO) {
+        try {
+            val file = File(filePath)
+            val render = DjvuLibre(FileInputStream(file).fd)
+            val page = render.getPageInfo(0)
+            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+            render.renderPage(
+                bitmap, 0, 0, 0, page.width, page.height,
+                0, 0, page.width, page.height
+            )
+            PlatformBitmap(bitmap)
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+private class AndroidFb2PreviewGenerator : IPreviewGenerator {
+    override suspend fun generatePreviewBitmap(filePath: String): PlatformBitmap? {
+        // FB2 is text-based, can't generate bitmap preview easily
+        // TODO: Implement FB2 cover extraction if available
+        return null
+    }
+}
+

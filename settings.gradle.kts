@@ -16,3 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "PDFReaderJetpackCompose"
 include(":bottomapp")
+include(":shared")
+include(":desktopApp")

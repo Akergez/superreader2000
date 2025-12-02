@@ -23,22 +23,18 @@ import com.example.bottomapp.backend.RuntimeTypeAdapterFactory
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageAdapter
 import com.example.bottomapp.backend.UriTypeAdapter
-import com.example.bottomapp.backend.bookCreators.DjvuCreateFactory
 import com.example.bottomapp.backend.bookCreators.Fb2CreateFactory
 import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.backend.bookCreators.PdfCreateFactory
-import com.example.bottomapp.backend.previewGenerators.DjvuPreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.Fb2PreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.PdfPreviewGenerator
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
-import com.example.bottomapp.ui.mainscreen.readerscreenproviders.DjvuReaderScreenProvider
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenProvider
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.PdfReaderScreenProvider
-import com.example.bottomapp.ui.readerscreens.djvuscreen.DjvuScreenViewModel
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
 import com.google.gson.GsonBuilder
@@ -58,15 +54,15 @@ class ReaderApp : Application() {
         val appModule = module {
             single<IBookCreateFactory>(named(FileType.pdf)) { PdfCreateFactory() }
             single<IBookCreateFactory>(named(FileType.fb2)) { Fb2CreateFactory() }
-            single<IBookCreateFactory>(named(FileType.djvu)) { DjvuCreateFactory() }
+            // DjVu disabled - requires native library
 
             single<IReaderScreenProvider>(named(FormatType.PDF)) { PdfReaderScreenProvider(get()) }
             single<IReaderScreenProvider>(named(FormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
-            single<IReaderScreenProvider>(named(FormatType.DJVU)) { DjvuReaderScreenProvider(get()) }
+            // DjVu disabled
 
             single<IPreviewGenerator>(named(FormatType.PDF)) { PdfPreviewGenerator() }
             single<IPreviewGenerator>(named(FormatType.FB2)) { Fb2PreviewGenerator() }
-            single<IPreviewGenerator>(named(FormatType.DJVU)) { DjvuPreviewGenerator() }
+            // DjVu disabled
 
             single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { PdfBookAuthorExtractor() }
             single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { Fb2BookAuthorExtractor() }
@@ -87,8 +83,7 @@ class ReaderApp : Application() {
                 BookStorage(
                     androidContext(), get(), get(), get(), mapOf(
                         FormatType.PDF to get(qualifier = named(FormatType.PDF)),
-                        FormatType.FB2 to get(qualifier = named(FormatType.FB2)),
-                        FormatType.DJVU to get(qualifier = named(FormatType.DJVU))
+                        FormatType.FB2 to get(qualifier = named(FormatType.FB2))
                     )
                 )
             }
@@ -99,8 +94,7 @@ class ReaderApp : Application() {
                 BookInfoExtractorFactory(
                     mapOf(
                         FormatType.PDF to get(qualifier = named(FormatType.PDF)),
-                        FormatType.FB2 to get(qualifier = named(FormatType.FB2)),
-                        FormatType.DJVU to get(qualifier = named(FormatType.DJVU))
+                        FormatType.FB2 to get(qualifier = named(FormatType.FB2))
                     )
                 )
             }
@@ -110,8 +104,7 @@ class ReaderApp : Application() {
                 HoomeScreenViewModel(
                     get(), mapOf(
                         FileType.pdf to get(qualifier = named(FormatType.PDF)),
-                        FileType.fb2 to get(qualifier = named(FormatType.FB2)),
-                        FileType.djvu to get(qualifier = named(FormatType.DJVU))
+                        FileType.fb2 to get(qualifier = named(FormatType.FB2))
                     )
                 )
             }
@@ -120,11 +113,7 @@ class ReaderApp : Application() {
                     get(), parameters.get(), parameters.get()
                 )
             }
-            viewModel { parameters ->
-                DjvuScreenViewModel(
-                    get(), parameters.get(), parameters.get()
-                )
-            }
+            // DjVu screen disabled
 
             single {
                 ImageLoader.Builder(androidContext()).memoryCachePolicy(CachePolicy.ENABLED)

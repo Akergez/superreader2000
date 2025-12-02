@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.bottomapp"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.bottomapp"
-        minSdk = 24
-        targetSdk = 35
+        minSdk = 26
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -38,17 +38,21 @@ android {
     }
     buildFeatures {
         viewBinding = true
-    }
-    buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.2"
+
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+        }
     }
 }
 
 dependencies {
-    implementation(libs.djvulibre)
+    // Shared multiplatform module
+    implementation(project(":shared"))
+
+    // ...existing dependencies...
     implementation(libs.zoomable)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material)
