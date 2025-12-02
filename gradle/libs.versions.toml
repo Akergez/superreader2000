@@ -1,7 +1,7 @@
 [versions]
 accompanist-navigation-animation = "0.36.0"
 accompanist-pager = "0.29.1-alpha"
-agp = "8.6.1"
+agp = "8.13.1"
 androidx-material = "1.7.6"
 coil-compose-version = "2.1.0"
 djvulibre = "0.0.8"
