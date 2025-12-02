@@ -20,7 +20,8 @@ class PdfBookDomainModel(
 ) :
     BookDomainModel<PdfProgress> {
     val title: String = bookMetaInfo.title
-    private var progress: PdfProgress = bookMetaInfo.progress as PdfProgress
+    private var progress: PdfProgress = bookMetaInfo.progress as? PdfProgress
+        ?: PdfProgress(0, null)
 
     override fun readProgress(): PdfProgress {
         return progress
@@ -32,6 +33,6 @@ class PdfBookDomainModel(
 
     override suspend fun saveProgress(progress: PdfProgress) {
         this.progress = progress
-        updateProgress(BookMetaInfo(title, progress, bookMetaInfo.author))
+        updateProgress(BookMetaInfo(bookMetaInfo.title, progress, bookMetaInfo.author))
     }
 }

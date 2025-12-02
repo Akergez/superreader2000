@@ -20,7 +20,8 @@ class Fb2BookDomainModel(
 ) :
     BookDomainModel<Fb2Progress> {
     val title: String = bookLink.title
-    var progress: Fb2Progress = bookLink.progress as Fb2Progress
+    var progress: Fb2Progress = bookLink.progress as? Fb2Progress
+        ?: Fb2Progress(0, null)
 
     override fun readProgress(): Fb2Progress {
         return progress

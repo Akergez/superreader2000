@@ -12,19 +12,44 @@ enum class FormatType {
 }
 
 /**
- * File type enumeration
+ * File type enumeration for file extensions and MIME types
  */
 enum class FileType {
     pdf,
+    fb2,
     djvu,
-    fb2
+    unknown
 }
 
 /**
- * Base domain model for books
+ * Convert FileType to file extension
+ */
+fun FileType.toFileExtension(): String {
+    return when (this) {
+        FileType.pdf -> "pdf"
+        FileType.fb2 -> "fb2"
+        FileType.djvu -> "djvu"
+        FileType.unknown -> throw Exception("Unsupported file type")
+    }
+}
+
+/**
+ * Convert FileType to MIME types
+ */
+fun FileType.toMimeType(): List<String> {
+    return when (this) {
+        FileType.pdf -> listOf("application/pdf")
+        FileType.fb2 -> listOf("application/fb2", "text/fb2+xml")
+        FileType.djvu -> listOf("application/djvu")
+        FileType.unknown -> throw Exception("Unsupported file type")
+    }
+}
+
+/**
+ * Base domain model for books (metadata container)
  */
 @Serializable
-sealed class BookDomainModel {
+sealed class BookMetadata {
     abstract val uri: String
     abstract val name: String
     abstract val formatType: FormatType
@@ -32,10 +57,10 @@ sealed class BookDomainModel {
 }
 
 /**
- * PDF-specific book model
+ * PDF-specific book metadata
  */
 @Serializable
-data class PdfBookDomainModel(
+data class PdfBookMetadata(
     override val uri: String,
     override val name: String,
     override val formatType: FormatType = FormatType.PDF,
@@ -44,26 +69,26 @@ data class PdfBookDomainModel(
     val title: String = "",
     val subject: String = "",
     val producer: String = ""
-) : BookDomainModel()
+) : BookMetadata()
 
 /**
- * DjVu-specific book model
+ * DjVu-specific book metadata
  */
 @Serializable
-data class DjvuBookDomainModel(
+data class DjvuBookMetadata(
     override val uri: String,
     override val name: String,
     override val formatType: FormatType = FormatType.DJVU,
     override val pageCount: Int = 0,
     val author: String = "",
     val title: String = ""
-) : BookDomainModel()
+) : BookMetadata()
 
 /**
- * FB2-specific book model
+ * FB2-specific book metadata
  */
 @Serializable
-data class Fb2BookDomainModel(
+data class Fb2BookMetadata(
     override val uri: String,
     override val name: String,
     override val formatType: FormatType = FormatType.FB2,
@@ -71,10 +96,10 @@ data class Fb2BookDomainModel(
     val author: String = "",
     val title: String = "",
     val lang: String = "en"
-) : BookDomainModel()
+) : BookMetadata()
 
 /**
- * Book metadata information
+ * Book metadata information with progress tracking
  */
 @Serializable
 data class BookMetaInfo(
@@ -82,7 +107,10 @@ data class BookMetaInfo(
     val title: String = "",
     val subject: String = "",
     val pageCount: Int = 0,
-    val producer: String = ""
+    val producer: String = "",
+    val pdfProgress: PdfProgress? = null,
+    val djvuProgress: DjvuProgress? = null,
+    val fb2Progress: Fb2Progress? = null
 )
 
 /**

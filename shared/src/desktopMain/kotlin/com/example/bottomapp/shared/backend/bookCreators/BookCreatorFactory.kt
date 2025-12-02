@@ -1,9 +1,9 @@
 package com.example.bottomapp.shared.backend.bookCreators
 
-import com.example.bottomapp.shared.backend.domain.BookDomainModel
-import com.example.bottomapp.shared.backend.domain.PdfBookDomainModel
-import com.example.bottomapp.shared.backend.domain.DjvuBookDomainModel
-import com.example.bottomapp.shared.backend.domain.Fb2BookDomainModel
+import com.example.bottomapp.shared.backend.domain.BookMetadata
+import com.example.bottomapp.shared.backend.domain.PdfBookMetadata
+import com.example.bottomapp.shared.backend.domain.DjvuBookMetadata
+import com.example.bottomapp.shared.backend.domain.Fb2BookMetadata
 import com.example.bottomapp.shared.backend.domain.FormatType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,11 +17,11 @@ actual class BookCreatorFactory {
 }
 
 private class DesktopPdfCreateFactory : IBookCreateFactory {
-    override suspend fun create(filePath: String): BookDomainModel? = withContext(Dispatchers.IO) {
+    override suspend fun create(filePath: String): BookMetadata? = withContext(Dispatchers.IO) {
         try {
             val file = File(filePath)
             // Basic implementation - just get file info without full PDF parsing
-            val book = PdfBookDomainModel(
+            val book = PdfBookMetadata(
                 uri = file.absolutePath,
                 name = file.nameWithoutExtension,
                 formatType = FormatType.PDF,
@@ -39,12 +39,12 @@ private class DesktopPdfCreateFactory : IBookCreateFactory {
 }
 
 private class DesktopDjvuCreateFactory : IBookCreateFactory {
-    override suspend fun create(filePath: String): BookDomainModel? {
+    override suspend fun create(filePath: String): BookMetadata? {
         // DjVu support on desktop requires native library or JNI bindings
         // TODO: Implement DjVu rendering for desktop
         // For now, return a stub
         val file = File(filePath)
-        return DjvuBookDomainModel(
+        return DjvuBookMetadata(
             uri = file.absolutePath,
             name = file.nameWithoutExtension,
             formatType = FormatType.DJVU,
@@ -55,7 +55,7 @@ private class DesktopDjvuCreateFactory : IBookCreateFactory {
 }
 
 private class DesktopFb2CreateFactory : IBookCreateFactory {
-    override suspend fun create(filePath: String): BookDomainModel? = withContext(Dispatchers.IO) {
+    override suspend fun create(filePath: String): BookMetadata? = withContext(Dispatchers.IO) {
         try {
             val file = File(filePath)
             val content = file.readText()
@@ -63,7 +63,7 @@ private class DesktopFb2CreateFactory : IBookCreateFactory {
             val titleMatch = Regex("<book-title>([^<]+)</book-title>").find(content)
             val authorMatch = Regex("<first-name>([^<]+)</first-name>").find(content)
 
-            Fb2BookDomainModel(
+            Fb2BookMetadata(
                 uri = file.absolutePath,
                 name = file.nameWithoutExtension,
                 formatType = FormatType.FB2,

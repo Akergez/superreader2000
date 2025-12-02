@@ -20,7 +20,8 @@ class DjvuBookDomainModel(
 ) :
     BookDomainModel<DjvuProgress> {
     val title: String = bookMetaInfo.title
-    private var progress: DjvuProgress = bookMetaInfo.progress as DjvuProgress
+    private var progress: DjvuProgress = bookMetaInfo.progress as? DjvuProgress
+        ?: DjvuProgress(0, null)
 
     override fun readProgress(): DjvuProgress {
         return progress

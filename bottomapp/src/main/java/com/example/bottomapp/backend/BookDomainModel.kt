@@ -2,11 +2,8 @@ package com.example.bottomapp.backend
 
 import java.io.File
 
-enum class FormatType {
-    PDF,
-    FB2,
-    DJVU
-}
+// Re-export from shared module for backward compatibility
+typealias FormatType = com.example.bottomapp.shared.backend.domain.FormatType
 
 abstract class Progress(val formatType: FormatType)
 {

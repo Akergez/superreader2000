@@ -1,12 +1,11 @@
 package com.example.bottomapp.constants
 
-enum class FileType {
-    pdf,
-    fb2,
-    djvu,
-    unknown
-}
+// Re-export FileType from shared module for backward compatibility
+typealias FileType = com.example.bottomapp.shared.backend.domain.FileType
 
+/**
+ * Convert FileType to file extension
+ */
 fun FileType.toFileExtension(): String {
     return when (this) {
         FileType.pdf -> "pdf"
@@ -16,6 +15,9 @@ fun FileType.toFileExtension(): String {
     }
 }
 
+/**
+ * Convert FileType to MIME types
+ */
 fun FileType.toMimeType(): List<String> {
     return when (this) {
         FileType.pdf -> listOf("application/pdf")

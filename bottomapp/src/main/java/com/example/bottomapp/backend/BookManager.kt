@@ -9,12 +9,15 @@ import coil.ImageLoader
 import com.example.bottomapp.R
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toFileExtension
+import com.example.bottomapp.shared.backend.domain.BookMetaInfo as SharedBookMetaInfo
+import com.example.bottomapp.shared.backend.domain.FileType as SharedFileType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
+// Keep legacy BookMetaInfo for backward compatibility during transition
 data class BookMetaInfo(val title: String, val progress: Progress, val author: String?)
 
 data class BookStorageEntry(

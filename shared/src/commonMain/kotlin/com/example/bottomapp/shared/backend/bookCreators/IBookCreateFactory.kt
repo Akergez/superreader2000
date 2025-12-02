@@ -1,12 +1,12 @@
 package com.example.bottomapp.shared.backend.bookCreators
 
-import com.example.bottomapp.shared.backend.domain.BookDomainModel
+import com.example.bottomapp.shared.backend.domain.BookMetadata
 
 /**
- * Factory interface for creating book objects from files
+ * Factory interface for creating book metadata objects from files
  */
 interface IBookCreateFactory {
-    suspend fun create(filePath: String): BookDomainModel?
+    suspend fun create(filePath: String): BookMetadata?
 }
 
 /**
