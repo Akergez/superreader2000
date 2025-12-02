@@ -1,17 +1,83 @@
+# Gradle
+.gradle/
+build/
+*.gradle.bak
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# IntelliJ IDEA
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
+.idea/
+*.ipr
+*.iws
+
+# Android Specific
 /captures
 .externalNativeBuild
 .cxx
-local.properties
-/.idea/*
-.kotlin
+*.apk
+*.aar
+*.ap_
+*.dex
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+
+# Kotlin
+.kotlin/
+*.kotlin_module
+
+# Build artifacts
+/build
+buildSrc/build/
+
+# Multiplatform build
+.gradle
+.build/
+
+# SQLDelight generated files
+**/src/*Main/sqldelight/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS
+Thumbs.db
+
+# Node (for web targets if used)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE specific
+.vscode/
+vscode-settings/
+*.code-workspace
+
+# Test Reports
+**/test-results/
+**/reports/
+
+# Generated code
+**/generated/
+**/.kapt_metadata

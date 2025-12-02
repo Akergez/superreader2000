@@ -1,0 +1,19 @@
+# Build
+/build
+*.jar
+*.aar
+
+# Gradle
+.gradle/
+
+# Generated
+/generated/
+**/src/*Main/sqldelight/
+
+# Local
+local.properties
+
+# Test results
+test-results/
+**/build/reports/
+
