@@ -8,19 +8,12 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.BookMetaInfo
-import com.example.bottomapp.backend.BookStorage
-import com.example.bottomapp.backend.BookStorageRepository
-import com.example.bottomapp.backend.DjvuProgress
 import com.example.bottomapp.backend.Fb2BookAuthorExtractor
 import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.backend.IBookInfoExtractor
 import com.example.bottomapp.backend.PdfBookAuthorExtractor
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.Progress
-import com.example.bottomapp.backend.RuntimeTypeAdapterFactory
-import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageAdapter
 import com.example.bottomapp.backend.UriTypeAdapter
 import com.example.bottomapp.backend.bookCreators.Fb2CreateFactory
@@ -37,7 +30,6 @@ import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenPr
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.PdfReaderScreenProvider
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
-import com.google.gson.GsonBuilder
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -47,64 +39,77 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
+// Shared module imports
+import com.example.bottomapp.shared.backend.domain.FormatType as SharedFormatType
+import com.example.bottomapp.shared.backend.storage.PreferencesStore
+import com.example.bottomapp.shared.backend.storage.BookRepository
+import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
 
 class ReaderApp : Application() {
     override fun onCreate() {
         super.onCreate()
         val appModule = module {
+            // Shared module - Settings and Preferences
+            single<PreferencesStore> {
+                PreferencesStore(androidContext())
+            }
+            single {
+                DefaultSettingsManager(get<PreferencesStore>())
+            }
+
+            // Shared module - Book Repository
+            single<BookRepository> {
+                BookRepository(get<PreferencesStore>())
+            }
+
+            // Android-specific UI providers
             single<IBookCreateFactory>(named(FileType.pdf)) { PdfCreateFactory() }
             single<IBookCreateFactory>(named(FileType.fb2)) { Fb2CreateFactory() }
-            // DjVu disabled - requires native library
 
-            single<IReaderScreenProvider>(named(FormatType.PDF)) { PdfReaderScreenProvider(get()) }
-            single<IReaderScreenProvider>(named(FormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
-            // DjVu disabled
+            single<IReaderScreenProvider>(named(SharedFormatType.PDF)) { PdfReaderScreenProvider(get()) }
+            single<IReaderScreenProvider>(named(SharedFormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
 
-            single<IPreviewGenerator>(named(FormatType.PDF)) { PdfPreviewGenerator() }
-            single<IPreviewGenerator>(named(FormatType.FB2)) { Fb2PreviewGenerator() }
-            // DjVu disabled
+            single<IPreviewGenerator>(named(SharedFormatType.PDF)) { PdfPreviewGenerator() }
+            single<IPreviewGenerator>(named(SharedFormatType.FB2)) { Fb2PreviewGenerator() }
 
-            single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { PdfBookAuthorExtractor() }
-            single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { Fb2BookAuthorExtractor() }
-            single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.DJVU)) { Fb2BookAuthorExtractor() }
-
-
-            single {
-                GsonBuilder().registerTypeAdapterFactory(
-                    RuntimeTypeAdapterFactory.of(Progress::class.java, "type")
-                        .registerSubtype(PdfProgress::class.java, "pdf")
-                        .registerSubtype(Fb2Progress::class.java, "fb2")
-                        .registerSubtype(DjvuProgress::class.java, "djvu")
-                ).registerTypeAdapter(Uri::class.java, UriTypeAdapter()).create()
+            // Book info extractors (using local Android types for now)
+            single<IBookInfoExtractor<com.example.bottomapp.backend.BookMetaInfo>>(named(SharedFormatType.PDF)) {
+                PdfBookAuthorExtractor()
+            }
+            single<IBookInfoExtractor<com.example.bottomapp.backend.BookMetaInfo>>(named(SharedFormatType.FB2)) {
+                Fb2BookAuthorExtractor()
             }
 
+            // Android-specific storage (legacy, kept for backward compatibility)
             singleOf(::StorageAdapter) bind StorageAdapter::class
-            single {
-                BookStorage(
-                    androidContext(), get(), get(), get(), mapOf(
-                        FormatType.PDF to get(qualifier = named(FormatType.PDF)),
-                        FormatType.FB2 to get(qualifier = named(FormatType.FB2))
-                    )
-                )
-            }
             singleOf(::BookManager) bind BookManager::class
-            singleOf(::SettingsManager) bind SettingsManager::class
-            singleOf(::BookStorageRepository) bind BookStorageRepository::class
+
+            // Image loader for Coil
             single {
-                BookInfoExtractorFactory(
-                    mapOf(
-                        FormatType.PDF to get(qualifier = named(FormatType.PDF)),
-                        FormatType.FB2 to get(qualifier = named(FormatType.FB2))
-                    )
-                )
+                ImageLoader.Builder(androidContext()).memoryCachePolicy(CachePolicy.ENABLED)
+                    .memoryCache {
+                        MemoryCache.Builder(androidContext()).maxSizePercent(0.25).build()
+                    }.build()
             }
+
+            // Android Room database (kept for now, will migrate to SQLDelight in Phase 3)
+            single {
+                val db = Room.databaseBuilder(
+                    androidContext(), AppDatabase::class.java, "database-name"
+                ).allowMainThreadQueries().build()
+                db.userDao()
+            }
+
+            // ViewModels
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
-            viewModel { SettingsViewModel(get(), get()) }
+            viewModel {
+                SettingsViewModel(get(), get())
+            }
             viewModel {
                 HoomeScreenViewModel(
                     get(), mapOf(
-                        FileType.pdf to get(qualifier = named(FormatType.PDF)),
-                        FileType.fb2 to get(qualifier = named(FormatType.FB2))
+                        FileType.pdf to get(qualifier = named(SharedFormatType.PDF)),
+                        FileType.fb2 to get(qualifier = named(SharedFormatType.FB2))
                     )
                 )
             }
@@ -112,20 +117,6 @@ class ReaderApp : Application() {
                 PdfScreenViewModel(
                     get(), parameters.get(), parameters.get()
                 )
-            }
-            // DjVu screen disabled
-
-            single {
-                ImageLoader.Builder(androidContext()).memoryCachePolicy(CachePolicy.ENABLED)
-                    .memoryCache {
-                        MemoryCache.Builder(androidContext()).maxSizePercent(0.25).build()
-                    }.build()
-            }
-            single {
-                val db = Room.databaseBuilder(
-                    applicationContext, AppDatabase::class.java, "database-name"
-                ).allowMainThreadQueries().build()
-                db.userDao()
             }
         }
 
