@@ -1,22 +1,40 @@
 package com.example.bottomapp.shared.ui.platform
 
+import androidx.compose.runtime.Composable
+
 /**
- * Platform service interface for showing UI notifications.
- * Implementations vary by platform (Android Toast, Desktop notifications, etc.)
+ * Platform-specific service for showing toast messages
  */
-expect interface IPlatformServices {
-    fun showToast(message: String)
-    fun showError(message: String)
-    suspend fun pickFile(fileFilter: String = "*"): String?
+expect class ToastService {
+    fun show(message: String, duration: ToastDuration = ToastDuration.SHORT)
+}
+
+enum class ToastDuration {
+    SHORT,
+    LONG
 }
 
 /**
- * Platform service for file operations.
- * Implementations vary by platform.
+ * Platform-specific service for showing alerts/dialogs
  */
-expect interface IFileService {
-    fun getFileName(path: String): String
-    suspend fun readFileBytes(path: String): ByteArray
-    suspend fun exists(path: String): Boolean
+expect class AlertService {
+    @Composable
+    fun showAlert(
+        title: String,
+        message: String,
+        onDismiss: () -> Unit,
+        onConfirm: () -> Unit = {},
+        confirmText: String = "OK",
+        dismissText: String = "Cancel"
+    )
+}
+
+/**
+ * Platform-specific service for file operations
+ */
+expect class FileService {
+    suspend fun openFilePicker(): String?
+    suspend fun saveFile(fileName: String, content: ByteArray): Boolean
+    suspend fun loadFile(path: String): ByteArray?
 }
 

@@ -2,13 +2,9 @@ package com.example.bottomapp.shared.platform
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.preference.PreferenceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import androidx.core.content.edit
 
 actual class FileProvider(private val context: Context) {
     actual suspend fun loadFileBytes(path: String): ByteArray = withContext(Dispatchers.IO) {
