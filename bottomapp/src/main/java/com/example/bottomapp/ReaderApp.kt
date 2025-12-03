@@ -1,19 +1,14 @@
 package com.example.bottomapp
 
+// Shared module imports
 import android.app.Application
-import android.net.Uri
 import androidx.room.Room
 import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.Fb2Progress
-import com.example.bottomapp.backend.IBookInfoExtractor
-import com.example.bottomapp.backend.PdfProgress
-import com.example.bottomapp.backend.Progress
 import com.example.bottomapp.backend.StorageAdapter
-import com.example.bottomapp.backend.UriTypeAdapter
 import com.example.bottomapp.backend.bookCreators.Fb2CreateFactory
 import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.backend.bookCreators.PdfCreateFactory
@@ -21,6 +16,10 @@ import com.example.bottomapp.backend.previewGenerators.Fb2PreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.PdfPreviewGenerator
 import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
+import com.example.bottomapp.shared.backend.storage.BookRepository
+import com.example.bottomapp.shared.backend.storage.PreferencesStore
+import com.example.bottomapp.shared.di.commonModule
 import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
@@ -37,12 +36,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
-// Shared module imports
 import com.example.bottomapp.shared.backend.domain.FormatType as SharedFormatType
-import com.example.bottomapp.shared.backend.storage.PreferencesStore
-import com.example.bottomapp.shared.backend.storage.BookRepository
-import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
-import com.example.bottomapp.shared.di.commonModule
 
 class ReaderApp : Application() {
     override fun onCreate() {

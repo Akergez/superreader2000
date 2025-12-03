@@ -1,17 +1,8 @@
 package com.example.bottomapp.backend
 
+import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.domain.Fb2Progress
 import java.io.File
-
-
-data class Fb2Progress(val wordOffset: Int, val totalWords: Int?) : Progress(FormatType.FB2) {
-    override fun getProgressInPercent(): Double? {
-        return if (totalWords != null && totalWords != 0) {
-            wordOffset.toDouble() / totalWords.toDouble() * 100
-        } else {
-            null
-        }
-    }
-}
 
 class Fb2BookDomainModel(
     val bookLink: BookMetaInfo,
@@ -21,7 +12,7 @@ class Fb2BookDomainModel(
     BookDomainModel<Fb2Progress> {
     val title: String = bookLink.title
     var progress: Fb2Progress = bookLink.progress as? Fb2Progress
-        ?: Fb2Progress(0, null)
+        ?: Fb2Progress(0, 0)
 
     override fun readProgress(): Fb2Progress {
         return progress

@@ -34,8 +34,7 @@ class PdfBookDomainModelImpl(
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFilePathFromStorage: suspend () -> String,
 ) : BookDomainModel<PdfProgress> {
-    private var progress: PdfProgress = bookMetaInfo.pdfProgress
-        ?: PdfProgress(currentPage = 0, totalPages = bookMetaInfo.pageCount)
+    private var progress: PdfProgress = bookMetaInfo.progress as PdfProgress
 
     override fun readProgress(): PdfProgress = progress
 
@@ -43,7 +42,7 @@ class PdfBookDomainModelImpl(
         this.progress = progress
         updateProgress(
             bookMetaInfo.copy(
-                pdfProgress = progress
+              //  pdfProgress = progress
             )
         )
     }
@@ -61,8 +60,7 @@ class DjvuBookDomainModelImpl(
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFilePathFromStorage: suspend () -> String,
 ) : BookDomainModel<DjvuProgress> {
-    private var progress: DjvuProgress = bookMetaInfo.djvuProgress
-        ?: DjvuProgress(currentPage = 0, totalPages = bookMetaInfo.pageCount)
+    private var progress: DjvuProgress = bookMetaInfo.progress as DjvuProgress
 
     override fun readProgress(): DjvuProgress = progress
 
@@ -70,7 +68,7 @@ class DjvuBookDomainModelImpl(
         this.progress = progress
         updateProgress(
             bookMetaInfo.copy(
-                djvuProgress = progress
+               // djvuProgress = progress
             )
         )
     }
@@ -88,8 +86,7 @@ class Fb2BookDomainModelImpl(
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFilePathFromStorage: suspend () -> String,
 ) : BookDomainModel<Fb2Progress> {
-    private var progress: Fb2Progress = bookMetaInfo.fb2Progress
-        ?: Fb2Progress(currentPage = 0, totalPages = bookMetaInfo.pageCount)
+    private var progress: Fb2Progress = bookMetaInfo.progress as Fb2Progress
 
     override fun readProgress(): Fb2Progress = progress
 
@@ -97,7 +94,7 @@ class Fb2BookDomainModelImpl(
         this.progress = progress
         updateProgress(
             bookMetaInfo.copy(
-                fb2Progress = progress
+              //  fb2Progress = progress
             )
         )
     }

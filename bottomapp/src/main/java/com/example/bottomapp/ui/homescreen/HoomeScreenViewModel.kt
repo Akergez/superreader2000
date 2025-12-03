@@ -4,12 +4,13 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -113,8 +114,8 @@ class HoomeScreenViewModel(
         var updatedBook = newBook
         if (previewChanged) {
             viewModelScope.launch {
-                bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!).onSuccess {
-                    updatedBook = newBook.copy(previewUri = it)
+                bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!.toUri()).onSuccess {
+                    updatedBook = newBook.copy(previewUri = it.toString())
                 }.onSuccess {
                     viewModelScope.launch {
                         bookManager.renameBook(

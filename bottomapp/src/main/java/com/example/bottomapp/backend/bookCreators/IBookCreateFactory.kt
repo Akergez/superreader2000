@@ -1,6 +1,6 @@
 package com.example.bottomapp.backend.bookCreators
 
-import com.example.bottomapp.backend.Progress
+import com.example.bottomapp.shared.backend.domain.Progress
 
 interface IBookCreateFactory {
     fun createProgress(): Progress

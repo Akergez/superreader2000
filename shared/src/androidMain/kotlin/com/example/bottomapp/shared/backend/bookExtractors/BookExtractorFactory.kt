@@ -24,9 +24,6 @@ private class AndroidPdfExtractor : IBookInfoExtractor<BookMetaInfo> {
                 BookMetaInfo(
                     author = documentInfo?.author ?: "",
                     title = documentInfo?.title ?: file.nameWithoutExtension,
-                    subject = documentInfo?.subject ?: "",
-                    pageCount = pageCount,
-                    producer = documentInfo?.producer ?: ""
                 )
             }
         } catch (_: Exception) {
@@ -34,7 +31,6 @@ private class AndroidPdfExtractor : IBookInfoExtractor<BookMetaInfo> {
             val file = File(filePath)
             BookMetaInfo(
                 title = file.nameWithoutExtension,
-                pageCount = 0
             )
         }
     }
@@ -48,7 +44,6 @@ private class AndroidDjvuExtractor : IBookInfoExtractor<BookMetaInfo> {
             // For now, provide basic metadata from file
             BookMetaInfo(
                 title = file.nameWithoutExtension,
-                pageCount = 0
             )
         } catch (_: Exception) {
             BookMetaInfo()
@@ -100,14 +95,12 @@ private class AndroidFb2Extractor : IBookInfoExtractor<BookMetaInfo> {
             BookMetaInfo(
                 author = author,
                 title = title,
-                pageCount = estimateFb2PageCount(file)
             )
         } catch (_: Exception) {
             // Fallback if XML parsing fails
             val file = File(filePath)
             BookMetaInfo(
                 title = file.nameWithoutExtension,
-                pageCount = 0
             )
         }
     }

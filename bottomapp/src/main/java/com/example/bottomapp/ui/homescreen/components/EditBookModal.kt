@@ -46,8 +46,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.bottomapp.R
-import com.example.bottomapp.backend.BookStorageEntry
-import com.example.bottomapp.ui.homescreen.components.AsyncImage
+import com.example.bottomapp.shared.backend.storage.BookStorageEntry
+import com.example.bottomapp.shared.ui.components.AsyncImage
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -176,7 +176,7 @@ fun EditBookModal(
                         .background(color = MaterialTheme.colorScheme.surface)
                 ) {
                     AsyncImage(
-                        uri = state.previewUri,
+                        uri = state.previewUri.toString(),
                         modifier = Modifier.fillMaxSize(),
                         alpha = 0.5f
                     )
@@ -216,7 +216,7 @@ fun EditBookModal(
                     onSave(
                         book.copy(
                             bundleName = state.title,
-                            previewUri = state.previewUri,
+                            previewUri = state.previewUri.toString(),
                             bookMetaInfo = book.bookMetaInfo.copy(
                                 title = state.title,
                                 author = state.author

@@ -37,11 +37,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.core.content.ContextCompat.getString
 import androidx.navigation.NavController
 import com.example.bottomapp.R
-import com.example.bottomapp.backend.BookStorageEntry
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toFileExtension
 import com.example.bottomapp.constants.toMimeType
-import com.example.bottomapp.ui.homescreen.components.BookItem
+import com.example.bottomapp.shared.backend.storage.BookStorageEntry
+import com.example.bottomapp.shared.ui.components.BookItem
 import com.example.bottomapp.ui.homescreen.components.TopEditBar
 import com.example.bottomapp.ui.mainscreen.BottomNavigationBar
 import com.example.bottomapp.ui.mainscreen.Screen

@@ -18,9 +18,9 @@ import androidx.core.content.ContextCompat.getString
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.DocThemeMode
 import com.example.bottomapp.backend.Fb2BookDomainModel
-import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
+import com.example.bottomapp.shared.backend.domain.Fb2Progress
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
 import com.example.bottomapp.ui.readerscreens.fb2screen.Fb2ViewerProvider
@@ -58,7 +58,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                             fb2File
                         )
                     }
-                    val offset = book.readProgress().wordOffset
+                    val offset = book.readProgress().currentPage
                     newPage = if (offset > 0) {
                         fb2RenderHelper.value!!.getPageIndexByWordOffset(offset)
                     } else {
@@ -81,7 +81,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                     book.saveProgress(
                         Fb2Progress(
                             helper.pageWordSum[pageIndex],
-                            helper.totalWords.value
+                            helper.totalWords.value?:0
                         )
                     )
                 }

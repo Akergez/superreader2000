@@ -34,9 +34,9 @@ data class BundleEditResult(
 @Serializable
 data class BookStorageEntry(
     val title: String,
+    val previewUri: String?,
     val bundleName: String,
     val progressInPercent: Double?,
-    val previewUri: String?,
     val bookMetaInfo: BookMetaInfo
 )
 

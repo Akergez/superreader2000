@@ -1,21 +1,25 @@
-package com.example.bottomapp.ui.homescreen.components
+// Kotlin
+package com.example.bottomapp.shared.ui.components
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil.ImageLoader
+import coil.compose.AsyncImage
 import org.koin.compose.koinInject
+import androidx.core.net.toUri
 
 @Composable
-fun AsyncImage(
-    uri: Uri?,
+actual fun AsyncImage(
+    uri: String?,
     modifier: Modifier,
-    alpha: Float = 1f,
-    imageLoader: ImageLoader = koinInject()
+    alpha: Float
 ) {
-    coil.compose.AsyncImage(
-        model = uri,
+    val imageLoader: ImageLoader = koinInject()
+    val model = uri?.toUri() ?: uri
+    AsyncImage(
+        model = model,
         contentDescription = null,
         modifier = modifier,
         alpha = alpha,

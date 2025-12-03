@@ -1,4 +1,4 @@
-package com.example.bottomapp.ui.homescreen.components
+package com.example.bottomapp.shared.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
@@ -15,7 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.shared.backend.storage.BookStorageEntry
+import com.example.bottomapp.shared.ui.components.AsyncImage
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -30,7 +31,7 @@ fun BookItem(
     ListItem(
         leadingContent = {
             AsyncImage(
-                uri = book.previewUri,
+                uri = book.previewUri.toString(),
                 modifier = Modifier
                     .size(100.dp, 150.dp)
                     .clip(shape)

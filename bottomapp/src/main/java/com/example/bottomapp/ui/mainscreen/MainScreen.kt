@@ -45,10 +45,10 @@ import com.example.bottomapp.backend.AppThemeMode
 import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.constants.Route
+import com.example.bottomapp.shared.ui.theme.AppTheme
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenProvider
 import com.example.bottomapp.ui.settingsscreen.SettingsScreen
-import com.pdf.reader.jetpack.compose.ui.theme.PDFReaderJetpackComposeTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
@@ -71,7 +71,7 @@ fun MainScreen(
     val currentTheme by settingsManager.appThemeMode.collectAsState(AppThemeMode.System)
 
     KoinContext() {
-        PDFReaderJetpackComposeTheme(
+        AppTheme (
             darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme == AppThemeMode.Dark)
         ) {
             NavHost(navController = navController,
@@ -116,7 +116,7 @@ fun MainScreen(
                         val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
                         bookLink?.bookMetaInfo?.progress?.let {
                             val provider: IReaderScreenProvider = koinInject(
-                                qualifier = named(bookLink.bookMetaInfo.progress.formatType),
+                                qualifier = named(bookLink.bookMetaInfo.progress!!.formatType),
                             )
                             provider.getReaderScreen(bookLink)()
                         }

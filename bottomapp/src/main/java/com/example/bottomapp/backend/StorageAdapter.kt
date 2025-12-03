@@ -6,6 +6,7 @@ import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.storage.IDeserializer
 import com.example.bottomapp.backend.storage.INameProvider
 import com.example.bottomapp.backend.storage.StorageManager
+import com.example.bottomapp.shared.backend.domain.BookMetaInfo
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import org.koin.compose.getKoin
@@ -30,7 +31,7 @@ class StorageAdapter(private val gson: Gson) : IDeserializer<BookMetaInfo>,
     }
 
     override fun fileName(bundleName: String, meta: BookMetaInfo): String {
-        return when (meta.progress.formatType) {
+        return when (meta.progress!!.formatType) {
             FormatType.PDF -> "${bundleName}.pdf"
             FormatType.FB2 -> "${bundleName}.fb2"
             FormatType.DJVU -> "${bundleName}.djvu"
@@ -51,7 +52,7 @@ class BookStorage(
     adapter,
     infoExtractorFactory,
     {
-        previewGeneratorMap[it.progress.formatType]
-            ?: throw NotImplementedError("PreviewGenerator for ${it.progress.formatType} not found, check your DI config")
+        previewGeneratorMap[it.progress!!.formatType]
+            ?: throw NotImplementedError("PreviewGenerator for ${it.progress!!.formatType} not found, check your DI config")
     }
 )

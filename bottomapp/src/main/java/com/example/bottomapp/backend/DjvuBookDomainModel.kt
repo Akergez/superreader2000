@@ -1,17 +1,8 @@
 package com.example.bottomapp.backend
 
+import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.domain.DjvuProgress
 import java.io.File
-
-data class DjvuProgress(val pageIndex: Int, val totalPages: Int?) :
-    Progress(FormatType.DJVU) {
-    override fun getProgressInPercent(): Double? {
-        return if (totalPages != null && totalPages != 0) {
-            pageIndex.toDouble() / totalPages.toDouble() * 100
-        } else {
-            null
-        }
-    }
-}
 
 class DjvuBookDomainModel(
     val bookMetaInfo: BookMetaInfo,
@@ -21,7 +12,7 @@ class DjvuBookDomainModel(
     BookDomainModel<DjvuProgress> {
     val title: String = bookMetaInfo.title
     private var progress: DjvuProgress = bookMetaInfo.progress as? DjvuProgress
-        ?: DjvuProgress(0, null)
+        ?: DjvuProgress(0, 0)
 
     override fun readProgress(): DjvuProgress {
         return progress

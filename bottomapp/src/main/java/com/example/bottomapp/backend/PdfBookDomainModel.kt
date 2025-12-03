@@ -1,17 +1,9 @@
 package com.example.bottomapp.backend
 
+import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.domain.PdfProgress
+import com.example.bottomapp.shared.backend.domain.Progress
 import java.io.File
-
-
-data class PdfProgress(val pageIndex: Int, val totalPages: Int?) : Progress(FormatType.PDF) {
-    override fun getProgressInPercent(): Double? {
-        return if (totalPages != null && totalPages != 0) {
-            pageIndex.toDouble() / totalPages.toDouble() * 100
-        } else {
-            null
-        }
-    }
-}
 
 class PdfBookDomainModel(
     val bookMetaInfo: BookMetaInfo,
@@ -21,7 +13,7 @@ class PdfBookDomainModel(
     BookDomainModel<PdfProgress> {
     val title: String = bookMetaInfo.title
     private var progress: PdfProgress = bookMetaInfo.progress as? PdfProgress
-        ?: PdfProgress(0, null)
+        ?: PdfProgress(0, 0)
 
     override fun readProgress(): PdfProgress {
         return progress

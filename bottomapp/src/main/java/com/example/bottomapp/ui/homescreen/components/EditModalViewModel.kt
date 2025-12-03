@@ -1,8 +1,9 @@
 package com.example.bottomapp.ui.homescreen.components
 
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
-import com.example.bottomapp.backend.BookStorageEntry
+import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +13,7 @@ class EditModalViewModel(val book: BookStorageEntry): ViewModel() {
     val editModalState: StateFlow<EditModalState> = _editModalState.asStateFlow()
 
     init {
-        _editModalState.value = EditModalState(book.previewUri, book.bookMetaInfo.title, book.bookMetaInfo.author ?: "")
+        _editModalState.value = EditModalState(book.previewUri!!.toUri(), book.bookMetaInfo.title, book.bookMetaInfo.author ?: "")
     }
 
     fun updateTitle(title: String) {

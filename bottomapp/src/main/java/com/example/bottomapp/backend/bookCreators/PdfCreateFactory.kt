@@ -1,11 +1,11 @@
 package com.example.bottomapp.backend.bookCreators
 
-import com.example.bottomapp.backend.PdfProgress
-import com.example.bottomapp.backend.Progress
+import com.example.bottomapp.shared.backend.domain.PdfProgress
+import com.example.bottomapp.shared.backend.domain.Progress
 
 class PdfCreateFactory : IBookCreateFactory {
     override fun createProgress(): Progress {
-        return PdfProgress(0, null)
+        return PdfProgress(0, 0)
     }
 
     override fun getNameFromFileName(fileName: String): String {

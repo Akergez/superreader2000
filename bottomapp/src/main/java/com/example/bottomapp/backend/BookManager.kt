@@ -9,6 +9,9 @@ import coil.ImageLoader
 import com.example.bottomapp.R
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.constants.toFileExtension
+import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.domain.Progress
+import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo as SharedBookMetaInfo
 import com.example.bottomapp.shared.backend.domain.FileType as SharedFileType
 import kotlinx.coroutines.CoroutineScope
@@ -18,16 +21,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 // Keep legacy BookMetaInfo for backward compatibility during transition
-data class BookMetaInfo(val title: String, val progress: Progress, val author: String?)
-
-data class BookStorageEntry(
-    val title: String,
-    val previewUri: Uri?,
-    val bundleName: String,
-    val progressInPercent: Double?,
-    val bookMetaInfo: BookMetaInfo
-)
-
 
 class BookManager(
     val context: Context,
@@ -63,14 +56,14 @@ class BookManager(
         storageManager.createBundle(
             fileName,
             fileUri,
-            BookMetaInfo(fileName, progress, null),
+            BookMetaInfo(fileName, progress),
             context.contentResolver,
             fileType.toFileExtension()
         ).onSuccess {
             CoroutineScope(Dispatchers.IO).launch {
                 bookCache.addBook(
                     BookStorageEntry(
-                        fileName, it.previewUri, fileName, null, it.meta
+                        fileName, it.previewUri.toString(), fileName, null, it.meta
                     )
                 )
             }
@@ -91,7 +84,7 @@ class BookManager(
         val book = bookCache.findBook(bookMetaInfo.title)
         bookCache.updateBook(
             BookStorageEntry(
-                bookMetaInfo.title, book?.previewUri, bundleName, bookMetaInfo.progress.getProgressInPercent(), bookMetaInfo
+                bookMetaInfo.title, book?.previewUri, bundleName, bookMetaInfo.progress!!.getProgressInPercent(), bookMetaInfo
             )
         )
         _pendingBooksToSave.add(bundleName)
@@ -116,7 +109,7 @@ class BookManager(
             .onSuccess {
                 storageManager.updateBundleMeta(
                     newNameForBundle,
-                    BookMetaInfo(newNameForBundle, meta.bookMetaInfo.progress, null)
+                    BookMetaInfo(newNameForBundle, meta.bookMetaInfo.progress)
                 ).onSuccess {
                     refreshBooksLinks()
                     Result.success(Unit)
@@ -172,7 +165,7 @@ class BookManager(
     private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {
         return storageManager.listAllBundles().filterNotNull().map {
             BookStorageEntry(
-                it.meta.title, it.previewUri, it.bundleName, it.meta.progress.getProgressInPercent(), it.meta
+                it.meta.title, it.previewUri.toString(), it.bundleName, it.meta.progress!!.getProgressInPercent(), it.meta
             )
         }
     }
