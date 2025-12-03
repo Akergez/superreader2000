@@ -16,6 +16,10 @@ kotlin {
         }
     }
 
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -34,9 +38,6 @@ kotlin {
                 // Serialization
                 implementation(libs.kotlinx.serialization)
 
-                // PDFBox for PDF processing
-                implementation(libs.pdfbox)
-
                 // SQLDelight for database
                 implementation(libs.sqldelight.runtime)
             }
@@ -52,6 +53,8 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.sqldelight.sqlite)
+                // Apache PDFBox for PDF processing (Desktop/JVM only)
+                implementation(libs.pdfbox)
             }
         }
 

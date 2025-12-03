@@ -1,16 +1,13 @@
 package com.example.bottomapp.shared.backend.bookCreators
 
 import com.example.bottomapp.shared.backend.domain.BookMetadata
-import com.example.bottomapp.shared.backend.domain.PdfBookMetadata
 import com.example.bottomapp.shared.backend.domain.DjvuBookMetadata
 import com.example.bottomapp.shared.backend.domain.Fb2BookMetadata
 import com.example.bottomapp.shared.backend.domain.FormatType
+import com.example.bottomapp.shared.backend.domain.PdfBookMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.apache.pdfbox.pdmodel.PDDocument
-import com.github.axet.djvulibre.DjvuLibre
 import java.io.File
-import java.io.FileInputStream
 
 actual class BookCreatorFactory {
     actual fun createPdfFactory(): IBookCreateFactory = AndroidPdfCreateFactory()

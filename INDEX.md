@@ -134,6 +134,10 @@ README_MULTIPLATFORM.md (reference)
 ### Phase 2: Moving Business Logic
 - See: IMPLEMENTATION_GUIDE.md → "Phase 2: Move Business Logic"
 - See: CHECKLIST.md → "Phase 2: Business Logic Migration"
+- **Stage 5 (Book Info Extractors)**: PHASE2_STAGE5_SUMMARY.md
+  - Overview: PHASE2_STAGE5_SUMMARY.md
+  - Technical Details: PHASE2_STAGE5_COMPLETE.md
+  - Quick Reference: PHASE2_STAGE5_QUICKREF.md
 
 ### Creating a Desktop Feature
 - See: IMPLEMENTATION_GUIDE.md → "Phase 4: Implement Desktop App"
@@ -156,6 +160,12 @@ README_MULTIPLATFORM.md (reference)
 | IMPLEMENTATION_GUIDE.md | ✅ Complete | Dec 2, 2025 | Step-by-step |
 | MULTIPLATFORM_MIGRATION.md | ✅ Complete | Dec 2, 2025 | Architecture |
 | CHECKLIST.md | ✅ Complete | Dec 2, 2025 | Task tracking |
+| PHASE2_STEP1_COMPLETE.md | ✅ Complete | Dec 2, 2025 | Phase 2 Stage 1 |
+| PHASE2_STEP2_COMPLETE.md | ✅ Complete | Dec 2, 2025 | Phase 2 Stage 2 |
+| PHASE2_STEP4_COMPLETE.md | ✅ Complete | Dec 2, 2025 | Phase 2 Stage 4 |
+| PHASE2_STAGE5_SUMMARY.md | ✅ Complete | Dec 3, 2025 | Phase 2 Stage 5 Overview |
+| PHASE2_STAGE5_COMPLETE.md | ✅ Complete | Dec 3, 2025 | Phase 2 Stage 5 Technical Details |
+| PHASE2_STAGE5_QUICKREF.md | ✅ Complete | Dec 3, 2025 | Phase 2 Stage 5 Quick Reference |
 | quick-start.sh | ✅ Complete | Dec 2, 2025 | Build helper |
 
 ## Common Scenarios

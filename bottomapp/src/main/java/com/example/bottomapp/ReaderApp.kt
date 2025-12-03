@@ -8,10 +8,8 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.Fb2BookAuthorExtractor
 import com.example.bottomapp.backend.Fb2Progress
 import com.example.bottomapp.backend.IBookInfoExtractor
-import com.example.bottomapp.backend.PdfBookAuthorExtractor
 import com.example.bottomapp.backend.PdfProgress
 import com.example.bottomapp.backend.Progress
 import com.example.bottomapp.backend.StorageAdapter
@@ -44,6 +42,7 @@ import com.example.bottomapp.shared.backend.domain.FormatType as SharedFormatTyp
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
+import com.example.bottomapp.shared.di.commonModule
 
 class ReaderApp : Application() {
     override fun onCreate() {
@@ -71,14 +70,6 @@ class ReaderApp : Application() {
 
             single<IPreviewGenerator>(named(SharedFormatType.PDF)) { PdfPreviewGenerator() }
             single<IPreviewGenerator>(named(SharedFormatType.FB2)) { Fb2PreviewGenerator() }
-
-            // Book info extractors (using local Android types for now)
-            single<IBookInfoExtractor<com.example.bottomapp.backend.BookMetaInfo>>(named(SharedFormatType.PDF)) {
-                PdfBookAuthorExtractor()
-            }
-            single<IBookInfoExtractor<com.example.bottomapp.backend.BookMetaInfo>>(named(SharedFormatType.FB2)) {
-                Fb2BookAuthorExtractor()
-            }
 
             // Android-specific storage (legacy, kept for backward compatibility)
             singleOf(::StorageAdapter) bind StorageAdapter::class
@@ -123,7 +114,7 @@ class ReaderApp : Application() {
         startKoin {
             androidLogger()
             androidContext(this@ReaderApp)
-            modules(appModule)
+            modules(commonModule(), appModule)
         }
         PDFBoxResourceLoader.init(applicationContext)
     }

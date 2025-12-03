@@ -5,8 +5,6 @@ import com.example.bottomapp.shared.platform.PlatformBitmap
 import com.github.axet.djvulibre.DjvuLibre
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.apache.pdfbox.pdmodel.PDDocument
-import org.apache.pdfbox.rendering.PDFRenderer
 import java.io.File
 import java.io.FileInputStream
 
@@ -22,21 +20,14 @@ private class AndroidPdfPreviewGenerator : IPreviewGenerator {
             // Placeholder - PDF preview generation requires proper library setup
             // For now, return null to gracefully handle missing implementation
             null
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
-    }
-
-    private fun bufferedImageToBitmap(bufferedImage: java.awt.image.BufferedImage): Bitmap {
-        val bitmap = Bitmap.createBitmap(bufferedImage.width, bufferedImage.height, Bitmap.Config.ARGB_8888)
-        val pixels = IntArray(bufferedImage.width * bufferedImage.height)
-        bufferedImage.getRGB(0, 0, bufferedImage.width, bufferedImage.height, pixels, 0, bufferedImage.width)
-        bitmap.setPixels(pixels, 0, bufferedImage.width, 0, 0, bufferedImage.width, bufferedImage.height)
-        return bitmap
     }
 }
 
 private class AndroidDjvuPreviewGenerator : IPreviewGenerator {
+    @Suppress("NewApi")
     override suspend fun generatePreviewBitmap(filePath: String): PlatformBitmap? = withContext(Dispatchers.IO) {
         try {
             val file = File(filePath)
@@ -48,7 +39,7 @@ private class AndroidDjvuPreviewGenerator : IPreviewGenerator {
                 0, 0, page.width, page.height
             )
             PlatformBitmap(bitmap)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
