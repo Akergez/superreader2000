@@ -5,6 +5,7 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import java.io.File
 import java.io.IOException
+import androidx.core.graphics.createBitmap
 
 class PdfPreviewGenerator : IPreviewGenerator {
     override fun generatePreviewBitmap(file: File): Bitmap? {
@@ -17,7 +18,7 @@ class PdfPreviewGenerator : IPreviewGenerator {
                 val page = pdfRenderer.openPage(0)
                 val width = page.width
                 val height = page.height
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val bitmap = createBitmap(width, height)
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
                 return bitmap

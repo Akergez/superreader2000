@@ -2,18 +2,12 @@ package com.example.bottomapp.shared.backend.domain
 
 import kotlinx.serialization.Serializable
 
-/**
- * Format type enumeration for different document formats
- */
 enum class FormatType {
     PDF,
     DJVU,
     FB2
 }
 
-/**
- * File type enumeration for file extensions and MIME types
- */
 enum class FileType {
     pdf,
     fb2,
@@ -21,9 +15,6 @@ enum class FileType {
     unknown
 }
 
-/**
- * Convert FileType to file extension
- */
 fun FileType.toFileExtension(): String {
     return when (this) {
         FileType.pdf -> "pdf"
@@ -33,9 +24,6 @@ fun FileType.toFileExtension(): String {
     }
 }
 
-/**
- * Convert FileType to MIME types
- */
 fun FileType.toMimeType(): List<String> {
     return when (this) {
         FileType.pdf -> listOf("application/pdf")
@@ -45,9 +33,6 @@ fun FileType.toMimeType(): List<String> {
     }
 }
 
-/**
- * Base domain model for books (metadata container)
- */
 @Serializable
 sealed class BookMetadata {
     abstract val uri: String
@@ -56,9 +41,6 @@ sealed class BookMetadata {
     abstract val pageCount: Int
 }
 
-/**
- * PDF-specific book metadata
- */
 @Serializable
 data class PdfBookMetadata(
     override val uri: String,
@@ -71,9 +53,6 @@ data class PdfBookMetadata(
     val producer: String = ""
 ) : BookMetadata()
 
-/**
- * DjVu-specific book metadata
- */
 @Serializable
 data class DjvuBookMetadata(
     override val uri: String,
@@ -84,9 +63,6 @@ data class DjvuBookMetadata(
     val title: String = ""
 ) : BookMetadata()
 
-/**
- * FB2-specific book metadata
- */
 @Serializable
 data class Fb2BookMetadata(
     override val uri: String,
@@ -98,9 +74,6 @@ data class Fb2BookMetadata(
     val lang: String = "en"
 ) : BookMetadata()
 
-/**
- * Book metadata information with progress tracking
- */
 @Serializable
 data class BookMetaInfo(
     val author: String = "",
@@ -113,9 +86,6 @@ data class BookMetaInfo(
     val fb2Progress: Fb2Progress? = null
 )
 
-/**
- * Progress tracking for reading
- */
 @Serializable
 sealed class Progress {
     abstract val currentPage: Int

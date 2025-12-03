@@ -1,43 +1,44 @@
 [versions]
 accompanist-navigation-animation = "0.36.0"
-accompanist-pager = "0.29.1-alpha"
+accompanist-pager = "0.36.0"
 agp = "8.13.1"
-androidx-material = "1.7.6"
-coil-compose-version = "2.1.0"
-djvulibre = "0.0.8"
-gson = "2.10.1"
-koin-androidx-compose-version = "4.0.0"
-kotlin = "2.0.0"
-core-ktx = "1.15.0"
+androidx-material = "1.9.5"
+coil-compose-version = "2.7.0"
+djvulibre = "0.1.4"
+gson = "2.13.2"
+koin-androidx-compose-version = "4.1.1"
+kotlin = "2.2.21"
+core-ktx = "1.17.0"
 junit = "4.13.2"
-navigation-compose-version = "2.8.5"
+navigation-compose-version = "2.9.6"
 pagecurl-version = "1.5.1"
 pdfbox-android = "2.0.27.0"
-pdfbox = "3.0.2"
-androidx-test-ext-junit = "1.2.1"
-espresso-core = "3.6.1"
+pdfbox = "3.0.6"
+androidx-test-ext-junit = "1.3.0"
+espresso-core = "3.7.0"
 kotlin-gradle-plugin = "2.0.21"
-lifecycle-runtime-ktx = "2.8.7"
-activity-compose = "1.10.0"
-compose-bom = "2025.01.00"
-compose-multiplatform = "1.7.1"
-library = "8.0.2"
-androidx-appcompat = "1.7.0"
-material-version = "1.12.0"
-constraintlayout = "2.2.0"
-lifecycle-livedata-ktx = "2.8.7"
-lifecycle-viewmodel-ktx = "2.8.7"
-navigation-fragment-ktx = "2.8.5"
-navigation-ui-ktx = "2.8.5"
-room-runtime = "2.6.1"
-ui = "1.7.6"
-ui-tooling-preview = "1.7.6"
-room-common = "2.6.1"
-zoomable = "2.0.0"
-material3 = "1.3.1"
-koin-version = "4.0.0"
-sqldelight-version = "2.1.0"
-kotlinx-serialization = "1.6.0"
+lifecycle-runtime-ktx = "2.10.0"
+activity-compose = "1.12.0"
+compose-bom = "2025.11.01"
+compose-multiplatform = "1.9.3"
+library = "8.13.1"
+androidx-appcompat = "1.7.1"
+material-version = "1.13.0"
+constraintlayout = "2.2.1"
+lifecycle-livedata-ktx = "2.10.0"
+lifecycle-viewmodel-ktx = "2.10.0"
+navigation-fragment-ktx = "2.9.6"
+navigation-ui-ktx = "2.9.6"
+room-runtime = "2.8.4"
+ui = "1.9.5"
+ui-tooling-preview = "1.9.5"
+room-common = "2.8.4"
+zoomable = "2.9.0"
+material3 = "1.4.0"
+koin-version = "4.1.1"
+sqldelight-version = "2.2.1"
+kotlinx-serialization = "1.9.0"
+documentfile = "1.1.0"
 
 
 [libraries]
@@ -57,7 +58,6 @@ djvulibre = { module = "com.github.axet:djvulibre", version.ref = "djvulibre" }
 koin-androidx-compose-navigation = { module = "io.insert-koin:koin-androidx-compose-navigation", version.ref = "koin-androidx-compose-version" }
 koin-androidx-compose-v400 = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin-androidx-compose-version" }
 accompanist-pager = { module = "com.google.accompanist:accompanist-pager", version.ref = "accompanist-pager" }
-androidx-navigation-compose-v240alpha10 = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose-version" }
 androidx-ui = { module = "androidx.compose.ui:ui", version.ref = "ui" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "ui-tooling-preview" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -97,6 +97,7 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight-version" }
 sqldelight-sqlite = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight-version" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -104,9 +105,6 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 library = { id = "com.android.library", version.ref = "library" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
-sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight-version" }
 
 [bundles]
 

@@ -9,12 +9,9 @@ plugins {
 kotlin {
     jvm("desktop")
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "1.8"
-            }
-        }
     }
+
+    jvmToolchain(17)
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")

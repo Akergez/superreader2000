@@ -4,6 +4,7 @@ import com.google.gson.TypeAdapter
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
 import android.net.Uri
+import androidx.core.net.toUri
 
 class UriTypeAdapter : TypeAdapter<Uri>() {
     override fun write(out: JsonWriter, value: Uri?) {
@@ -12,6 +13,6 @@ class UriTypeAdapter : TypeAdapter<Uri>() {
 
     override fun read(reader: JsonReader): Uri? {
         val uriString = reader.nextString()
-        return if (uriString.isEmpty()) null else Uri.parse(uriString) // Convert String back to Uri
+        return if (uriString.isEmpty()) null else uriString.toUri() // Convert String back to Uri
     }
 }

@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
-    id("com.google.devtools.ksp") version "2.0.21-1.0.25"
+    id("com.google.devtools.ksp") version "2.2.21-2.0.4"
     id("kotlin-parcelize")
     alias(libs.plugins.kotlinCompose)
 }
@@ -30,12 +30,10 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+
     buildFeatures {
         viewBinding = true
         compose = true
@@ -45,6 +43,10 @@ android {
         resources {
             excludes += "META-INF/DEPENDENCIES"
         }
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 }
 
@@ -59,7 +61,6 @@ dependencies {
     implementation(libs.pdfbox.android)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.navigation.compose.v240alpha10)
     implementation(libs.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -69,6 +70,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.room.common)
+    implementation(libs.androidx.documentfile)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -121,4 +123,6 @@ dependencies {
     testImplementation(libs.androidx.room.testing)
     // optional - Paging 3 Integration
     implementation(libs.androidx.room.paging)
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended")
 }

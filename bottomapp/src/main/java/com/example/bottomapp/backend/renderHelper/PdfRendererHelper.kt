@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.core.graphics.createBitmap
 
 class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBookContent> {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
@@ -57,7 +58,7 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBook
             synchronized(lock) {
                 val page = pdfRenderer.value?.openPage(pageIndex)
                 bitmap =
-                    Bitmap.createBitmap(page!!.width * 5, page.height * 5, Bitmap.Config.ARGB_8888)
+                    createBitmap(page!!.width * 5, page.height * 5)
                 val rect = Rect(0, 0, page.width * 5, page.height * 5)
                 page.render(bitmap!!, rect, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
@@ -81,7 +82,7 @@ class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBook
         applyInversion: Boolean,
         bitmap: Bitmap
     ): Bitmap {
-        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+        return createBitmap(width, height).apply {
             val cacheCanvas = android.graphics.Canvas(this)
 
             val bitmapWidth = bitmap.width

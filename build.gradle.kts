@@ -14,11 +14,12 @@ buildscript {
 plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.kotlinAndroid) apply false
-    alias(libs.plugins.library) apply false
-    id("org.jetbrains.kotlin.multiplatform") version "2.0.0" apply false
-    id("org.jetbrains.compose") version "1.7.1" apply false
-    id("com.google.devtools.ksp") version "2.0.21-1.0.25" apply false
+    alias(libs.plugins.library) apply false    // CHANGE THIS LINE from "2.0.0" to "2.0.21"
+    id("org.jetbrains.kotlin.multiplatform") version "2.2.21" apply false
+    id("org.jetbrains.compose") version "1.9.3" apply false
+    id("com.google.devtools.ksp") version "2.2.21-2.0.4" apply false
     alias(libs.plugins.kotlinCompose) apply false
-    id("app.cash.sqldelight") version "2.1.0" apply false
+    id("app.cash.sqldelight") version "2.2.1" apply false
 }
+
 

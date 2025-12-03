@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import androidx.core.content.edit
 
 actual class FileProvider(private val context: Context) {
     actual suspend fun loadFileBytes(path: String): ByteArray = withContext(Dispatchers.IO) {
@@ -29,35 +30,30 @@ actual class FileProvider(private val context: Context) {
 }
 
 actual class PreferencesStore(private val context: Context) {
-    private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-
-    actual suspend fun getString(key: String, default: String): String = withContext(Dispatchers.IO) {
-        prefs.getString(key, default) ?: default
+    actual suspend fun getString(key: String, default: String): String {
+        TODO("Not yet implemented")
     }
 
-    actual suspend fun putString(key: String, value: String) = withContext(Dispatchers.IO) {
-        prefs.edit().putString(key, value).apply()
+    actual suspend fun putString(key: String, value: String) {
     }
 
-    actual suspend fun getInt(key: String, default: Int): Int = withContext(Dispatchers.IO) {
-        prefs.getInt(key, default)
+    actual suspend fun getInt(key: String, default: Int): Int {
+        TODO("Not yet implemented")
     }
 
-    actual suspend fun putInt(key: String, value: Int) = withContext(Dispatchers.IO) {
-        prefs.edit().putInt(key, value).apply()
+    actual suspend fun putInt(key: String, value: Int) {
     }
 
-    actual suspend fun getBoolean(key: String, default: Boolean): Boolean = withContext(Dispatchers.IO) {
-        prefs.getBoolean(key, default)
+    actual suspend fun getBoolean(key: String, default: Boolean): Boolean {
+        TODO("Not yet implemented")
     }
 
-    actual suspend fun putBoolean(key: String, value: Boolean) = withContext(Dispatchers.IO) {
-        prefs.edit().putBoolean(key, value).apply()
+    actual suspend fun putBoolean(key: String, value: Boolean) {
     }
 
-    actual suspend fun removeKey(key: String) = withContext(Dispatchers.IO) {
-        prefs.edit().remove(key).apply()
+    actual suspend fun removeKey(key: String) {
     }
+
 }
 
 actual class BitmapProvider {

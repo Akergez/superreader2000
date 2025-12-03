@@ -61,7 +61,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
     bookManager: BookManager = koinInject(), settingsManager: SettingsManager = koinInject()

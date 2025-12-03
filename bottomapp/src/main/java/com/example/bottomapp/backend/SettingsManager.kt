@@ -5,6 +5,8 @@ import android.net.Uri
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import androidx.core.content.edit
+import androidx.core.net.toUri
 
 
 enum class AppThemeMode {
@@ -28,7 +30,7 @@ class SettingsManager(context: Context) {
 
 
     private fun saveSetting(key: String, value: String) {
-        sharedPreferences.edit().putString(key, value).apply()
+        sharedPreferences.edit { putString(key, value) }
     }
 
     private fun getSetting(key: String): String? {
@@ -66,7 +68,7 @@ class SettingsManager(context: Context) {
 
     fun getStorageUri(): Uri? {
         val setting: String = getSetting("storage") ?: return null
-        return Uri.parse(setting)
+        return setting.toUri()
     }
 
     fun saveStorageUri(uri: Uri) {

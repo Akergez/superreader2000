@@ -13,6 +13,7 @@ import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
 import java.io.FileInputStream
+import androidx.core.graphics.createBitmap
 
 class Fb2PreviewGenerator : IPreviewGenerator {
     override fun generatePreviewBitmap(file: File): Bitmap? {
@@ -71,7 +72,7 @@ class Fb2PreviewGenerator : IPreviewGenerator {
             }
 
             // Если обложка не найдена, создаем стилизованное изображение с текстом
-            val bitmap = Bitmap.createBitmap(300, 400, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(300, 400)
             val canvas = Canvas(bitmap)
 
             // Заполняем фон градиентом

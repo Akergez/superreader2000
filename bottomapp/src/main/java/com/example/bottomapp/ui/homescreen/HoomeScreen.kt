@@ -52,7 +52,6 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalUuidApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(

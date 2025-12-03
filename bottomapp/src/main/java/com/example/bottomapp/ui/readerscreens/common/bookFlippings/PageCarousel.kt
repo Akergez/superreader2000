@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -129,7 +130,7 @@ fun <TBookContent> PageCarousel(
                     derivedStateOf { lazyListState.firstVisibleItemIndex }
                 }
 
-                val sliderValue = remember { mutableStateOf(firstVisibleItemIndex.toFloat()) }
+                val sliderValue = remember { mutableFloatStateOf(firstVisibleItemIndex.toFloat()) }
 
                 LaunchedEffect(firstVisibleItemIndex) {
                     sliderValue.value = firstVisibleItemIndex.toFloat()

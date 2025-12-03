@@ -1,6 +1,7 @@
 package com.example.bottomapp.shared.backend.previewGenerators
 
 import android.graphics.Bitmap
+import android.graphics.Bitmap.*
 import com.example.bottomapp.shared.platform.PlatformBitmap
 import com.github.axet.djvulibre.DjvuLibre
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,7 @@ private class AndroidDjvuPreviewGenerator : IPreviewGenerator {
             val file = File(filePath)
             val render = DjvuLibre(FileInputStream(file).fd)
             val page = render.getPageInfo(0)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(page.width, page.height, Config.ARGB_8888)
             render.renderPage(
                 bitmap, 0, 0, 0, page.width, page.height,
                 0, 0, page.width, page.height

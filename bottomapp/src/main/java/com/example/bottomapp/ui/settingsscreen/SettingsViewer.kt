@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -171,7 +172,7 @@ fun <TEnum> ThemeSelector(
     SettingsOption(title)
 
     val options = values.values.toList()
-    var selectedIndex by remember { mutableStateOf(options.indexOf(values[selectedTheme])) }
+    var selectedIndex by remember { mutableIntStateOf(options.indexOf(values[selectedTheme])) }
 
     SingleChoiceSegmentedButtonRow(modifier = Modifier.padding(bottom = 15.dp)){
         options.forEachIndexed { index, label ->

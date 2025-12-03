@@ -7,12 +7,8 @@ plugins {
 }
 
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "11"
-        }
-        withJava()
-    }
+    jvm()
+    jvmToolchain(17)
 
     sourceSets {
         val jvmMain by getting {
@@ -20,6 +16,13 @@ kotlin {
                 implementation(project(":shared"))
                 implementation(compose.desktop.currentOs)
                 implementation(compose.desktop.common)
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.ui)
+                implementation(compose.material3)
+                implementation(compose.materialIconsExtended)
+                implementation(compose.desktop.currentOs) // ОБЯЗАТЕЛЬНО
+
             }
         }
 

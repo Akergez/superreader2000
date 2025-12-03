@@ -20,7 +20,6 @@ class MainActivity : ComponentActivity() {
     private val storageManager = inject<BookStorage>()
     private val bookManager = inject<BookManager>()
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -39,7 +38,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
