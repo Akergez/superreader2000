@@ -10,9 +10,6 @@ import java.io.File
  * The concrete implementations have been moved to IBookInfoExtractorLegacy.kt
  * for backward compatibility.
  */
-interface IBookInfoExtractor<T> {
-    fun getAuthor(file: File): String?
-}
 
 // Concrete implementations have been moved to IBookInfoExtractorLegacy.kt
 // These are imported from there for backward compatibility

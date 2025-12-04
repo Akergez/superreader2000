@@ -55,6 +55,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
 }
 
+
 class BookStorageRepository(private val dao: UserDao, private val gson: Gson) {
     private val _bookFlow = MutableStateFlow(emptyList<BookStorageEntry>())
     val bookFlow: StateFlow<List<BookStorageEntry>> = _bookFlow

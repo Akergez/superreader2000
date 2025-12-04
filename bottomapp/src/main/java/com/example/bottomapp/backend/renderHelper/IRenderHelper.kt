@@ -1,6 +1,6 @@
 package com.example.bottomapp.backend.renderHelper
 
-import com.example.bottomapp.backend.FormatType
+import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.ui.readerscreens.IBookContent
 import kotlinx.coroutines.flow.StateFlow
 

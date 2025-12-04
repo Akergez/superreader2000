@@ -8,6 +8,8 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.BookManager
+import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageAdapter
 import com.example.bottomapp.backend.bookCreators.Fb2CreateFactory
 import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
@@ -16,6 +18,7 @@ import com.example.bottomapp.backend.previewGenerators.Fb2PreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.PdfPreviewGenerator
 import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
 import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
@@ -85,7 +88,12 @@ class ReaderApp : Application() {
                 db.userDao()
             }
 
+            singleOf(::BookManager) bind BookManager::class
+            singleOf(::BookStorage) bind BookStorage::class
+            singleOf(::SettingsManager) bind SettingsManager::class
+            single<BookInfoExtractorFactory>{BookInfoExtractorFactory()}
             // ViewModels
+
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
             viewModel {
                 SettingsViewModel(get(), get())

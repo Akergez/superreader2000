@@ -19,7 +19,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
-import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.backend.renderHelper.fb2.FB2BoldText
 import com.example.bottomapp.backend.renderHelper.fb2.FB2CodeText
 import com.example.bottomapp.backend.renderHelper.fb2.FB2ColoredText
@@ -29,6 +28,7 @@ import com.example.bottomapp.backend.renderHelper.fb2.FB2ItalicText
 import com.example.bottomapp.backend.renderHelper.fb2.FB2Paragraph
 import com.example.bottomapp.backend.renderHelper.fb2.FB2SubtitleText
 import com.example.bottomapp.backend.renderHelper.fb2.FB2Text
+import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.ui.readerscreens.Fb2BookContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -2,8 +2,8 @@ package com.example.bottomapp.ui.mainscreen.readerscreenproviders
 
 import androidx.compose.runtime.Composable
 import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
+import com.example.bottomapp.shared.backend.domain.PdfBookDomainModel
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
@@ -18,18 +18,18 @@ class PdfReaderScreenProvider(val bookManager: BookManager) :
                 bookManager.updateProgress(
                     bookLink.bundleName, updatedBookLink
                 )
-            }, bookMetaInfo = bookLink.bookMetaInfo, getFileFromStorage = {
-                bookManager.getBookFile(bookLink.bundleName).getOrThrow()
+            }, bookMetaInfo = bookLink.bookMetaInfo, getFilePathFromStorage = {
+                bookManager.getBookFile(bookLink.bundleName).getOrThrow().toString()
             })
 
         return {
-            PdfReaderScreen(
+/*            PdfReaderScreen(
                 pdfScreenViewModel = koinViewModel<PdfScreenViewModel>(
                     parameters = {
                         parametersOf(pdfBookDomainModel,
-                            PdfRendererHelper { pdfBookDomainModel.getFile() })
+                            PdfRendererHelper { pdfBookDomainModel.getFilePath() })
                     })
-            )
+            )*/
         }
     }
 }

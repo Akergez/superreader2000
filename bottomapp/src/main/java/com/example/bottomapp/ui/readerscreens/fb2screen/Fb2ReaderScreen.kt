@@ -17,9 +17,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.core.content.ContextCompat.getString
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.DocThemeMode
-import com.example.bottomapp.backend.Fb2BookDomainModel
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.renderHelper.Fb2RenderHelper
+import com.example.bottomapp.shared.backend.domain.Fb2BookDomainModel
 import com.example.bottomapp.shared.backend.domain.Fb2Progress
 import com.example.bottomapp.ui.readerscreens.common.BookContent
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
@@ -47,17 +47,17 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
     LaunchedEffect(componentHeight) {
         CoroutineScope(Dispatchers.IO).launch {
             if (componentHeight > 1) {
-                val fb2File = book.getFile()
+                val fb2File = book.getFilePath()
                 var newPage: Int
                 synchronized(lock) {
-                    if (fb2RenderHelper.value == null) {
+/*                    if (fb2RenderHelper.value == null) {
                         fb2RenderHelper.value = Fb2RenderHelper(
                             componentWidth - (density.density * (16 + 32)).toInt(),
                             componentHeight - (density.density * (16 + 40)).toInt(),
                             textMeasurer,
                             fb2File
                         )
-                    }
+                    }*/
                     val offset = book.readProgress().currentPage
                     newPage = if (offset > 0) {
                         fb2RenderHelper.value!!.getPageIndexByWordOffset(offset)
@@ -115,7 +115,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: SettingsManager =
                 },
                 updateFlipMode = { flipMode -> settingsManager.setPdfFlipMode(flipMode) },
                 onCarouselBack = { mode = ReaderMode.Reading },
-                title = book.title,
+                title = book.getMetadata().title,
                 tableOfContent = fb2RenderHelper.value!!.tableOfContents,
                 viewerProvider = Fb2ViewerProvider()
             )

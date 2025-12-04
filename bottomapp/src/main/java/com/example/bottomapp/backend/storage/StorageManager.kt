@@ -6,11 +6,11 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import com.example.bottomapp.IBookInfoExtractorFactory
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.backend.exceptions.InvalidStorageDirectoryException
 import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
+import com.example.bottomapp.shared.backend.bookExtractors.IBookInfoExtractorFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -138,7 +138,7 @@ abstract class StorageManager<T>(
                 metaFile.uri,
                 previewFile.uri,
                 meta,
-                infoExtractor.createExtractor(meta).getAuthor(bookFile!!)
+                infoExtractor.getAuthor(bookFile!!)
             )
         )
     }

@@ -1,25 +1,26 @@
 package com.example.bottomapp.backend
 
 import android.content.Context
-import com.example.bottomapp.BookInfoExtractorFactory
 import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.storage.IDeserializer
 import com.example.bottomapp.backend.storage.INameProvider
 import com.example.bottomapp.backend.storage.StorageManager
+import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.domain.FormatType
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 
-class StorageAdapter(private val gson: Gson) : IDeserializer<BookMetaInfo>,
+class StorageAdapter() : IDeserializer<BookMetaInfo>,
     INameProvider<BookMetaInfo> {
     override fun deserialize(jsonString: String): BookMetaInfo {
-        return gson.fromJson(jsonString, BookMetaInfo::class.java)
+        return BookMetaInfo("", null, null)
     }
 
     override fun serialize(obj: BookMetaInfo): String {
-        return gson.toJson(obj)
+        return ""
     }
 
     override fun jsonMetaFilename(bundleName: String): String {

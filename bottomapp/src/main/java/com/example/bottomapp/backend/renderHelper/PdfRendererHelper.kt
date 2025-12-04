@@ -9,8 +9,8 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.example.bottomapp.backend.FormatType
-import com.example.bottomapp.ui.readerscreens.IBookContent
+import androidx.core.graphics.createBitmap
+import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.ui.readerscreens.PdfBookContent
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageTree
@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import androidx.core.graphics.createBitmap
 
 class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBookContent> {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)

@@ -29,7 +29,7 @@ interface BookDomainModel<T : Progress> {
 /**
  * PDF-specific book domain model implementation
  */
-class PdfBookDomainModelImpl(
+class PdfBookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFilePathFromStorage: suspend () -> String,
@@ -55,7 +55,7 @@ class PdfBookDomainModelImpl(
 /**
  * DjVu-specific book domain model implementation
  */
-class DjvuBookDomainModelImpl(
+class DjvuBookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFilePathFromStorage: suspend () -> String,
@@ -81,7 +81,7 @@ class DjvuBookDomainModelImpl(
 /**
  * FB2-specific book domain model implementation
  */
-class Fb2BookDomainModelImpl(
+class Fb2BookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
     private val getFilePathFromStorage: suspend () -> String,

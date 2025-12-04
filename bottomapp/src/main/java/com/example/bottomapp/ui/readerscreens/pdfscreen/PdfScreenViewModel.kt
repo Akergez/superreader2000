@@ -3,9 +3,9 @@ package com.example.bottomapp.ui.readerscreens.pdfscreen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.backend.DocThemeMode
-import com.example.bottomapp.backend.PdfBookDomainModel
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
+import com.example.bottomapp.shared.backend.domain.PdfBookDomainModel
 import com.example.bottomapp.shared.backend.domain.PdfProgress
 import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import com.example.bottomapp.ui.readerscreens.common.ReaderMode
@@ -41,7 +41,7 @@ class PdfScreenViewModel(
     }
 
     fun getTitle():String {
-        return pdfBookDomainModel.title
+        return pdfBookDomainModel.getMetadata().title
     }
 
     fun changePage(newPage: Int) {

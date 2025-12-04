@@ -1,8 +1,8 @@
 package com.example.bottomapp
 
-import com.example.bottomapp.backend.FormatType
 import com.example.bottomapp.backend.IBookInfoExtractor
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.domain.FormatType
 
 interface IBookInfoExtractorFactory<T> {
     fun createExtractor(meta: T): IBookInfoExtractor<T>

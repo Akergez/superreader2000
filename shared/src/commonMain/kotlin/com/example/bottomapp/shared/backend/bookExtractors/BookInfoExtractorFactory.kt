@@ -6,22 +6,9 @@ import com.example.bottomapp.shared.backend.domain.FormatType
 /**
  * Factory interface for creating book information extractors
  */
-interface IBookInfoExtractorFactory {
-    fun createExtractor(formatType: FormatType): IBookInfoExtractor<BookMetaInfo>
+
+class BookExtractorFactory {
+    fun createPdfExtractor(): IBookInfoExtractor<BookMetaInfo> = PdfBookAuthorExtractor()
+    fun createDjvuExtractor(): IBookInfoExtractor<BookMetaInfo> = DjvuBookAuthorExtractor()
+    fun createFb2Extractor(): IBookInfoExtractor<BookMetaInfo> = Fb2BookAuthorExtractor()
 }
-
-/**
- * Default implementation using BookExtractorFactory
- */
-class BookInfoExtractorFactory : IBookInfoExtractorFactory {
-    private val factory = BookExtractorFactory()
-
-    override fun createExtractor(formatType: FormatType): IBookInfoExtractor<BookMetaInfo> {
-        return when (formatType) {
-            FormatType.PDF -> factory.createPdfExtractor()
-            FormatType.DJVU -> factory.createDjvuExtractor()
-            FormatType.FB2 -> factory.createFb2Extractor()
-        }
-    }
-}
-
