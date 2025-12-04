@@ -138,7 +138,7 @@ abstract class StorageManager<T>(
                 metaFile.uri,
                 previewFile.uri,
                 meta,
-                infoExtractor.getAuthor(bookFile!!)
+                infoExtractor.createExtractor(meta).getAuthor(bookFile!!)
             )
         )
     }

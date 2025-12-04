@@ -82,7 +82,7 @@ data class BookMetaInfo(
 )
 
 @Serializable
-sealed class Progress {
+abstract class Progress {
     abstract val currentPage: Int
     abstract val totalPages: Int
     abstract fun getProgressInPercent(): Double?

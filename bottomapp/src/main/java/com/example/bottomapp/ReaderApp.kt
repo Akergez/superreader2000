@@ -2,6 +2,7 @@ package com.example.bottomapp
 
 // Shared module imports
 import android.app.Application
+import android.net.Uri
 import androidx.room.Room
 import coil.ImageLoader
 import coil.memory.MemoryCache
@@ -9,8 +10,11 @@ import coil.request.CachePolicy
 import com.example.bottomapp.backend.AppDatabase
 import com.example.bottomapp.backend.BookManager
 import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.backend.BookStorageRepository
+import com.example.bottomapp.backend.RuntimeTypeAdapterFactory
 import com.example.bottomapp.backend.SettingsManager
 import com.example.bottomapp.backend.StorageAdapter
+import com.example.bottomapp.backend.UriTypeAdapter
 import com.example.bottomapp.backend.bookCreators.Fb2CreateFactory
 import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.backend.bookCreators.PdfCreateFactory
@@ -19,6 +23,11 @@ import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.backend.previewGenerators.PdfPreviewGenerator
 import com.example.bottomapp.constants.FileType
 import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
+import com.example.bottomapp.shared.backend.domain.DjvuProgress
+import com.example.bottomapp.shared.backend.domain.Fb2Progress
+import com.example.bottomapp.shared.backend.domain.FormatType
+import com.example.bottomapp.shared.backend.domain.PdfProgress
+import com.example.bottomapp.shared.backend.domain.Progress
 import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
@@ -30,6 +39,7 @@ import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenPr
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.PdfReaderScreenProvider
 import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
+import com.google.gson.GsonBuilder
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -39,6 +49,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import kotlin.jvm.java
 import com.example.bottomapp.shared.backend.domain.FormatType as SharedFormatType
 
 class ReaderApp : Application() {
@@ -80,6 +91,17 @@ class ReaderApp : Application() {
                     }.build()
             }
 
+            single {
+                GsonBuilder().create()
+            }
+
+            /*.registerTypeAdapterFactory(
+                    RuntimeTypeAdapterFactory.of(Progress, "type")
+                        .registerSubtype(PdfProgress::class.java, "pdf")
+                        .registerSubtype(Fb2Progress::class.java, "fb2")
+                        .registerSubtype(DjvuProgress::class.java, "djvu")
+                ).registerTypeAdapter(Uri::class.java, UriTypeAdapter())*/
+
             // Android Room database (kept for now, will migrate to SQLDelight in Phase 3)
             single {
                 val db = Room.databaseBuilder(
@@ -88,11 +110,19 @@ class ReaderApp : Application() {
                 db.userDao()
             }
 
+            single {
+                BookStorage(
+                    androidContext(), get(), get(), get(), mapOf(
+                        FormatType.PDF to get(qualifier = named(FormatType.PDF)),
+                        FormatType.FB2 to get(qualifier = named(FormatType.FB2))
+                    )
+                )
+            }
+
             singleOf(::BookManager) bind BookManager::class
-            singleOf(::BookStorage) bind BookStorage::class
             singleOf(::SettingsManager) bind SettingsManager::class
-            single<BookInfoExtractorFactory>{BookInfoExtractorFactory()}
             // ViewModels
+            singleOf(::BookStorageRepository) bind BookStorageRepository::class
 
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
             viewModel {

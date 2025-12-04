@@ -1,6 +1,5 @@
-package com.example.bottomapp
+package com.example.bottomapp.shared.backend.bookExtractors
 
-import com.example.bottomapp.backend.IBookInfoExtractor
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
 import com.example.bottomapp.shared.backend.domain.FormatType
 

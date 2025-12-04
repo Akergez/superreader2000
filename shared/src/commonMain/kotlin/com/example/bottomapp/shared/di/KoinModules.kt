@@ -4,14 +4,19 @@ import com.example.bottomapp.shared.backend.bookCreators.BookCreatorFactory
 import com.example.bottomapp.shared.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.shared.backend.bookExtractors.BookExtractorFactory
 import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
+import com.example.bottomapp.shared.backend.bookExtractors.DjvuBookAuthorExtractor
+import com.example.bottomapp.shared.backend.bookExtractors.Fb2BookAuthorExtractor
 import com.example.bottomapp.shared.backend.bookExtractors.IBookInfoExtractor
 import com.example.bottomapp.shared.backend.bookExtractors.IBookInfoExtractorFactory
+import com.example.bottomapp.shared.backend.bookExtractors.PdfBookAuthorExtractor
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
 import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.PreviewGeneratorFactory
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 /**
@@ -20,7 +25,19 @@ import org.koin.dsl.module
  */
 fun commonModule(): Module = module {
     // Book extractors factory
-    single<IBookInfoExtractorFactory> { BookInfoExtractorFactory() }
+
+    single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { PdfBookAuthorExtractor() }
+    single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { Fb2BookAuthorExtractor() }
+    single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.DJVU)) { DjvuBookAuthorExtractor() }
+
+    single {
+        BookInfoExtractorFactory(
+            mapOf(
+                FormatType.PDF to get(qualifier = named(FormatType.PDF)),
+                FormatType.FB2 to get(qualifier = named(FormatType.FB2))
+            )
+        )
+    }
 
     // Book creators
     single<IBookCreateFactory>(named(FormatType.PDF)) { BookCreatorFactory().createPdfFactory() }
