@@ -2,8 +2,11 @@ package com.example.bottomapp.shared.backend.storage
 
 import android.util.Log
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.backend.settings.ISettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -12,10 +15,12 @@ import kotlinx.serialization.json.Json
  * Android implementation of book repository using Room DAO
  */
 actual class BookRepository actual constructor(
-    private val settingsStore: ISettingsStore
+    private val settingsStore: PreferencesStore
 ) : IBookRepository {
     private val json = Json { ignoreUnknownKeys = true }
     private val cache = mutableListOf<BookStorageEntry>()
+    private val _bookFlow = MutableStateFlow(emptyList<BookStorageEntry>())
+    val bookFlow: StateFlow<List<BookStorageEntry>> = _bookFlow
 
     // This will be injected in actual Android implementation
     // For now, we provide a base implementation

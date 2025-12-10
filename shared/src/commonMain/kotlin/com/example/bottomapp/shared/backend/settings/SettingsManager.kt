@@ -1,5 +1,6 @@
 package com.example.bottomapp.shared.backend.settings
 
+import com.example.bottomapp.shared.ui.screens.readerscreens.common.FlipMode
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 
@@ -16,20 +17,9 @@ enum class AppThemeMode {
 /**
  * Document display theme modes
  */
-@Serializable
 enum class DocThemeMode {
     AsIs,
     Invert
-}
-
-/**
- * PDF flip animation mode
- */
-@Serializable
-enum class FlipMode {
-    PagingCurl,
-    SlideAnimation,
-    DirectFlip
 }
 
 /**
@@ -44,59 +34,59 @@ interface ISettingsManager {
     /**
      * Get current app theme
      */
-    suspend fun getAppTheme(defaultTheme: AppThemeMode = AppThemeMode.System): AppThemeMode
+     fun getAppTheme(defaultTheme: AppThemeMode = AppThemeMode.System): AppThemeMode
 
     /**
      * Set app theme
      */
-    suspend fun setAppTheme(theme: AppThemeMode)
+     fun setAppTheme(theme: AppThemeMode)
 
     /**
      * Get documents display theme
      */
-    suspend fun getDocumentsTheme(defaultTheme: DocThemeMode = DocThemeMode.AsIs): DocThemeMode
+     fun getDocumentsTheme(defaultTheme: DocThemeMode = DocThemeMode.AsIs): DocThemeMode
 
     /**
      * Set documents theme
      */
-    suspend fun setDocumentsTheme(theme: DocThemeMode)
+     fun setDocumentsTheme(theme: DocThemeMode)
 
     /**
      * Get PDF flip animation mode
      */
-    suspend fun getFlipMode(): FlipMode
+     fun getFlipMode(): FlipMode
 
     /**
      * Set PDF flip mode
      */
-    suspend fun setFlipMode(mode: FlipMode)
+     fun setFlipMode(mode: FlipMode)
 
     /**
      * Get storage directory path
      */
-    suspend fun getStoragePath(): String?
+     fun getStoragePath(): String?
 
     /**
      * Set storage directory path
      */
-    suspend fun setStoragePath(path: String)
+     fun setStoragePath(path: String)
 
     /**
      * Clear storage path
      */
-    suspend fun clearStoragePath()
+     fun clearStoragePath()
 }
 
 /**
  * Default settings implementation
  */
 class DefaultSettingsManager(
-    private val store: com.example.bottomapp.shared.backend.storage.ISettingsStore
+    private val store: com.example.bottomapp.shared.backend.storage.PreferencesStore
 ) : ISettingsManager {
     private val _appThemeModeFlow = kotlinx.coroutines.flow.MutableStateFlow(AppThemeMode.System)
     override val appThemeModeFlow: StateFlow<AppThemeMode> = _appThemeModeFlow
 
-    override suspend fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
+    override  fun getAppTheme(defaultTheme: AppThemeMode): AppThemeMode {
         val themeName = store.getString("app_theme", defaultTheme.name)
         return try {
             AppThemeMode.valueOf(themeName)
@@ -105,12 +95,12 @@ class DefaultSettingsManager(
         }
     }
 
-    override suspend fun setAppTheme(theme: AppThemeMode) {
+    override  fun setAppTheme(theme: AppThemeMode) {
         store.putString("app_theme", theme.name)
         _appThemeModeFlow.value = theme
     }
 
-    override suspend fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
+    override  fun getDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
         val themeName = store.getString("doc_theme", defaultTheme.name)
         return try {
             DocThemeMode.valueOf(themeName)
@@ -119,11 +109,11 @@ class DefaultSettingsManager(
         }
     }
 
-    override suspend fun setDocumentsTheme(theme: DocThemeMode) {
+    override  fun setDocumentsTheme(theme: DocThemeMode) {
         store.putString("doc_theme", theme.name)
     }
 
-    override suspend fun getFlipMode(): FlipMode {
+    override  fun getFlipMode(): FlipMode {
         val modeName = store.getString("pdf_flip_mode", FlipMode.PagingCurl.name)
         return try {
             FlipMode.valueOf(modeName)
@@ -132,20 +122,20 @@ class DefaultSettingsManager(
         }
     }
 
-    override suspend fun setFlipMode(mode: FlipMode) {
+    override  fun setFlipMode(mode: FlipMode) {
         store.putString("pdf_flip_mode", mode.name)
     }
 
-    override suspend fun getStoragePath(): String? {
+    override  fun getStoragePath(): String? {
         val path = store.getString("storage_path", "")
         return if (path.isEmpty()) null else path
     }
 
-    override suspend fun setStoragePath(path: String) {
+    override  fun setStoragePath(path: String) {
         store.putString("storage_path", path)
     }
 
-    override suspend fun clearStoragePath() {
+    override  fun clearStoragePath() {
         store.removeKey("storage_path")
     }
 }

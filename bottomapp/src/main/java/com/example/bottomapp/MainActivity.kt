@@ -1,15 +1,13 @@
 package com.example.bottomapp
 
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.BookStorage
+import com.example.bottomapp.shared.backend.BookManager
+import com.example.bottomapp.shared.backend.BookStorage
 import com.example.bottomapp.ui.mainscreen.MainScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

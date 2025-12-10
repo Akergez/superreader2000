@@ -8,8 +8,9 @@ import java.util.Properties
 /**
  * Desktop implementation of settings store using Properties file
  */
-actual class PreferencesStore : ISettingsStore {
-    private val prefsFile = File(System.getProperty("user.home"), ".config/pdfreaderr/prefs.properties")
+actual class PreferencesStore {
+    private val prefsFile =
+        File(System.getProperty("user.home"), ".config/pdfreaderr/prefs.properties")
     private val properties = Properties()
 
     init {
@@ -31,34 +32,33 @@ actual class PreferencesStore : ISettingsStore {
         }
     }
 
-    actual override suspend fun getString(key: String, default: String): String = withContext(Dispatchers.IO) {
+    actual fun getString(key: String, default: String): String =
         properties.getProperty(key, default)
-    }
 
-    actual override suspend fun putString(key: String, value: String) = withContext(Dispatchers.IO) {
+    actual fun putString(key: String, value: String) {
         properties.setProperty(key, value)
         save()
     }
 
-    actual override suspend fun getInt(key: String, default: Int): Int = withContext(Dispatchers.IO) {
-        properties.getProperty(key, default.toString()).toIntOrNull() ?: default
+    actual fun getInt(key: String, default: Int): Int {
+        return properties.getProperty(key, default.toString()).toIntOrNull() ?: default
     }
 
-    actual override suspend fun putInt(key: String, value: Int) = withContext(Dispatchers.IO) {
+    actual fun putInt(key: String, value: Int) {
         properties.setProperty(key, value.toString())
         save()
     }
 
-    actual override suspend fun getBoolean(key: String, default: Boolean): Boolean = withContext(Dispatchers.IO) {
-        properties.getProperty(key, default.toString()).toBooleanStrictOrNull() ?: default
+    actual fun getBoolean(key: String, default: Boolean): Boolean {
+        return properties.getProperty(key, default.toString()).toBooleanStrictOrNull() ?: default
     }
 
-    actual override suspend fun putBoolean(key: String, value: Boolean) = withContext(Dispatchers.IO) {
+    actual fun putBoolean(key: String, value: Boolean) {
         properties.setProperty(key, value.toString())
         save()
     }
 
-    actual override suspend fun removeKey(key: String) = withContext(Dispatchers.IO) {
+    actual fun removeKey(key: String) {
         properties.remove(key)
         save()
     }

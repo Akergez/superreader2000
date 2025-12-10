@@ -6,7 +6,6 @@ import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,20 +41,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.bottomapp.R
 import com.example.bottomapp.backend.AppThemeMode
-import com.example.bottomapp.backend.BookManager
+import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.constants.Route
+import com.example.bottomapp.shared.constants.Route
 import com.example.bottomapp.shared.ui.theme.AppTheme
 import com.example.bottomapp.ui.homescreen.HomeScreen
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenProvider
-import com.example.bottomapp.ui.settingsscreen.SettingsScreen
+import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsScreen
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
-import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
-import org.koin.core.qualifier.qualifier
-import org.koin.java.KoinJavaComponent.inject
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -192,43 +188,4 @@ fun StorageSelectionDialog(
 @Composable
 fun PreviewStorageSelectionDialog() {
     StorageSelectionDialog(onChoose = {})
-}
-
-@Composable
-fun BottomNavigationBar(
-    navController: NavController, screen: Screen
-) {
-    NavigationBar {
-        NavigationBarItem(icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-            label = { Text(getString(LocalContext.current, R.string.title_home)) },
-            selected = screen == Screen.HOME_SCREEN,
-            onClick = {
-                if (navController.currentDestination?.route != Route.Main) {
-                    navController.navigate(Route.Main) {
-                        popUpTo(Route.Settings) {
-                            inclusive = true
-                        } // Удалить все экраны до "Settings", включая "Settings"
-                        launchSingleTop = true
-                    }
-                }
-            })
-        NavigationBarItem(icon = {
-            Icon(
-                Icons.Filled.Settings, contentDescription = null
-            )
-        }, label = {
-            Text(
-                getString(
-                    LocalContext.current, R.string.title_settings
-                )
-            )
-        },
-            selected = screen == Screen.SETTINGS_SCREEN, onClick = {
-                if (navController.currentDestination?.route != Route.Settings) {
-                    navController.navigate(Route.Settings) {
-                        launchSingleTop = true // Предотвратить дублирование "Settings" в стеке
-                    }
-                }
-            })
-    }
 }

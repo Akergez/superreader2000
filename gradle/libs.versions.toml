@@ -1,9 +1,14 @@
 [versions]
 accompanist-navigation-animation = "0.36.0"
 accompanist-pager = "0.36.0"
+activity-compose-version = "1.8.0"
+activity-ktx = "1.12.1"
 agp = "8.13.1"
 androidx-material = "1.9.5"
+appcompat = "1.6.1"
 coil-compose-version = "2.7.0"
+core = "1.17.0"
+core-ktx-version = "1.12.0"
 djvulibre = "0.1.4"
 gson = "2.13.2"
 koin-androidx-compose-version = "4.1.1"
@@ -39,10 +44,17 @@ koin-version = "4.1.1"
 sqldelight-version = "2.2.1"
 kotlinx-serialization = "1.9.0"
 documentfile = "1.1.0"
+ui-geometry = "1.9.5"
+pdf-viewer = "1.0.0-alpha11"
 
 
 [libraries]
 accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanist-navigation-animation" }
+androidx-activity-compose-v180 = { module = "androidx.activity:activity-compose", version.ref = "activity-compose-version" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity-ktx" }
+androidx-appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-core = { module = "androidx.core:core", version.ref = "core" }
+androidx-core-ktx-v1120 = { module = "androidx.core:core-ktx", version.ref = "core-ktx-version" }
 androidx-material = { module = "androidx.compose.material:material", version.ref = "androidx-material" }
 androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -100,6 +112,8 @@ sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sq
 sqldelight-sqlite = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight-version" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
+androidx-ui-geometry = { group = "androidx.compose.ui", name = "ui-geometry", version.ref = "ui-geometry" }
+androidx-pdf-viewer = { group = "androidx.pdf", name = "pdf-viewer", version.ref = "pdf-viewer" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

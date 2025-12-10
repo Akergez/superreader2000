@@ -1,20 +1,9 @@
 package com.example.bottomapp.shared.backend.bookCreators
 
 import com.example.bottomapp.shared.backend.domain.BookMetadata
+import com.example.bottomapp.shared.backend.domain.Progress
 
-/**
- * Factory interface for creating book metadata objects from files
- */
 interface IBookCreateFactory {
-    suspend fun create(filePath: String): BookMetadata?
+    fun createProgress(): Progress
+    fun getNameFromFileName(fileName: String): String
 }
-
-/**
- * Platform-specific factory provider
- */
-expect class BookCreatorFactory() {
-    fun createPdfFactory(): IBookCreateFactory
-    fun createDjvuFactory(): IBookCreateFactory
-    fun createFb2Factory(): IBookCreateFactory
-}
-

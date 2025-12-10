@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.compose")
@@ -6,6 +8,10 @@ plugins {
     alias(libs.plugins.library)
 }
 
+compose.resources {
+    publicResClass = true
+    generateResClass = always
+}
 kotlin {
     jvm("desktop")
     androidTarget {
@@ -16,17 +22,17 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-
     sourceSets {
         val commonMain by getting {
             dependencies {
+
+                implementation(libs.zoomable)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation(compose.components.uiToolingPreview)
-
                 // Koin for dependency injection
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
@@ -37,6 +43,10 @@ kotlin {
 
                 // SQLDelight for database
                 implementation(libs.sqldelight.runtime)
+                implementation(compose.components.resources)
+                //implementation(libs.oleksandrbalan.pagecurl)
+
+
             }
         }
 
@@ -57,6 +67,14 @@ kotlin {
 
         val androidMain by getting {
             dependencies {
+                // Android Framework - needed for IDE to resolve android.* imports
+                implementation("androidx.appcompat:appcompat:1.6.1")
+                implementation("androidx.activity:activity:1.8.0")
+
+                implementation(libs.androidx.activity.compose.v180)
+                implementation(libs.androidx.appcompat.v161)
+                implementation(libs.androidx.core)
+                implementation(libs.androidx.documentfile)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.core.ktx)
                 implementation(libs.activity.compose)
@@ -97,6 +115,10 @@ kotlin {
 
                 // GSON for serialization
                 implementation(libs.gson)
+
+                implementation(libs.androidx.activity.ktx)
+                implementation(libs.androidx.core.ktx.v1120)
+                implementation(libs.androidx.material.icons.extended)
             }
         }
     }
@@ -115,4 +137,3 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
-

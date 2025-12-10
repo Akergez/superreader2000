@@ -2,7 +2,7 @@ package com.example.bottomapp.ui.mainscreen.readerscreenproviders
 
 import Fb2ReaderScreen
 import androidx.compose.runtime.Composable
-import com.example.bottomapp.backend.BookManager
+import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.domain.Fb2BookDomainModel
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import kotlinx.coroutines.CoroutineScope

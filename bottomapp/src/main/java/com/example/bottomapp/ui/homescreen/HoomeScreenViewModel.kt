@@ -7,9 +7,9 @@ import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
-import com.example.bottomapp.constants.FileType
+import com.example.bottomapp.shared.backend.BookManager
+import com.example.bottomapp.shared.constants.FileType
+import com.example.bottomapp.shared.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +61,7 @@ class HoomeScreenViewModel(
         }
         viewModelScope.launch {
             bookManager.addNewBook(
-                uri, factory.getNameFromFileName(fileName), factory.createProgress(), fileType
+                uri.toString(), factory.getNameFromFileName(fileName), factory.createProgress(), fileType
             )
         }
     }
@@ -114,7 +114,7 @@ class HoomeScreenViewModel(
         var updatedBook = newBook
         if (previewChanged) {
             viewModelScope.launch {
-                bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!.toUri()).onSuccess {
+                bookManager.updateBookPreview(oldBook.bundleName, newBook.previewUri!!).onSuccess {
                     updatedBook = newBook.copy(previewUri = it.toString())
                 }.onSuccess {
                     viewModelScope.launch {

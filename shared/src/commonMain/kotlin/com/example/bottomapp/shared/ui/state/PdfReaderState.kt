@@ -1,5 +1,8 @@
 package com.example.bottomapp.shared.ui.state
 
+import com.example.bottomapp.shared.backend.settings.DocThemeMode
+import com.example.bottomapp.shared.ui.screens.readerscreens.common.FlipMode
+import com.example.bottomapp.shared.ui.screens.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -10,23 +13,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Reading mode for the PDF reader
- */
-enum class ReaderMode {
-    Reading,
-    Bookmarks,
-    Settings,
-    TableOfContents
-}
-
-/**
  * Immutable state for PDF reader screen
  */
 data class PdfReaderUiState(
     val currentPage: Int = 0,
     val totalPages: Int = 0,
     val mode: ReaderMode = ReaderMode.Reading,
-    val flipMode: FlipMode = FlipMode.Vertical,
+    val flipMode: FlipMode = FlipMode.VerticalScroll,
     val docThemeMode: DocThemeMode = DocThemeMode.AsIs,
     val isLoading: Boolean = false
 )

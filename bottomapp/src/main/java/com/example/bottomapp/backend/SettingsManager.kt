@@ -2,11 +2,11 @@ package com.example.bottomapp.backend
 
 import android.content.Context
 import android.net.Uri
-import com.example.bottomapp.ui.readerscreens.common.FlipMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.example.bottomapp.shared.ui.screens.readerscreens.common.FlipMode
 
 
 enum class AppThemeMode {

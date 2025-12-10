@@ -39,12 +39,6 @@ android {
         compose = true
     }
 
-    packaging {
-        resources {
-            excludes += "META-INF/DEPENDENCIES"
-        }
-    }
-
     kotlinOptions {
         jvmTarget = "17"
     }

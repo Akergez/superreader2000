@@ -2,43 +2,28 @@ package com.example.bottomapp
 
 // Shared module imports
 import android.app.Application
-import android.net.Uri
-import androidx.room.Room
 import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
-import com.example.bottomapp.backend.AppDatabase
-import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.BookStorage
-import com.example.bottomapp.backend.BookStorageRepository
-import com.example.bottomapp.backend.RuntimeTypeAdapterFactory
+import com.example.bottomapp.shared.backend.BookManager
+import com.example.bottomapp.shared.backend.BookStorage
 import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.backend.StorageAdapter
-import com.example.bottomapp.backend.UriTypeAdapter
-import com.example.bottomapp.backend.bookCreators.Fb2CreateFactory
-import com.example.bottomapp.backend.bookCreators.IBookCreateFactory
-import com.example.bottomapp.backend.bookCreators.PdfCreateFactory
-import com.example.bottomapp.backend.previewGenerators.Fb2PreviewGenerator
-import com.example.bottomapp.backend.previewGenerators.IPreviewGenerator
-import com.example.bottomapp.backend.previewGenerators.PdfPreviewGenerator
-import com.example.bottomapp.constants.FileType
-import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
-import com.example.bottomapp.shared.backend.domain.DjvuProgress
-import com.example.bottomapp.shared.backend.domain.Fb2Progress
+import com.example.bottomapp.shared.backend.StorageAdapter
 import com.example.bottomapp.shared.backend.domain.FormatType
-import com.example.bottomapp.shared.backend.domain.PdfProgress
-import com.example.bottomapp.shared.backend.domain.Progress
-import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
+import com.example.bottomapp.shared.backend.previewGenerators.Fb2PreviewGenerator
+import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
+import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
+import com.example.bottomapp.shared.constants.FileType
 import com.example.bottomapp.shared.di.commonModule
+import com.example.bottomapp.shared.ui.screens.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenProvider
 import com.example.bottomapp.ui.mainscreen.readerscreenproviders.PdfReaderScreenProvider
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
-import com.example.bottomapp.ui.settingsscreen.SettingsViewModel
+import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
 import com.google.gson.GsonBuilder
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
@@ -49,7 +34,6 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import kotlin.jvm.java
 import com.example.bottomapp.shared.backend.domain.FormatType as SharedFormatType
 
 class ReaderApp : Application() {
@@ -60,18 +44,8 @@ class ReaderApp : Application() {
             single<PreferencesStore> {
                 PreferencesStore(androidContext())
             }
-            single {
-                DefaultSettingsManager(get<PreferencesStore>())
-            }
-
-            // Shared module - Book Repository
-            single<BookRepository> {
-                BookRepository(get<PreferencesStore>())
-            }
 
             // Android-specific UI providers
-            single<IBookCreateFactory>(named(FileType.pdf)) { PdfCreateFactory() }
-            single<IBookCreateFactory>(named(FileType.fb2)) { Fb2CreateFactory() }
 
             single<IReaderScreenProvider>(named(SharedFormatType.PDF)) { PdfReaderScreenProvider(get()) }
             single<IReaderScreenProvider>(named(SharedFormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
@@ -102,13 +76,6 @@ class ReaderApp : Application() {
                         .registerSubtype(DjvuProgress::class.java, "djvu")
                 ).registerTypeAdapter(Uri::class.java, UriTypeAdapter())*/
 
-            // Android Room database (kept for now, will migrate to SQLDelight in Phase 3)
-            single {
-                val db = Room.databaseBuilder(
-                    androidContext(), AppDatabase::class.java, "database-name"
-                ).allowMainThreadQueries().build()
-                db.userDao()
-            }
 
             single {
                 BookStorage(
@@ -122,7 +89,7 @@ class ReaderApp : Application() {
             singleOf(::BookManager) bind BookManager::class
             singleOf(::SettingsManager) bind SettingsManager::class
             // ViewModels
-            singleOf(::BookStorageRepository) bind BookStorageRepository::class
+            singleOf(::BookRepository) bind BookRepository::class
 
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
             viewModel {
@@ -138,7 +105,7 @@ class ReaderApp : Application() {
             }
             viewModel { parameters ->
                 PdfScreenViewModel(
-                    get(), parameters.get(), parameters.get()
+                    parameters.get(), parameters.get(), parameters.get()
                 )
             }
         }

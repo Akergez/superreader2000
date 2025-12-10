@@ -8,34 +8,35 @@ import androidx.core.content.edit
 /**
  * Android implementation of settings store using SharedPreferences
  */
-actual class PreferencesStore(private val context: Context) : ISettingsStore {
-    private val sharedPreferences = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+actual class PreferencesStore(private val context: Context) {
+    private val sharedPreferences =
+        context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
 
-    actual override suspend fun getString(key: String, default: String): String = withContext(Dispatchers.IO) {
-        sharedPreferences.getString(key, default) ?: default
+    actual fun getString(key: String, default: String): String {
+        return sharedPreferences.getString(key, default) ?: default
     }
 
-    actual override suspend fun putString(key: String, value: String) = withContext(Dispatchers.IO) {
+    actual fun putString(key: String, value: String) {
         sharedPreferences.edit { putString(key, value) }
     }
 
-    actual override suspend fun getInt(key: String, default: Int): Int = withContext(Dispatchers.IO) {
-        sharedPreferences.getInt(key, default)
+    actual fun getInt(key: String, default: Int): Int {
+        return sharedPreferences.getInt(key, default)
     }
 
-    actual override suspend fun putInt(key: String, value: Int) = withContext(Dispatchers.IO) {
+    actual fun putInt(key: String, value: Int) {
         sharedPreferences.edit { putInt(key, value) }
     }
 
-    actual override suspend fun getBoolean(key: String, default: Boolean): Boolean = withContext(Dispatchers.IO) {
-        sharedPreferences.getBoolean(key, default)
+    actual fun getBoolean(key: String, default: Boolean): Boolean {
+        return sharedPreferences.getBoolean(key, default)
     }
 
-    actual override suspend fun putBoolean(key: String, value: Boolean) = withContext(Dispatchers.IO) {
+    actual fun putBoolean(key: String, value: Boolean) {
         sharedPreferences.edit { putBoolean(key, value) }
     }
 
-    actual override suspend fun removeKey(key: String) = withContext(Dispatchers.IO) {
+    actual fun removeKey(key: String) {
         sharedPreferences.edit { remove(key) }
     }
 }

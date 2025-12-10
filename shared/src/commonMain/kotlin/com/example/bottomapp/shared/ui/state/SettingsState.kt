@@ -1,5 +1,8 @@
 package com.example.bottomapp.shared.ui.state
 
+import com.example.bottomapp.shared.backend.settings.AppThemeMode
+import com.example.bottomapp.shared.backend.settings.DocThemeMode
+import com.example.bottomapp.shared.ui.screens.readerscreens.common.FlipMode
 import com.sun.jndi.toolkit.url.Uri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,40 +15,12 @@ import kotlinx.coroutines.launch
 import java.nio.file.Path
 
 /**
- * Theme mode for documents/reading mode
- */
-enum class DocThemeMode {
-    AsIs,
-    Light,
-    Dark,
-    Sepia
-}
-
-/**
- * Theme mode for the application UI
- */
-enum class AppThemeMode {
-    Light,
-    Dark,
-    System
-}
-
-/**
- * Page flip mode for PDF reading (how pages transition)
- */
-enum class FlipMode {
-    Vertical,
-    Horizontal,
-    Curl
-}
-
-/**
  * Immutable state for settings screen
  */
 data class SettingsUiState(
     val storageAddress: String = "",
     val docThemeMode: DocThemeMode = DocThemeMode.AsIs,
-    val flipMode: FlipMode = FlipMode.Vertical,
+    val flipMode: FlipMode = FlipMode.VerticalScroll,
     val appThemeMode: AppThemeMode = AppThemeMode.System
 )
 

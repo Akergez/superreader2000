@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
  * Platform abstraction for book repository
  */
 expect class BookRepository(
-    settingsStore: ISettingsStore
+    settingsStore: PreferencesStore
 ) : IBookRepository {
     override suspend fun getAllBooks(): List<BookStorageEntry>
     override suspend fun getBookFlow(): Flow<List<BookStorageEntry>>

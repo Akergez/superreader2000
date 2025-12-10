@@ -1,14 +1,9 @@
 package com.example.bottomapp.ui.mainscreen.readerscreenproviders
 
 import androidx.compose.runtime.Composable
-import com.example.bottomapp.backend.BookManager
-import com.example.bottomapp.backend.renderHelper.PdfRendererHelper
+import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.domain.PdfBookDomainModel
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfReaderScreen
-import com.example.bottomapp.ui.readerscreens.pdfscreen.PdfScreenViewModel
-import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 class PdfReaderScreenProvider(val bookManager: BookManager) :
     IReaderScreenProvider {

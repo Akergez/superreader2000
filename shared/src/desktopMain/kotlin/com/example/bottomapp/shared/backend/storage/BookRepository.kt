@@ -11,7 +11,7 @@ import java.io.File
  * Desktop implementation of book repository using file-based storage
  */
 actual class BookRepository actual constructor(
-    private val settingsStore: ISettingsStore
+    private val settingsStore: PreferencesStore
 ) : IBookRepository {
     private val cache = mutableListOf<BookStorageEntry>()
     private val storagePath get() = System.getProperty("user.home") + "/.config/pdfreaderr/books"
