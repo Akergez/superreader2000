@@ -45,8 +45,10 @@ kotlin {
                 implementation(libs.sqldelight.runtime)
                 implementation(compose.components.resources)
                 //implementation(libs.oleksandrbalan.pagecurl)
+                implementation(libs.material.icons.extended) // Check for the latest version
 
-
+                // Navigation Compose for KMP
+                implementation(libs.jetbrains.navigation.compose)
             }
         }
 
@@ -62,6 +64,7 @@ kotlin {
                 implementation(libs.sqldelight.sqlite)
                 // Apache PDFBox for PDF processing (Desktop/JVM only)
                 implementation(libs.pdfbox)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
             }
         }
 
@@ -87,12 +90,9 @@ kotlin {
 
                 // Android-specific Koin
                 implementation(libs.koin.androidx.compose.v400)
-                implementation(libs.koin.androidx.compose.navigation)
 
                 // Android Room & navigation
                 implementation(libs.androidx.room.runtime)
-                implementation(libs.androidx.navigation.fragment.ktx)
-                implementation(libs.androidx.navigation.ui.ktx)
                 implementation(libs.androidx.constraintlayout)
                 implementation(libs.androidx.appcompat)
 
@@ -104,9 +104,7 @@ kotlin {
                 implementation(libs.coil.compose.v210)
 
                 // Navigation & UI
-                implementation(libs.navigation.compose)
                 implementation(libs.accompanist.pager)
-                implementation(libs.accompanist.navigation.animation)
                 implementation(libs.oleksandrbalan.pagecurl)
                 implementation(libs.zoomable)
 
@@ -118,22 +116,21 @@ kotlin {
 
                 implementation(libs.androidx.activity.ktx)
                 implementation(libs.androidx.core.ktx.v1120)
-                implementation(libs.androidx.material.icons.extended)
             }
         }
     }
-}
 
-android {
-    namespace = "com.example.bottomapp.shared"
-    compileSdk = 36
+    android {
+        namespace = "com.example.bottomapp.shared"
+        compileSdk = 36
 
-    defaultConfig {
-        minSdk = 26
-    }
+        defaultConfig {
+            minSdk = 26
+        }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_1_8
+            targetCompatibility = JavaVersion.VERSION_1_8
+        }
     }
 }

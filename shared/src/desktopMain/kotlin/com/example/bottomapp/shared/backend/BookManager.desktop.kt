@@ -2,6 +2,7 @@ package com.example.bottomapp.shared.backend
 
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
 import com.example.bottomapp.shared.backend.domain.Progress
+import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import com.example.bottomapp.shared.constants.FileType
 import com.sun.jndi.toolkit.url.Uri
@@ -12,12 +13,12 @@ actual class BookManager {
     actual val bookFlow: StateFlow<List<BookStorageEntry>>
         get() = TODO("Not yet implemented")
 
-    actual suspend fun getBookFile(bundleName: String): Result<File> {
+    actual suspend fun getBookFile(bundleName: String): Result<FileWrapper> {
         TODO("Not yet implemented")
     }
 
     actual suspend fun addNewBook(
-        fileUri: Uri,
+        fileUri: String,
         fileName: String,
         progress: Progress,
         fileType: FileType
@@ -38,7 +39,7 @@ actual class BookManager {
         TODO("Not yet implemented")
     }
 
-    actual fun renameBook(
+    actual suspend fun renameBook(
         bundleName: String,
         newNameForBundle: String
     ): Result<Unit> {
@@ -54,8 +55,8 @@ actual class BookManager {
 
     actual suspend fun updateBookPreview(
         bundleName: String,
-        newPreviewUri: Uri
-    ): Result<Uri> {
+        newPreviewUri: String
+    ): Result<String> {
         TODO("Not yet implemented")
     }
 

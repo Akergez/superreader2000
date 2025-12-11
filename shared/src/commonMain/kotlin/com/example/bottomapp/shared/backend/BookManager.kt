@@ -3,13 +3,9 @@ package com.example.bottomapp.shared.backend
 import com.example.bottomapp.shared.backend.domain.BookMetaInfo
 import com.example.bottomapp.shared.backend.domain.Progress
 import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
-import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
 import com.example.bottomapp.shared.constants.FileType
-import com.example.bottomapp.shared.constants.toFileExtension
-import com.sun.jndi.toolkit.url.Uri
 import kotlinx.coroutines.flow.StateFlow
-import java.io.File
 
 expect class BookManager {
      val bookFlow: StateFlow<List<BookStorageEntry>>

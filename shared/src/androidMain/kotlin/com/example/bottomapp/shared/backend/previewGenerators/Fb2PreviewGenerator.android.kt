@@ -1,6 +1,5 @@
 package com.example.bottomapp.shared.backend.previewGenerators
 
-import android.R.attr.textSize
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas

@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.BookStorage
-import com.example.bottomapp.ui.mainscreen.MainScreen
+import com.example.bottomapp.shared.ui.screens.mainscreen.MainScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

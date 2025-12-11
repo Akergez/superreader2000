@@ -17,12 +17,13 @@ import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.constants.FileType
 import com.example.bottomapp.shared.di.commonModule
+import com.example.bottomapp.shared.di.androidPlatformModule
 import com.example.bottomapp.shared.ui.screens.readerscreens.pdfscreen.PdfScreenViewModel
-import com.example.bottomapp.ui.homescreen.HoomeScreenViewModel
-import com.example.bottomapp.ui.homescreen.components.EditModalViewModel
-import com.example.bottomapp.ui.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
-import com.example.bottomapp.ui.mainscreen.readerscreenproviders.IReaderScreenProvider
-import com.example.bottomapp.ui.mainscreen.readerscreenproviders.PdfReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.homescreen.HoomeScreenViewModel
+import com.example.bottomapp.shared.ui.components.EditModalViewModel
+import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.IReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.PdfReaderScreenProvider
 import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
 import com.google.gson.GsonBuilder
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -97,10 +98,13 @@ class ReaderApp : Application() {
             }
             viewModel {
                 HoomeScreenViewModel(
-                    get(), mapOf(
+                    get(),
+                    mapOf(
                         FileType.pdf to get(qualifier = named(SharedFormatType.PDF)),
                         FileType.fb2 to get(qualifier = named(SharedFormatType.FB2))
-                    )
+                    ),
+                    get(),
+                    get()
                 )
             }
             viewModel { parameters ->
@@ -113,7 +117,7 @@ class ReaderApp : Application() {
         startKoin {
             androidLogger()
             androidContext(this@ReaderApp)
-            modules(commonModule(), appModule)
+            modules(commonModule(), androidPlatformModule(), appModule)
         }
         PDFBoxResourceLoader.init(applicationContext)
     }

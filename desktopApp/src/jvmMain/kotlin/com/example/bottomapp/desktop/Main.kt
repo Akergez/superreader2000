@@ -1,24 +1,99 @@
 package com.example.bottomapp.desktop
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.example.bottomapp.shared.backend.domain.FormatType
+import com.example.bottomapp.shared.backend.previewGenerators.Fb2PreviewGenerator
+import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
+import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
+import com.example.bottomapp.shared.backend.storage.BookRepository
+import com.example.bottomapp.shared.backend.storage.PreferencesStore
+import com.example.bottomapp.shared.constants.FileType
+import com.example.bottomapp.shared.di.commonModule
+import com.example.bottomapp.shared.di.desktopPlatformModule
+import com.example.bottomapp.shared.ui.screens.homescreen.HoomeScreenViewModel
+import com.example.bottomapp.shared.ui.screens.mainscreen.MainScreen
+import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.IReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.PdfReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.readerscreens.pdfscreen.PdfScreenViewModel
+import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
+import org.koin.core.context.startKoin
+import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.qualifier.named
+import org.koin.dsl.module
 
 fun main() = application {
+    // Initialize Koin before creating the UI
+    startKoin {
+        modules(
+            commonModule(),
+            desktopPlatformModule(),
+            desktopAppModule()
+        )
+    }
+
     Window(
         onCloseRequest = ::exitApplication,
         title = "PDF Reader KMP"
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("PDF Reader KMP - Desktop App (Coming Soon!)")
-        }
+        MainScreen()
     }
 }
+
+/**
+ * Desktop-specific application module
+ */
+private fun desktopAppModule() = module {
+    // Preferences Store
+    single<PreferencesStore> {
+        PreferencesStore()
+    }
+
+    // Reader Screen Providers
+    single<IReaderScreenProvider>(named(FormatType.PDF)) {
+        PdfReaderScreenProvider(get())
+    }
+    single<IReaderScreenProvider>(named(FormatType.FB2)) {
+        Fb2ReaderScreenProvider(get())
+    }
+
+    // Preview Generators
+    single<IPreviewGenerator>(named(FormatType.PDF)) {
+        PdfPreviewGenerator()
+    }
+    single<IPreviewGenerator>(named(FormatType.FB2)) {
+        Fb2PreviewGenerator()
+    }
+
+    // Book Repository
+    singleOf(::BookRepository)
+
+    // ViewModels
+    viewModel {
+        SettingsViewModel(get(), get())
+    }
+
+    viewModel {
+        HoomeScreenViewModel(
+            get(),
+            mapOf(
+                FileType.pdf to get(qualifier = named(FormatType.PDF)),
+                FileType.fb2 to get(qualifier = named(FormatType.FB2))
+            ),
+            get(),
+            get()
+        )
+    }
+
+    viewModel { parameters ->
+        PdfScreenViewModel(
+            parameters.get(),
+            parameters.get(),
+            parameters.get()
+        )
+    }
+}
+
 

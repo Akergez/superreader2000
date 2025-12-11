@@ -1,5 +1,6 @@
 package com.example.bottomapp.shared.di
 
+import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.bookCreators.Fb2CreateFactory
 import com.example.bottomapp.shared.backend.bookCreators.IBookCreateFactory
 import com.example.bottomapp.shared.backend.bookCreators.PdfCreateFactory
@@ -16,8 +17,11 @@ import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
 import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
+import com.example.bottomapp.shared.backend.settings.ISettingsManager
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
+import com.example.bottomapp.shared.platform.FileUriHandler
+import com.example.bottomapp.shared.platform.MessageHandler
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
@@ -33,7 +37,7 @@ fun commonModule(): Module = module {
 
     single {
         DefaultSettingsManager(get<PreferencesStore>())
-    }
+    } bind ISettingsManager::class
 
     // Shared module - Book Repository
     single<BookRepository> {
@@ -61,6 +65,5 @@ fun commonModule(): Module = module {
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { BookExtractorFactory().createPdfExtractor() }
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.DJVU)) { BookExtractorFactory().createDjvuExtractor() }
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { BookExtractorFactory().createFb2Extractor() }
-
 }
 

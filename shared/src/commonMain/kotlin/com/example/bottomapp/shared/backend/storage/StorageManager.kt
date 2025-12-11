@@ -1,7 +1,6 @@
 package com.example.bottomapp.shared.backend.storage
 
 import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
-import com.sun.jndi.toolkit.url.Uri
 
 data class BundleCreateResult<TMeta>(
     val bookFile: String,
