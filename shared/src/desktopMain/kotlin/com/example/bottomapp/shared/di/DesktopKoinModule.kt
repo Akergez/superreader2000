@@ -1,6 +1,8 @@
 package com.example.bottomapp.shared.di
 
 import com.example.bottomapp.shared.backend.BookManager
+import com.example.bottomapp.shared.backend.storage.BookRepository
+import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.platform.FileUriHandler
 import com.example.bottomapp.shared.platform.MessageHandler
 import org.koin.core.module.Module
@@ -18,6 +20,10 @@ fun desktopPlatformModule(): Module = module {
 
     single<FileUriHandler> {
         FileUriHandler()
+    }
+
+    single<BookRepository> {
+        BookRepository(get<PreferencesStore>())
     }
 
     singleOf(::BookManager) bind BookManager::class

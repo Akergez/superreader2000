@@ -2,6 +2,7 @@ package com.example.bottomapp
 
 // Shared module imports
 import android.app.Application
+import androidx.room.Room
 import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
@@ -13,6 +14,7 @@ import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.shared.backend.previewGenerators.Fb2PreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
+import com.example.bottomapp.shared.backend.storage.AppDatabase
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.constants.FileType
@@ -117,7 +119,7 @@ class ReaderApp : Application() {
         startKoin {
             androidLogger()
             androidContext(this@ReaderApp)
-            modules(commonModule(), androidPlatformModule(), appModule)
+            modules(commonModule(), androidPlatformModule(applicationContext), appModule)
         }
         PDFBoxResourceLoader.init(applicationContext)
     }

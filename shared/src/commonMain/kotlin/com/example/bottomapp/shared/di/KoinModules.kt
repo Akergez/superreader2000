@@ -40,9 +40,6 @@ fun commonModule(): Module = module {
     } bind ISettingsManager::class
 
     // Shared module - Book Repository
-    single<BookRepository> {
-        BookRepository(get<PreferencesStore>())
-    }
 
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { PdfBookAuthorExtractor() }
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { Fb2BookAuthorExtractor() }

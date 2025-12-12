@@ -22,64 +22,19 @@ enum class DocThemeMode {
     Invert
 }
 
-/**
- * Common settings manager interface for cross-platform settings
- */
 interface ISettingsManager {
-    /**
-     * Get current app theme mode as a StateFlow
-     */
     val appThemeModeFlow: StateFlow<AppThemeMode>
-
-    /**
-     * Get current app theme
-     */
      fun getAppTheme(defaultTheme: AppThemeMode = AppThemeMode.System): AppThemeMode
-
-    /**
-     * Set app theme
-     */
      fun setAppTheme(theme: AppThemeMode)
-
-    /**
-     * Get documents display theme
-     */
      fun getDocumentsTheme(defaultTheme: DocThemeMode = DocThemeMode.AsIs): DocThemeMode
-
-    /**
-     * Set documents theme
-     */
      fun setDocumentsTheme(theme: DocThemeMode)
-
-    /**
-     * Get PDF flip animation mode
-     */
      fun getFlipMode(): FlipMode
-
-    /**
-     * Set PDF flip mode
-     */
      fun setFlipMode(mode: FlipMode)
-
-    /**
-     * Get storage directory path
-     */
      fun getStoragePath(): String?
-
-    /**
-     * Set storage directory path
-     */
      fun setStoragePath(path: String)
-
-    /**
-     * Clear storage path
-     */
      fun clearStoragePath()
 }
 
-/**
- * Default settings implementation
- */
 class DefaultSettingsManager(
     private val store: com.example.bottomapp.shared.backend.storage.PreferencesStore
 ) : ISettingsManager {
@@ -128,7 +83,7 @@ class DefaultSettingsManager(
 
     override  fun getStoragePath(): String? {
         val path = store.getString("storage_path", "")
-        return if (path.isEmpty()) null else path
+        return path.ifEmpty { null }
     }
 
     override  fun setStoragePath(path: String) {

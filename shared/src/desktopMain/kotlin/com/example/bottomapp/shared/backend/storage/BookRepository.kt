@@ -1,16 +1,8 @@
 package com.example.bottomapp.shared.backend.storage
 
-import com.example.bottomapp.shared.backend.domain.BookMetaInfo
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.withContext
 import java.io.File
 
-/**
- * Desktop implementation of book repository using file-based storage
- */
-actual class BookRepository actual constructor(
+actual class BookRepository(
     private val settingsStore: PreferencesStore
 ) : IBookRepository {
     private val cache = mutableListOf<BookStorageEntry>()
@@ -18,14 +10,6 @@ actual class BookRepository actual constructor(
 
     init {
         File(storagePath).mkdirs()
-    }
-
-    actual override suspend fun getAllBooks(): List<BookStorageEntry> {
-        return cache
-    }
-
-    actual override suspend fun getBookFlow(): Flow<List<BookStorageEntry>> {
-        return flowOf(cache)
     }
 
     actual override suspend fun saveBooks(books: List<BookStorageEntry>) {
@@ -46,10 +30,6 @@ actual class BookRepository actual constructor(
 
     actual override suspend fun findBook(bundleName: String): BookStorageEntry? {
         return cache.find { it.bundleName == bundleName }
-    }
-
-    actual override suspend fun deleteBook(bundleName: String) {
-        cache.removeAll { it.bundleName == bundleName }
     }
 }
 

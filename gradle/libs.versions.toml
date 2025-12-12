@@ -48,9 +48,17 @@ kotlinx-serialization = "1.9.0"
 documentfile = "1.1.0"
 ui-geometry = "1.9.5"
 pdf-viewer = "1.0.0-alpha11"
+room = "2.8.4"
+sqlite = "2.6.2"
+ksp = "2.2.20-2.0.4"
+
+# Optional SQLite Wrapper available in version 2.8.0 and higher
 
 
 [libraries]
+androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+androidx-room-sqlite-wrapper = { module = "androidx.room:room-sqlite-wrapper", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanist-navigation-animation" }
 androidx-activity-compose-v180 = { module = "androidx.activity:activity-compose", version.ref = "activity-compose-version" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity-ktx" }
@@ -61,7 +69,6 @@ androidx-material = { module = "androidx.compose.material:material", version.ref
 androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
-androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room-runtime" }
 androidx-room-guava = { module = "androidx.room:room-guava", version.ref = "room-runtime" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room-runtime" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room-runtime" }
@@ -125,6 +132,8 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 library = { id = "com.android.library", version.ref = "library" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+androidx-room = { id = "androidx.room", version.ref = "room" }
 
 [bundles]
 

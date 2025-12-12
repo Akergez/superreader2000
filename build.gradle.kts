@@ -8,6 +8,10 @@ buildscript {
 
     dependencies {
         classpath(libs.kotlin.gradle.plugin)
+        dependencies {
+//            add("kspAndroid", libs.androidx.room.compiler)
+            // Add any other platform target you use in your project, for example kspDesktop
+        }
     }
 }
 
@@ -17,9 +21,8 @@ plugins {
     alias(libs.plugins.library) apply false    // CHANGE THIS LINE from "2.0.0" to "2.0.21"
     id("org.jetbrains.kotlin.multiplatform") version "2.2.21" apply false
     id("org.jetbrains.compose") version "1.9.3" apply false
-    id("com.google.devtools.ksp") version "2.2.21-2.0.4" apply false
+    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinCompose) apply false
     id("app.cash.sqldelight") version "2.2.1" apply false
 }
-
 

@@ -6,6 +6,12 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.library)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 compose.resources {
@@ -22,6 +28,7 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -93,8 +100,21 @@ kotlin {
 
                 // Android Room & navigation
                 implementation(libs.androidx.room.runtime)
+                implementation(libs.androidx.room.common)
                 implementation(libs.androidx.constraintlayout)
                 implementation(libs.androidx.appcompat)
+                implementation(libs.androidx.sqlite.bundled)
+                //ksp(libs.androidx.room.compiler)
+                implementation(libs.androidx.room.ktx)
+                // optional - RxJava2 support for Room
+                implementation(libs.androidx.room.rxjava2)
+                // optional - RxJava3 support for Room
+                implementation(libs.androidx.room.rxjava3)
+                // optional - Guava support for Room, including Optional and ListenableFuture
+                implementation(libs.androidx.room.guava)
+                // optional - Test helpers
+                // optional - Paging 3 Integration
+                implementation(libs.androidx.room.paging)
 
                 // PDF & DjVu rendering (Android specific)
                 implementation(libs.pdfbox.android)

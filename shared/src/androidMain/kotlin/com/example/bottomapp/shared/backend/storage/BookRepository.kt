@@ -1,65 +1,96 @@
 package com.example.bottomapp.shared.backend.storage
 
 import android.util.Log
-import com.example.bottomapp.shared.backend.domain.BookMetaInfo
-import com.example.bottomapp.shared.backend.settings.ISettingsManager
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Delete
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.RoomDatabase
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.launch
 
 /**
  * Android implementation of book repository using Room DAO
  */
-actual class BookRepository actual constructor(
-    private val settingsStore: PreferencesStore
-) : IBookRepository {
-    private val json = Json { ignoreUnknownKeys = true }
-    private val cache = mutableListOf<BookStorageEntry>()
+
+@Entity
+data class Book(
+    @PrimaryKey val fileName: String,
+    @ColumnInfo(name = "payload") val payload: String?,
+)
+
+@Dao
+interface UserDao {
+    @Query("SELECT * FROM book")
+    suspend fun getAll(): List<Book>
+
+    @Query("SELECT * FROM book")
+    fun getFlow(): Flow<List<Book>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(vararg users: Book)
+
+    @Query("DELETE FROM book")
+    suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(vararg users: Book)
+
+    @Delete
+    suspend fun delete(book: Book)
+}
+
+@Database(entities = [Book::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+}
+
+actual class BookRepository(private val dao: UserDao, private val gson: Gson) : IBookRepository {
     private val _bookFlow = MutableStateFlow(emptyList<BookStorageEntry>())
     val bookFlow: StateFlow<List<BookStorageEntry>> = _bookFlow
 
-    // This will be injected in actual Android implementation
-    // For now, we provide a base implementation
-    actual override suspend fun getAllBooks(): List<BookStorageEntry> {
-        Log.d("BookRepository", "Getting all books from Android database")
-        return cache
-    }
-
-    actual override suspend fun getBookFlow(): Flow<List<BookStorageEntry>> {
-        return kotlinx.coroutines.flow.flowOf(cache)
-    }
-
-    actual override suspend fun saveBooks(books: List<BookStorageEntry>) {
-        Log.d("BookRepository", "Saving ${books.size} books")
-        cache.clear()
-        cache.addAll(books)
-    }
-
-    actual override suspend fun addBook(book: BookStorageEntry) {
-        Log.d("BookRepository", "Adding book: ${book.bundleName}")
-        cache.add(book)
-    }
-
-    actual override suspend fun updateBook(book: BookStorageEntry) {
-        Log.d("BookRepository", "Updating book: ${book.bundleName}")
-        val index = cache.indexOfFirst { it.bundleName == book.bundleName }
-        if (index >= 0) {
-            cache[index] = book
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            dao.getFlow().map {
+                it.map {
+                    gson.fromJson(it.payload, BookStorageEntry::class.java)
+                }
+            }.collect { value ->
+                _bookFlow.value = value
+            }
         }
     }
 
-    actual override suspend fun findBook(bundleName: String): BookStorageEntry? {
-        Log.d("BookRepository", "Finding book: $bundleName")
-        return cache.find { it.bundleName == bundleName }
+    actual override suspend fun saveBooks(books: List<BookStorageEntry>) {
+        Log.i("BookStorageRepository", "saveBookLinks: $books")
+        dao.deleteAll()
+        dao.insertAll(*books.map { Book(it.bundleName, gson.toJson(it)) }.toTypedArray())
     }
 
-    actual override suspend fun deleteBook(bundleName: String) {
-        Log.d("BookRepository", "Deleting book: $bundleName")
-        cache.removeAll { it.bundleName == bundleName }
+    actual override suspend fun addBook(book: BookStorageEntry) {
+        Log.i("BookStorageRepository", "addBook: $book")
+        dao.insert(Book(book.bundleName, gson.toJson(book)))
+    }
+
+    actual override suspend fun updateBook(book: BookStorageEntry) {
+        Log.i("BookStorageRepository", "updateBook: $book")
+        dao.insert(Book(book.bundleName, gson.toJson(book)))
+    }
+
+    actual override suspend fun findBook(bundleName: String): BookStorageEntry? {
+        Log.i("BookStorageRepository", "findBook: $bundleName")
+        return dao.getAll().map { gson.fromJson(it.payload, BookStorageEntry::class.java) }
+            .find { it.bundleName == bundleName }
     }
 }
-

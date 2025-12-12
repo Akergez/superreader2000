@@ -19,11 +19,8 @@ data class BookStorageEntry(
  * Book repository interface for database operations
  */
 interface IBookRepository {
-    suspend fun getAllBooks(): List<BookStorageEntry>
-    suspend fun getBookFlow(): kotlinx.coroutines.flow.Flow<List<BookStorageEntry>>
     suspend fun saveBooks(books: List<BookStorageEntry>)
     suspend fun addBook(book: BookStorageEntry)
     suspend fun updateBook(book: BookStorageEntry)
     suspend fun findBook(bundleName: String): BookStorageEntry?
-    suspend fun deleteBook(bundleName: String)
 }
