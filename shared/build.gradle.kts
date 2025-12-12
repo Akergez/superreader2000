@@ -155,8 +155,9 @@ kotlin {
     }
 }
 
-// Add KSP Room compiler for Android
+// Add KSP Room compiler for Android and Desktop
 dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
+    add("kspDesktop", libs.androidx.room.compiler)
 }
 

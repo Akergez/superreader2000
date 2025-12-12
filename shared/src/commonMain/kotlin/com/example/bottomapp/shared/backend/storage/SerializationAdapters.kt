@@ -25,10 +25,6 @@ class BookMetaInfoDeserializer : IDeserializer<BookMetaInfo> {
         return json.encodeToString(BookMetaInfo.serializer(), obj)
     }
 }
-
-/**
- * Default name provider for book metadata files
- */
 class BookMetaInfoNameProvider : INameProvider<BookMetaInfo> {
     override fun jsonMetaFilename(bundleName: String): String {
         return "${bundleName}_meta.json"

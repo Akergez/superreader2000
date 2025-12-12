@@ -22,7 +22,10 @@ actual abstract class StorageManager<T>(
 ) {
     private val fileCache = HashMap<String, File>()
 
-    actual suspend fun updateBundlePreview(newBundlePreview: String, bundleName: String): Result<String> =
+    actual suspend fun updateBundlePreview(
+        newBundlePreview: String,
+        bundleName: String
+    ): Result<String> =
         withContext(Dispatchers.IO) {
             val storagePath = settingsManager.getStoragePath() ?: return@withContext Result.failure(
                 Exception("Storage directory not set")
@@ -45,7 +48,11 @@ actual abstract class StorageManager<T>(
         }
 
     actual suspend fun createBundle(
-        bundleName: String, file: String, meta: T, contentResolver: ContentResolverWrapper, mimeType: String
+        bundleName: String,
+        file: String,
+        meta: T,
+        contentResolver: ContentResolverWrapper,
+        mimeType: String
     ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
         val storagePath = settingsManager.getStoragePath() ?: return@withContext Result.failure(
             Error("Storage directory not set")
@@ -65,7 +72,7 @@ actual abstract class StorageManager<T>(
         }
 
         val destFile = File(bundleDir, nameProvider.fileName(bundleName, meta))
-        val sourceFile = File(file)
+        val sourceFile = File(file.removePrefix("file:"))
         sourceFile.copyTo(destFile, overwrite = false)
 
         val metaFile = File(bundleDir, nameProvider.jsonMetaFilename(bundleName))
@@ -138,24 +145,25 @@ actual abstract class StorageManager<T>(
         )
     }
 
-    actual suspend fun deleteBundle(bundleName: String): Result<Unit> = withContext(Dispatchers.IO) {
-        val storagePath = settingsManager.getStoragePath() ?: return@withContext Result.failure(
-            Exception("Storage directory not set")
-        )
-        val storageDir = File(storagePath)
-        if (!storageDir.exists() || !storageDir.isDirectory) {
-            return@withContext Result.failure(InvalidStorageDirectoryException())
+    actual suspend fun deleteBundle(bundleName: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val storagePath = settingsManager.getStoragePath() ?: return@withContext Result.failure(
+                Exception("Storage directory not set")
+            )
+            val storageDir = File(storagePath)
+            if (!storageDir.exists() || !storageDir.isDirectory) {
+                return@withContext Result.failure(InvalidStorageDirectoryException())
+            }
+
+            val bundleDir = File(storageDir, bundleName)
+            if (!bundleDir.exists()) {
+                return@withContext Result.failure(Exception("Bundle not found"))
+            }
+
+            bundleDir.deleteRecursively()
+
+            return@withContext Result.success(Unit)
         }
-
-        val bundleDir = File(storageDir, bundleName)
-        if (!bundleDir.exists()) {
-            return@withContext Result.failure(Exception("Bundle not found"))
-        }
-
-        bundleDir.deleteRecursively()
-
-        return@withContext Result.success(Unit)
-    }
 
     actual suspend fun updateBundleMeta(bundleName: String, meta: T): Result<Unit> =
         withContext(Dispatchers.IO) {
