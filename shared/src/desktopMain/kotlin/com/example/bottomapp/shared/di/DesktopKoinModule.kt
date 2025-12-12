@@ -23,7 +23,7 @@ fun desktopPlatformModule(): Module = module {
     }
 
     single<BookRepository> {
-        BookRepository(get<PreferencesStore>())
+        BookRepository(get(), get())
     }
 
     singleOf(::BookManager) bind BookManager::class

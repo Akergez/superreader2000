@@ -27,7 +27,7 @@ import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.
 import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.IReaderScreenProvider
 import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.PdfReaderScreenProvider
 import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
-import com.google.gson.GsonBuilder
+import kotlinx.serialization.json.Json
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -68,8 +68,12 @@ class ReaderApp : Application() {
                     }.build()
             }
 
-            single {
-                GsonBuilder().create()
+            single<Json> {
+                Json {
+                    prettyPrint = true
+                    ignoreUnknownKeys = true
+                    encodeDefaults = true
+                }
             }
 
             /*.registerTypeAdapterFactory(

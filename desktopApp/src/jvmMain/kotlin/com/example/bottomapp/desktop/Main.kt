@@ -24,6 +24,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
+
 fun main() = application {
     // Initialize Koin before creating the UI
     startKoin {
@@ -66,9 +67,6 @@ private fun desktopAppModule() = module {
     single<IPreviewGenerator>(named(FormatType.FB2)) {
         Fb2PreviewGenerator()
     }
-
-    // Book Repository
-    singleOf(::BookRepository)
 
     // ViewModels
     viewModel {

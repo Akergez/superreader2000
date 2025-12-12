@@ -33,6 +33,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
 
+                implementation(libs.kotlinx.serialization)
                 implementation(libs.zoomable)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
@@ -56,6 +57,8 @@ kotlin {
 
                 // Navigation Compose for KMP
                 implementation(libs.jetbrains.navigation.compose)
+                implementation(libs.androidx.room.runtime)
+                implementation(libs.androidx.sqlite.bundled)
             }
         }
 
@@ -104,7 +107,6 @@ kotlin {
                 implementation(libs.androidx.constraintlayout)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.sqlite.bundled)
-                //ksp(libs.androidx.room.compiler)
                 implementation(libs.androidx.room.ktx)
                 // optional - RxJava2 support for Room
                 implementation(libs.androidx.room.rxjava2)
@@ -131,8 +133,6 @@ kotlin {
                 // Coil image loader
                 implementation(libs.coil.compose.v210)
 
-                // GSON for serialization
-                implementation(libs.gson)
 
                 implementation(libs.androidx.activity.ktx)
                 implementation(libs.androidx.core.ktx.v1120)
@@ -154,3 +154,9 @@ kotlin {
         }
     }
 }
+
+// Add KSP Room compiler for Android
+dependencies {
+    add("kspAndroid", libs.androidx.room.compiler)
+}
+

@@ -22,6 +22,7 @@ import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.platform.FileUriHandler
 import com.example.bottomapp.shared.platform.MessageHandler
+import kotlinx.serialization.json.Json
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
@@ -33,6 +34,15 @@ import org.koin.dsl.module
  * Platform-specific modules should add to this
  */
 fun commonModule(): Module = module {
+    // JSON serialization configuration
+    single<Json> {
+        Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
+    }
+
     // Book extractors factory
 
     single {
@@ -62,5 +72,6 @@ fun commonModule(): Module = module {
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { BookExtractorFactory().createPdfExtractor() }
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.DJVU)) { BookExtractorFactory().createDjvuExtractor() }
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { BookExtractorFactory().createFb2Extractor() }
+    singleOf(::BookRepository)
 }
 

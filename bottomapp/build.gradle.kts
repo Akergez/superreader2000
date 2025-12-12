@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.ksp)
     id("kotlin-parcelize")
     alias(libs.plugins.kotlinCompose)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 android {
@@ -93,7 +94,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.oleksandrbalan.pagecurl)
     implementation(libs.accompanist.pager)
-    implementation(libs.gson)
+    implementation(libs.kotlinx.serialization)
     implementation(libs.accompanist.navigation.animation)
     implementation(libs.coil.compose.v210)
     implementation(libs.koin.androidx.compose.v400)
