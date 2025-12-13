@@ -78,7 +78,7 @@ fun MainScreen(
                     HomeScreen(
                         onItemClick = { bookLink ->
                             val encodedFileName = urlEncode(bookLink.bundleName)
-                            navController.navigate("bookReader/$encodedFileName")
+                            navController.navigate(BookReader(encodedFileName))
                         },
                         bottomBar = {
                             com.example.bottomapp.shared.ui.components.BottomNavigationBar(
@@ -102,7 +102,7 @@ fun MainScreen(
                     },
                 ) { backStackEntry ->
                     val encodedFileName = backStackEntry.toRoute<BookReader>().fileName
-                    encodedFileName?.let {
+                    encodedFileName.let {
                         val fileName = urlDecode(it)
                         val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
                         bookLink?.bookMetaInfo?.progress?.let { progress ->

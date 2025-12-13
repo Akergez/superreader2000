@@ -214,8 +214,8 @@ actual abstract class StorageManager<T>(
                         BundleEditResult(
                             bookFile.absolutePath,
                             file.name,
-                            metaFile.absolutePath,
-                            previewFile.absolutePath,
+                            metaFile.toURI().toString(),
+                            previewFile.toURI().toString(),
                             bookMetaInfo
                         )
                     } else {

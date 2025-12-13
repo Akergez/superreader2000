@@ -4,6 +4,8 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,30 +23,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import com.example.bottomapp.shared.renderHelper.TOCEntry
 import kotlinx.coroutines.flow.StateFlow
+import org.jetbrains.compose.resources.stringResource
+import pdfreaderjetpackcompose.shared.generated.resources.Res
+import pdfreaderjetpackcompose.shared.generated.resources.page
+import pdfreaderjetpackcompose.shared.generated.resources.table_of_contents
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChapterScreen(
-    tableOfContents: StateFlow<List<TOCEntry>>,
-    onChapterClick: (Int) -> Unit,
-    onBack: () -> Unit
+    tableOfContents: StateFlow<List<TOCEntry>>, onChapterClick: (Int) -> Unit, onBack: () -> Unit
 ) {
     val tableOfContentsValue by tableOfContents.collectAsState()
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-/*                    Text(
-                        getString(LocalContext.current, R.string.table_of_contents),
-                        style = MaterialTheme.typography.bodyLarge
-                    )*/
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
-                       // Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+            TopAppBar(title = {
+                Text(
+                    stringResource(Res.string.table_of_contents),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }, navigationIcon = {
+                IconButton(onClick = { onBack() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-            )
+            })
         },
     ) { inner ->
         LazyColumn(Modifier.padding(inner)) {
@@ -52,29 +53,21 @@ fun ChapterScreen(
                 tableOfContentsValue.flatten(
                     { it.children },
                     { e, n -> ChapterView(e.title, n, e.pageIndex) })
-            )
-            { chapter ->
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            chapter.title,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    supportingContent = {
-/*                        Text(
-                            getString(
-                                LocalContext.current,
-                                R.string.page
-                            ) + ' ' + chapter.page.toString(), style = MaterialTheme.typography.bodySmall
-                        )*/
-                    },
-                    modifier = Modifier
-                        .pointerInput(Unit) {
-                            detectTapGestures { onChapterClick(chapter.page) }
-                        }
-                        .padding(start = chapter.nestingLevel * 60.dp)
-                )
+            ) { chapter ->
+                ListItem(headlineContent = {
+                    Text(
+                        chapter.title, style = MaterialTheme.typography.bodyMedium
+                    )
+                }, supportingContent = {
+                    Text(
+                        stringResource(
+                            Res.string.page
+                        ) + ' ' + chapter.page.toString(),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }, modifier = Modifier.pointerInput(Unit) {
+                    detectTapGestures { onChapterClick(chapter.page) }
+                }.padding(start = chapter.nestingLevel * 60.dp))
             }
         }
     }
@@ -90,9 +83,7 @@ fun <TInitial, TResult> List<TInitial>.flatten(
         result.add(constructFromNestingLevel(entry, nestingLevel))
         result.addAll(
             getChilds(entry).flatten(
-                getChilds,
-                constructFromNestingLevel,
-                nestingLevel + 1
+                getChilds, constructFromNestingLevel, nestingLevel + 1
             )
         )
     }
@@ -100,7 +91,5 @@ fun <TInitial, TResult> List<TInitial>.flatten(
 }
 
 data class ChapterView(
-    val title: String,
-    val nestingLevel: Int,
-    val page: Int
+    val title: String, val nestingLevel: Int, val page: Int
 )

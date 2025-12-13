@@ -20,8 +20,8 @@ class Fb2ReaderScreenProvider(private val bookManager: BookManager) : IReaderScr
                     )
                 }
             },
-            getFilePathFromStorage = {
-                bookManager.getBookFile(bookLink.bundleName).getOrThrow().toString()
+            getFileFromStorage = {
+                bookManager.getBookFile(bookLink.bundleName).getOrThrow()
             })
         return { Fb2ReaderScreen(book) }
     }

@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import com.example.bottomapp.shared.backend.domain.FormatType
+import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
 import com.example.bottomapp.shared.ui.PdfBookContent
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPageTree
@@ -22,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBookContent> {
+actual class PdfRendererHelper actual constructor(val pdfFile: suspend () -> FileWrapper) : IRenderHelper<PdfBookContent> {
     val pdfRenderer = MutableStateFlow<PdfRenderer?>(null)
     actual val pagesCount: MutableStateFlow<Int?> = MutableStateFlow(null)
     private val bitmapCache =
@@ -37,7 +38,7 @@ actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<
     init {
         CoroutineScope(Dispatchers.IO).launch {
             val parcelFileDescriptor =
-                ParcelFileDescriptor.open(pdfFile(), ParcelFileDescriptor.MODE_READ_ONLY)
+                ParcelFileDescriptor.open(pdfFile().file, ParcelFileDescriptor.MODE_READ_ONLY)
             pdfRenderer.value = PdfRenderer(parcelFileDescriptor)
             pagesCount.update { pdfRenderer.value!!.pageCount }
             extractTableOfContents()
@@ -140,7 +141,7 @@ actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<
             val tocEntries = mutableListOf<TOCEntry>()
             try {
                 val file = pdfFile()
-                PDDocument.load(file).use { document ->
+                PDDocument.load(file.file).use { document ->
                     val catalog = document.documentCatalog
                     val outline = catalog.documentOutline
                     val tree = document.pages

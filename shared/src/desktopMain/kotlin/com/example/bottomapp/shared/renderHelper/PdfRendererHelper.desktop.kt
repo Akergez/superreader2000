@@ -2,6 +2,7 @@ package com.example.bottomapp.shared.renderHelper
 
 import androidx.compose.ui.graphics.ImageBitmap
 import com.example.bottomapp.shared.backend.domain.FormatType
+import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
 import com.example.bottomapp.shared.ui.PdfBookContent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +22,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 
-actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<PdfBookContent> {
+actual class PdfRendererHelper actual constructor(val pdfFile: suspend () -> FileWrapper) : IRenderHelper<PdfBookContent> {
     val pdfRenderer = MutableStateFlow<PDFRenderer?>(null)
     actual val pagesCount: MutableStateFlow<Int?> = MutableStateFlow(null)
     private val bitmapCache =
@@ -35,7 +36,7 @@ actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            val parcelFileDescriptor = pdfFile();
+            val parcelFileDescriptor = pdfFile().file;
             val doc = Loader.loadPDF(parcelFileDescriptor)
             pdfRenderer.value = PDFRenderer(doc)
             pagesCount.update { doc.pages.count }
@@ -56,7 +57,7 @@ actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<
             //Log.d("PdfRendererHelper", "openPage: $pageIndex")
             var bitmap: ImageBitmap?
             synchronized(lock) {
-                val page = pdfRenderer.value?.renderImage(pageIndex)
+                val page = pdfRenderer.value?.renderImageWithDPI(pageIndex, 300f)
                 val baos = ByteArrayOutputStream()
                 ImageIO.write(page, "png", baos) // Use PNG or JPEG for compression
                 val imageBytes = baos.toByteArray()
@@ -86,7 +87,7 @@ actual class PdfRendererHelper(val pdfFile: suspend () -> File) : IRenderHelper<
         CoroutineScope(Dispatchers.IO).launch {
             val tocEntries = mutableListOf<TOCEntry>()
             try {
-                val file = pdfFile()
+                val file = pdfFile().file
                 val doc = Loader.loadPDF(file)
                 doc.use { document ->
                     val catalog = document.documentCatalog

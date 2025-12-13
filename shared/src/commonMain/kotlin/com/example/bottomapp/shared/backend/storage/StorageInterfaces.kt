@@ -11,7 +11,6 @@ data class BookStorageEntry(
     val title: String,
     val previewUri: String?,
     val bundleName: String,
-    val progressInPercent: Double?,
     val bookMetaInfo: BookMetaInfo
 )
 

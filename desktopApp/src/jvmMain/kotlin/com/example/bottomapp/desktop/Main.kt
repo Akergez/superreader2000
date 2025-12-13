@@ -11,6 +11,7 @@ import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.constants.FileType
 import com.example.bottomapp.shared.di.commonModule
 import com.example.bottomapp.shared.di.desktopPlatformModule
+import com.example.bottomapp.shared.ui.components.EditModalViewModel
 import com.example.bottomapp.shared.ui.screens.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.shared.ui.screens.mainscreen.MainScreen
 import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
@@ -29,15 +30,12 @@ fun main() = application {
     // Initialize Koin before creating the UI
     startKoin {
         modules(
-            commonModule(),
-            desktopPlatformModule(),
-            desktopAppModule()
+            commonModule(), desktopPlatformModule(), desktopAppModule()
         )
     }
 
     Window(
-        onCloseRequest = ::exitApplication,
-        title = "PDF Reader KMP"
+        onCloseRequest = ::exitApplication, title = "PDF Reader KMP"
     ) {
         MainScreen()
     }
@@ -54,7 +52,7 @@ private fun desktopAppModule() = module {
 
     // Reader Screen Providers
     single<IReaderScreenProvider>(named(FormatType.PDF)) {
-        PdfReaderScreenProvider(get())
+        PdfReaderScreenProvider(get(), get())
     }
     single<IReaderScreenProvider>(named(FormatType.FB2)) {
         Fb2ReaderScreenProvider(get())
@@ -73,23 +71,20 @@ private fun desktopAppModule() = module {
         SettingsViewModel(get(), get())
     }
 
+    viewModel { p -> EditModalViewModel(p.get()) }
+
     viewModel {
         HoomeScreenViewModel(
-            get(),
-            mapOf(
+            get(), mapOf(
                 FileType.pdf to get(qualifier = named(FormatType.PDF)),
                 FileType.fb2 to get(qualifier = named(FormatType.FB2))
-            ),
-            get(),
-            get()
+            ), get(), get()
         )
     }
 
     viewModel { parameters ->
         PdfScreenViewModel(
-            parameters.get(),
-            parameters.get(),
-            parameters.get()
+            parameters.get(), parameters.get(), parameters.get()
         )
     }
 }

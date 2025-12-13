@@ -13,8 +13,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -79,17 +84,19 @@ fun <TBookContent> PageCarousel(
                 },
                 navigationIcon = {
                     IconButton(onClick = { onBack() }) {
-                        //Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         },
     ) { padding ->
         totalPagesState?.let { totalPagesNotNull ->
-            Column(modifier = modifier
-                .padding(padding)
-                .zoomable(zoomS)
-                .padding(top = 16.dp)) {
+            Column(
+                modifier = modifier
+                    .padding(padding)
+                    .zoomable(zoomS)
+                    .padding(top = 16.dp)
+            ) {
                 LazyRow(
                     modifier = Modifier.weight(0.9f),
                     state = lazyListState,
@@ -140,7 +147,7 @@ fun <TBookContent> PageCarousel(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(onClick = { onChaptersClick() }) {
-                     //   Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
                     }
 
                     Column(
@@ -194,7 +201,7 @@ fun <TBookContent> PageCarousel(
                         )
                     }
                     IconButton(onClick = { onSettingsClick() }) {
-                     //   Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 }
             }

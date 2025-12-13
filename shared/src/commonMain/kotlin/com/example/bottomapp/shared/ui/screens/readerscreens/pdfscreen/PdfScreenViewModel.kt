@@ -6,6 +6,7 @@ import com.example.bottomapp.shared.backend.domain.PdfBookDomainModel
 import com.example.bottomapp.shared.backend.domain.PdfProgress
 import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
 import com.example.bottomapp.shared.backend.settings.DocThemeMode
+import com.example.bottomapp.shared.backend.settings.ISettingsManager
 import com.example.bottomapp.shared.renderHelper.PdfRendererHelper
 import com.example.bottomapp.shared.ui.screens.readerscreens.common.FlipMode
 import com.example.bottomapp.shared.ui.screens.readerscreens.common.ReaderMode
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class PdfScreenViewModel(
-    private val settingsManager: DefaultSettingsManager,
+    private val settingsManager: ISettingsManager,
     private val pdfBookDomainModel: PdfBookDomainModel,
     val pdfRendererHelper: PdfRendererHelper
 ) : ViewModel() {

@@ -57,7 +57,10 @@ actual class BookManager(
             CoroutineScope(Dispatchers.IO).launch {
                 bookCache.addBook(
                     BookStorageEntry(
-                        fileName, it.previewUri, fileName, null, it.meta
+                        fileName,
+                        it.previewUri,
+                        fileName,
+                        it.meta
                     )
                 )
             }
@@ -81,7 +84,6 @@ actual class BookManager(
                 bookMetaInfo.title,
                 book?.previewUri,
                 bundleName,
-                bookMetaInfo.progress!!.getProgressInPercent(),
                 bookMetaInfo
             )
         )
@@ -138,7 +140,10 @@ actual class BookManager(
         return Result.success(Unit)
     }
 
-    actual suspend fun updateBookPreview(bundleName: String, newPreviewUri: String): Result<String> {
+    actual suspend fun updateBookPreview(
+        bundleName: String,
+        newPreviewUri: String
+    ): Result<String> {
         val newPreview = storageManager.updateBundlePreview(newPreviewUri, bundleName)
         newPreview.onSuccess {
             refreshBooksLinks()
@@ -165,7 +170,6 @@ actual class BookManager(
                 it.meta.title,
                 it.previewUri,
                 it.bundleName,
-                it.meta.progress!!.getProgressInPercent(),
                 it.meta
             )
         }

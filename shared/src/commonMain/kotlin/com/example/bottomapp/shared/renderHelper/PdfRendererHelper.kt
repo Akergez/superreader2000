@@ -1,9 +1,10 @@
 package com.example.bottomapp.shared.renderHelper
 
+import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
 import com.example.bottomapp.shared.ui.PdfBookContent
 import kotlinx.coroutines.flow.MutableStateFlow
 
-expect class PdfRendererHelper : IRenderHelper<PdfBookContent>
+expect class PdfRendererHelper(pdfFile: suspend () -> FileWrapper): IRenderHelper<PdfBookContent>
 {
     val pagesCount : MutableStateFlow<Int?>
 }

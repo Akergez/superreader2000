@@ -1,38 +1,21 @@
 package com.example.bottomapp.shared.backend.domain
 
-/**
- * Base interface for all book domain models
- * Each book format (PDF, DjVu, FB2) implements this interface
- */
+import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
+
 interface BookDomainModel<T : Progress> {
-    /**
-     * Get the current reading progress
-     */
     fun readProgress(): T
 
-    /**
-     * Save the reading progress
-     */
     suspend fun saveProgress(progress: T)
 
-    /**
-     * Get the file path or URI for this book
-     */
-    suspend fun getFilePath(): String
+    suspend fun getFile(): FileWrapper
 
-    /**
-     * Get book metadata
-     */
     fun getMetadata(): BookMetaInfo
 }
 
-/**
- * PDF-specific book domain model implementation
- */
 class PdfBookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
-    private val getFilePathFromStorage: suspend () -> String,
+    private val getFileFromStorage: suspend () -> FileWrapper,
 ) : BookDomainModel<PdfProgress> {
     private var progress: PdfProgress = bookMetaInfo.progress as PdfProgress
 
@@ -42,23 +25,20 @@ class PdfBookDomainModel(
         this.progress = progress
         updateProgress(
             bookMetaInfo.copy(
-              //  pdfProgress = progress
+                progress = progress
             )
         )
     }
 
-    override suspend fun getFilePath(): String = getFilePathFromStorage()
+    override suspend fun getFile(): FileWrapper = getFileFromStorage()
 
     override fun getMetadata(): BookMetaInfo = bookMetaInfo
 }
 
-/**
- * DjVu-specific book domain model implementation
- */
 class DjvuBookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
-    private val getFilePathFromStorage: suspend () -> String,
+    private val getFileFromStorage: suspend () -> FileWrapper,
 ) : BookDomainModel<DjvuProgress> {
     private var progress: DjvuProgress = bookMetaInfo.progress as DjvuProgress
 
@@ -73,18 +53,15 @@ class DjvuBookDomainModel(
         )
     }
 
-    override suspend fun getFilePath(): String = getFilePathFromStorage()
+    override suspend fun getFile(): FileWrapper = getFileFromStorage()
 
     override fun getMetadata(): BookMetaInfo = bookMetaInfo
 }
 
-/**
- * FB2-specific book domain model implementation
- */
 class Fb2BookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
-    private val getFilePathFromStorage: suspend () -> String,
+    private val getFileFromStorage: suspend () -> FileWrapper,
 ) : BookDomainModel<Fb2Progress> {
     private var progress: Fb2Progress = bookMetaInfo.progress as Fb2Progress
 
@@ -99,7 +76,7 @@ class Fb2BookDomainModel(
         )
     }
 
-    override suspend fun getFilePath(): String = getFilePathFromStorage()
+    override suspend fun getFile(): FileWrapper = getFileFromStorage()
 
     override fun getMetadata(): BookMetaInfo = bookMetaInfo
 }

@@ -42,7 +42,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: ISettingsManager 
     LaunchedEffect(componentHeight) {
         CoroutineScope(Dispatchers.IO).launch {
             if (componentHeight > 1) {
-                val fb2File = book.getFilePath()
+                val fb2File = book.getFile()
                 var newPage: Int
                 synchronized(lock) {
 /*                    if (fb2RenderHelper.value == null) {
@@ -53,7 +53,7 @@ fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: ISettingsManager 
                             fb2File
                         )
                     }*/
-                    val offset = book.readProgress().currentPage
+                    val offset = book.readProgress().characterPosition
                     newPage = if (offset > 0) {
                         fb2RenderHelper.value!!.getPageIndexByWordOffset(offset)
                     } else {

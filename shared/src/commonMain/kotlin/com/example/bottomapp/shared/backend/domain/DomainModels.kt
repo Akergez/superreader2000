@@ -83,21 +83,21 @@ data class BookMetaInfo(
 
 @Serializable
 sealed class Progress {
-    abstract val currentPage: Int
-    abstract val totalPages: Int
     abstract fun getProgressInPercent(): Double?
 
-    abstract val formatType : FormatType;
+    abstract val formatType: FormatType;
 }
 
 @Serializable
 data class PdfProgress(
-    override val currentPage: Int,
-    override val totalPages: Int,
-    val zoom: Float = 1f
+    val currentPage: Int,
+    val totalPages: Int
 ) : Progress() {
-    override fun getProgressInPercent(): Double? {
-        TODO("Not yet implemented")
+    override fun getProgressInPercent(): Double {
+        if (totalPages == 0) {
+            return 0.0
+        }
+        return currentPage / totalPages.toDouble() * 100
     }
 
     override val formatType: FormatType = FormatType.PDF
@@ -105,26 +105,28 @@ data class PdfProgress(
 
 @Serializable
 data class DjvuProgress(
-    override val currentPage: Int,
-    override val totalPages: Int,
-    val zoom: Float = 1f,
+    val currentPage: Int,
+    val totalPages: Int
 ) : Progress() {
     override val formatType: FormatType = FormatType.DJVU
 
-    override fun getProgressInPercent(): Double? {
-        TODO("Not yet implemented")
+    override fun getProgressInPercent(): Double {
+        if (totalPages == 0) {
+            return 0.0
+        }
+        return currentPage / totalPages.toDouble() * 100
     }
 }
 
 @Serializable
 data class Fb2Progress(
-    override val currentPage: Int,
-    override val totalPages: Int,
     val characterPosition: Int = 0,
+    val totalCharacters: Int = 0
 ) : Progress() {
-    override fun getProgressInPercent(): Double? {
-        TODO("Not yet implemented")
+    override fun getProgressInPercent(): Double {
+        return characterPosition / totalCharacters.toDouble() * 100
     }
+
     override val formatType: FormatType = FormatType.FB2
 }
 
