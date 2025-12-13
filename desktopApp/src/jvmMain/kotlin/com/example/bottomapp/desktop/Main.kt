@@ -6,7 +6,6 @@ import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.shared.backend.previewGenerators.Fb2PreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
-import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.constants.FileType
 import com.example.bottomapp.shared.di.commonModule
@@ -20,24 +19,30 @@ import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.
 import com.example.bottomapp.shared.ui.screens.readerscreens.pdfscreen.PdfScreenViewModel
 import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
 import org.koin.core.context.startKoin
-import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 
-fun main() = application {
-    // Initialize Koin before creating the UI
-    startKoin {
-        modules(
-            commonModule(), desktopPlatformModule(), desktopAppModule()
-        )
-    }
+fun main() {
+    // Set macOS appearance to respect system theme (dark mode)
+    // This must be set BEFORE the application starts
+    System.setProperty("apple.awt.application.appearance", "system")
 
-    Window(
-        onCloseRequest = ::exitApplication, title = "PDF Reader KMP"
-    ) {
-        MainScreen()
+    application {
+        // Initialize Koin before creating the UI
+        startKoin {
+            modules(
+                commonModule(), desktopPlatformModule(), desktopAppModule()
+            )
+        }
+
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "PDF Reader KMP"
+        ) {
+            MainScreen()
+        }
     }
 }
 

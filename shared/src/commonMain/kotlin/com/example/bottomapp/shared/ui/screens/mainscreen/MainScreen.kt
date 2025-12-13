@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -68,6 +69,9 @@ fun MainScreen(
     AppTheme(
         darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme == AppThemeMode.Dark)
     ) {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
             NavHost(
                 navController = navController,
                 startDestination = Route.Main,
@@ -114,35 +118,36 @@ fun MainScreen(
                     }
                 }
             }
+        }
 
-            // Storage selection dialog and picker
-            var isDialogVisible by remember { mutableStateOf(true) }
-            var isNextScreenVisible by remember { mutableStateOf(false) }
-            var triggerEffect by remember { mutableIntStateOf(1) }
+        // Storage selection dialog and picker
+        var isDialogVisible by remember { mutableStateOf(true) }
+        var isNextScreenVisible by remember { mutableStateOf(false) }
+        var triggerEffect by remember { mutableIntStateOf(1) }
 
-            val directoryPicker = rememberStorageDirectoryPicker(
-                onDirectorySelected = { uri ->
-                    settingsManager.setStoragePath(uri)
-                },
-                onPermissionGranted = {
-                    bookManager.refreshBooksLinks()
-                }
-            )
-
-            if (settingsManager.getStoragePath() == null && isDialogVisible) {
-                StorageSelectionDialog(onChoose = {
-                    triggerEffect++
-                    isDialogVisible = false
-                    isNextScreenVisible = true
-                })
+        val directoryPicker = rememberStorageDirectoryPicker(
+            onDirectorySelected = { uri ->
+                settingsManager.setStoragePath(uri)
+            },
+            onPermissionGranted = {
+                bookManager.refreshBooksLinks()
             }
+        )
 
-            LaunchedEffect("storage_$triggerEffect") {
-                if (isNextScreenVisible) {
-                    isNextScreenVisible = false
-                    directoryPicker.launch()
-                }
+        if (settingsManager.getStoragePath() == null && isDialogVisible) {
+            StorageSelectionDialog(onChoose = {
+                triggerEffect++
+                isDialogVisible = false
+                isNextScreenVisible = true
+            })
+        }
+
+        LaunchedEffect("storage_$triggerEffect") {
+            if (isNextScreenVisible) {
+                isNextScreenVisible = false
+                directoryPicker.launch()
             }
+        }
     }
 }
 
