@@ -21,12 +21,18 @@ data class BundleEditResult<TMeta>(
 
 expect class ContentResolverWrapper
 
+expect class FileWrapper(path: String);
+
+expect class FileService {
+    fun getFileFromPath(path: String): FileWrapper?
+}
+
 expect abstract class StorageManager<T> {
 
     suspend fun updateBundlePreview(newBundlePreview: String, bundleName: String): Result<String>
 
     suspend fun createBundle(
-        bundleName: String, file: String, meta: T, contentResolver: ContentResolverWrapper, mimeType: String
+        bundleName: String, file: String, meta: T, mimeType: String
     ): Result<BundleCreateResult<T>>
 
     suspend fun renameBundle(

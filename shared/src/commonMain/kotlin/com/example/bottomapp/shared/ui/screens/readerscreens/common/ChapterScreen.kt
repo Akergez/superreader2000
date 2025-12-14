@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
-import com.example.bottomapp.shared.renderHelper.TOCEntry
+import com.example.bottomapp.shared.formats.pdf.TOCEntry
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.compose.resources.stringResource
 import pdfreaderjetpackcompose.shared.generated.resources.Res

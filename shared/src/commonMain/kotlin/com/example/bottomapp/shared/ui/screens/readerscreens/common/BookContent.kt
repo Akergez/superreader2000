@@ -22,7 +22,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.bottomapp.shared.backend.settings.DocThemeMode
-import com.example.bottomapp.shared.renderHelper.TOCEntry
+import com.example.bottomapp.shared.formats.pdf.TOCEntry
 import com.example.bottomapp.shared.ui.IBookContent
 import com.example.bottomapp.shared.ui.screens.readerscreens.common.bookFlippings.CasualCurl
 import com.example.bottomapp.shared.ui.screens.readerscreens.common.bookFlippings.PageCarousel

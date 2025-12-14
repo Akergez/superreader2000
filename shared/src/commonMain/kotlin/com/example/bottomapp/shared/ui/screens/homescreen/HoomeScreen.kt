@@ -27,9 +27,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
-import com.example.bottomapp.shared.constants.FileType
 import com.example.bottomapp.shared.constants.toFileExtension
 import com.example.bottomapp.shared.constants.toMimeType
+import com.example.bottomapp.shared.formats.abstractions.FileType
 import com.example.bottomapp.shared.platform.MessageHandler
 import com.example.bottomapp.shared.ui.components.BookItem
 import com.example.bottomapp.shared.ui.components.TopEditBar

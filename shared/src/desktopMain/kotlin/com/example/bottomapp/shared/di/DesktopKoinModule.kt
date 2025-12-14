@@ -4,15 +4,14 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.BookStorage
-import com.example.bottomapp.shared.backend.StorageAdapter
-import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
-import com.example.bottomapp.shared.backend.domain.BookMetaInfo
-import com.example.bottomapp.shared.backend.domain.FormatType
+import com.example.bottomapp.shared.formats.abstractions.BookInfoExtractorFactory
 import com.example.bottomapp.shared.backend.storage.AppDatabase
 import com.example.bottomapp.shared.backend.storage.BookMetaInfoDeserializer
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.IDeserializer
 import com.example.bottomapp.shared.backend.storage.INameProvider
+import com.example.bottomapp.shared.formats.abstractions.BookMetaInfo
+import com.example.bottomapp.shared.formats.abstractions.FormatType
 import com.example.bottomapp.shared.platform.FileUriHandler
 import com.example.bottomapp.shared.platform.MessageHandler
 import org.koin.core.module.Module
@@ -20,9 +19,6 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
 
-/**
- * Desktop-specific Koin module
- */
 fun desktopPlatformModule(): Module = module {
     single<MessageHandler> {
         MessageHandler()
@@ -33,7 +29,7 @@ fun desktopPlatformModule(): Module = module {
     }
 
     single {
-        val dbFile = File(System.getProperty("user.home"), ".bottomapp/database-name.db")
+        val dbFile = File(System.getProperty("user.home"), ".local/.bottomapp/cache.db")
         dbFile.parentFile?.mkdirs()
         Room.databaseBuilder<AppDatabase>(
             name = dbFile.absolutePath,
@@ -43,9 +39,9 @@ fun desktopPlatformModule(): Module = module {
             .userDao()
     }
 
-    single<IDeserializer<BookMetaInfo>> { BookMetaInfoDeserializer() }
+    single<IDeserializer<BookMetaInfo>> { BookMetaInfoDeserializer(get()) }
 
-    single<INameProvider<BookMetaInfo>> { StorageAdapter() }
+    single<INameProvider<BookMetaInfo>> { BookMetaInfoDeserializer(get()) }
 
     single<BookStorage> {
         BookStorage(

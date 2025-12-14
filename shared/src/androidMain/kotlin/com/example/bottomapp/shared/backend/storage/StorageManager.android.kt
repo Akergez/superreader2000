@@ -9,7 +9,7 @@ import androidx.core.net.toUri
 import com.example.bottomapp.shared.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.shared.backend.exceptions.InvalidStorageDirectoryException
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
-import com.example.bottomapp.shared.backend.bookExtractors.IBookInfoExtractorFactory
+import com.example.bottomapp.shared.formats.abstractions.IBookInfoExtractorFactory
 import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
 import androidx.documentfile.provider.DocumentFile
 import com.example.bottomapp.shared.backend.settings.ISettingsManager
@@ -20,6 +20,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+
+actual class FileWrapper actual constructor(path: String) {
+    val file : File = DocumentFile.fromTreeUri(path)
+}
 
 actual abstract class StorageManager<T>(
     val context: Context,
@@ -59,7 +63,7 @@ actual abstract class StorageManager<T>(
         }
 
    actual suspend fun createBundle(
-        bundleName: String, file: String, meta: T, contentResolver: ContentResolverWrapper, mimeType: String
+        bundleName: String, file: String, meta: T, mimeType: String
     ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
         Log.i("StorageManager", "Creating bundle $bundleName")
         val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@withContext Result.failure(
@@ -83,8 +87,8 @@ actual abstract class StorageManager<T>(
                 Error("Failed to create destination file")
             )
 
-        contentResolver.ContentResolver.openInputStream(file.toUri())?.use { input ->
-            contentResolver.ContentResolver.openOutputStream(destFile.uri)?.use { output ->
+        context.contentResolver.openInputStream(file.toUri())?.use { input ->
+            context.contentResolver.openOutputStream(destFile.uri)?.use { output ->
                 input.copyTo(output)
             }
         }
@@ -96,7 +100,7 @@ actual abstract class StorageManager<T>(
                 )
 
         val jsonString = deserializer.serialize(meta)
-        contentResolver.ContentResolver.openOutputStream(metaFile.uri)?.use { output ->
+       context.contentResolver.openOutputStream(metaFile.uri)?.use { output ->
             output.write(jsonString.toByteArray())
         }
 
@@ -113,7 +117,7 @@ actual abstract class StorageManager<T>(
             ?: return@withContext Result.failure(
                 Error("Failed to generate preview bitmap")
             )
-        contentResolver.ContentResolver.openOutputStream(previewFile.uri)?.use { output ->
+       context.contentResolver.openOutputStream(previewFile.uri)?.use { output ->
             previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
         }
         return@withContext Result.success(

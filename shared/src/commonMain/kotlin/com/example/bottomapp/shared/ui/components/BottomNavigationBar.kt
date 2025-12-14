@@ -10,7 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import com.example.bottomapp.shared.constants.Route
-import com.example.bottomapp.shared.ui.navigation.Screen
+import com.example.bottomapp.shared.ui.screens.Screen
 import org.jetbrains.compose.resources.stringResource
 import pdfreaderjetpackcompose.shared.generated.resources.Res
 import pdfreaderjetpackcompose.shared.generated.resources.title_home

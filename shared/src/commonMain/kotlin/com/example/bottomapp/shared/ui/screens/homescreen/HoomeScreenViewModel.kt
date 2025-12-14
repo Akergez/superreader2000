@@ -3,9 +3,9 @@ package com.example.bottomapp.shared.ui.screens.homescreen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bottomapp.shared.backend.BookManager
-import com.example.bottomapp.shared.backend.domain.FileType
-import com.example.bottomapp.shared.backend.bookCreators.IBookCreateFactory
+import com.example.bottomapp.shared.formats.abstractions.IBookCreateFactory
 import com.example.bottomapp.shared.backend.storage.BookStorageEntry
+import com.example.bottomapp.shared.formats.abstractions.FileType
 import com.example.bottomapp.shared.platform.FileUriHandler
 import com.example.bottomapp.shared.platform.MessageHandler
 import kotlinx.coroutines.flow.MutableStateFlow

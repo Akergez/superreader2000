@@ -28,14 +28,19 @@ import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.settings.AppThemeMode
 import com.example.bottomapp.shared.backend.settings.ISettingsManager
 import com.example.bottomapp.shared.constants.Route
-import com.example.bottomapp.shared.ui.navigation.Screen
+import com.example.bottomapp.shared.ui.screens.Screen
 import com.example.bottomapp.shared.ui.screens.homescreen.HomeScreen
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.IReaderScreenProvider
+import com.example.bottomapp.shared.formats.abstractions.IReaderScreenProvider
 import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsScreen
 import com.example.bottomapp.shared.ui.theme.AppTheme
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.core.qualifier.named
+import pdfreaderjetpackcompose.shared.generated.resources.Res
+import pdfreaderjetpackcompose.shared.generated.resources.choose
+import pdfreaderjetpackcompose.shared.generated.resources.choose_storage
+import pdfreaderjetpackcompose.shared.generated.resources.choose_storage_description
 
 // Platform-specific expect declarations
 @Composable
@@ -47,9 +52,6 @@ expect fun rememberStorageDirectoryPicker(
 expect class StorageDirectoryPicker {
     fun launch()
 }
-
-@Composable
-expect fun getStringResource(key: String): String
 
 // URL encoding/decoding expect functions
 expect fun urlEncode(value: String): String
@@ -159,19 +161,19 @@ fun StorageSelectionDialog(
         onDismissRequest = { },
         title = {
             Text(
-                text = getStringResource("choose_storage"),
+                text = stringResource(Res.string.choose_storage),
                 style = MaterialTheme.typography.headlineSmall
             )
         },
         text = {
             Text(
-                text = getStringResource("choose_storage_description"),
+                text = stringResource(Res.string.choose_storage_description),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
         confirmButton = {
             TextButton(onClick = { onChoose() }) {
-                Text(text = getStringResource("choose"))
+                Text(text = stringResource(Res.string.choose))
             }
         },
         tonalElevation = 8.dp

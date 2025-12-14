@@ -2,21 +2,21 @@ package com.example.bottomapp.desktop
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import com.example.bottomapp.shared.backend.domain.FormatType
-import com.example.bottomapp.shared.backend.previewGenerators.Fb2PreviewGenerator
+import com.example.bottomapp.shared.formats.fb2.Fb2PreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
-import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
+import com.example.bottomapp.shared.formats.pdf.PdfPreviewGenerator
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
-import com.example.bottomapp.shared.constants.FileType
 import com.example.bottomapp.shared.di.commonModule
 import com.example.bottomapp.shared.di.desktopPlatformModule
+import com.example.bottomapp.shared.formats.abstractions.FileType
+import com.example.bottomapp.shared.formats.abstractions.FormatType
 import com.example.bottomapp.shared.ui.components.EditModalViewModel
 import com.example.bottomapp.shared.ui.screens.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.shared.ui.screens.mainscreen.MainScreen
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.IReaderScreenProvider
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.PdfReaderScreenProvider
-import com.example.bottomapp.shared.ui.screens.readerscreens.pdfscreen.PdfScreenViewModel
+import com.example.bottomapp.shared.formats.fb2.ui.Fb2ReaderScreenProvider
+import com.example.bottomapp.shared.formats.abstractions.IReaderScreenProvider
+import com.example.bottomapp.shared.formats.pdf.ui.PdfReaderScreenProvider
+import com.example.bottomapp.shared.formats.pdf.ui.state.PdfScreenViewModel
 import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModel
@@ -25,12 +25,9 @@ import org.koin.dsl.module
 
 
 fun main() {
-    // Set macOS appearance to respect system theme (dark mode)
-    // This must be set BEFORE the application starts
     System.setProperty("apple.awt.application.appearance", "system")
 
     application {
-        // Initialize Koin before creating the UI
         startKoin {
             modules(
                 commonModule(), desktopPlatformModule(), desktopAppModule()
@@ -46,9 +43,6 @@ fun main() {
     }
 }
 
-/**
- * Desktop-specific application module
- */
 private fun desktopAppModule() = module {
     // Preferences Store
     single<PreferencesStore> {

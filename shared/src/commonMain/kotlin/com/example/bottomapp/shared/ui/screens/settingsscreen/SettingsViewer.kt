@@ -39,8 +39,8 @@ import androidx.navigation.NavController
 import com.example.bottomapp.shared.backend.settings.AppThemeMode
 import com.example.bottomapp.shared.backend.settings.DocThemeMode
 import com.example.bottomapp.shared.ui.components.BottomNavigationBar
-import com.example.bottomapp.shared.ui.navigation.Screen
-import com.example.bottomapp.shared.ui.screens.homescreen.components.IconScrollSelector
+import com.example.bottomapp.shared.ui.screens.Screen
+import com.example.bottomapp.shared.ui.screens.settingsscreen.components.IconScrollSelector
 import com.example.bottomapp.shared.ui.screens.mainscreen.rememberStorageDirectoryPicker
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel

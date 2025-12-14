@@ -1,11 +1,7 @@
 package com.example.bottomapp.shared.constants
 
-// Re-export FileType from shared module for backward compatibility
-typealias FileType = com.example.bottomapp.shared.backend.domain.FileType
+import com.example.bottomapp.shared.formats.abstractions.FileType
 
-/**
- * Convert FileType to file extension
- */
 fun FileType.toFileExtension(): String {
     return when (this) {
         FileType.pdf -> "pdf"
@@ -15,9 +11,6 @@ fun FileType.toFileExtension(): String {
     }
 }
 
-/**
- * Convert FileType to MIME types
- */
 fun FileType.toMimeType(): List<String> {
     return when (this) {
         FileType.pdf -> listOf("application/pdf")

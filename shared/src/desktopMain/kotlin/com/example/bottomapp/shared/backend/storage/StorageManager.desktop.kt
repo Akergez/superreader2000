@@ -1,8 +1,7 @@
 package com.example.bottomapp.shared.backend.storage
 
-import com.example.bottomapp.shared.backend.exceptions.InvalidStorageDirectoryException
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
-import com.example.bottomapp.shared.backend.bookExtractors.IBookInfoExtractorFactory
+import com.example.bottomapp.shared.formats.abstractions.IBookInfoExtractorFactory
 import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
 import com.example.bottomapp.shared.backend.settings.ISettingsManager
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +11,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.imageio.ImageIO
+
+actual class FileWrapper actual constructor(path: String) {
+    val file : File = File(path);
+}
+
+actual class FileService();
 
 actual abstract class StorageManager<T>(
     private val settingsManager: ISettingsManager,
@@ -51,7 +56,6 @@ actual abstract class StorageManager<T>(
         bundleName: String,
         file: String,
         meta: T,
-        contentResolver: ContentResolverWrapper,
         mimeType: String
     ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
         val storagePath = settingsManager.getStoragePath() ?: return@withContext Result.failure(
@@ -152,7 +156,7 @@ actual abstract class StorageManager<T>(
             )
             val storageDir = File(storagePath)
             if (!storageDir.exists() || !storageDir.isDirectory) {
-                return@withContext Result.failure(InvalidStorageDirectoryException())
+                return@withContext Result.failure(Exception("Invalid storage directory"))
             }
 
             val bundleDir = File(storageDir, bundleName)
@@ -172,7 +176,7 @@ actual abstract class StorageManager<T>(
             )
             val storageDir = File(storagePath)
             if (!storageDir.exists() || !storageDir.isDirectory) {
-                return@withContext Result.failure(InvalidStorageDirectoryException())
+                return@withContext Result.failure(Exception("Invalid storage directory"))
             }
 
             val bundleDir = File(storageDir, bundleName)
@@ -238,7 +242,7 @@ actual abstract class StorageManager<T>(
             ?: return Result.failure(Exception("Storage directory not set"))
         val storageDir = File(storagePath)
         if (!storageDir.exists() || !storageDir.isDirectory) {
-            return Result.failure(InvalidStorageDirectoryException())
+            return Result.failure(Exception("Invalid storage directory"))
         }
 
         val bundleDir = File(storageDir, bundleName)

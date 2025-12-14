@@ -1,33 +1,28 @@
 package com.example.bottomapp
 
-// Shared module imports
 import android.app.Application
-import androidx.room.Room
 import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.example.bottomapp.shared.backend.BookManager
 import com.example.bottomapp.shared.backend.BookStorage
-import com.example.bottomapp.backend.SettingsManager
-import com.example.bottomapp.shared.backend.StorageAdapter
-import com.example.bottomapp.shared.backend.domain.FormatType
-import com.example.bottomapp.shared.backend.previewGenerators.Fb2PreviewGenerator
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
-import com.example.bottomapp.shared.backend.previewGenerators.PdfPreviewGenerator
-import com.example.bottomapp.shared.backend.storage.AppDatabase
+import com.example.bottomapp.shared.backend.storage.BookMetaInfoDeserializer
 import com.example.bottomapp.shared.backend.storage.BookRepository
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
-import com.example.bottomapp.shared.constants.FileType
-import com.example.bottomapp.shared.di.commonModule
 import com.example.bottomapp.shared.di.androidPlatformModule
-import com.example.bottomapp.shared.ui.screens.readerscreens.pdfscreen.PdfScreenViewModel
-import com.example.bottomapp.shared.ui.screens.homescreen.HoomeScreenViewModel
+import com.example.bottomapp.shared.di.commonModule
+import com.example.bottomapp.shared.formats.abstractions.FileType
+import com.example.bottomapp.shared.formats.abstractions.FormatType
+import com.example.bottomapp.shared.formats.abstractions.IReaderScreenProvider
+import com.example.bottomapp.shared.formats.fb2.Fb2PreviewGenerator
+import com.example.bottomapp.shared.formats.fb2.ui.Fb2ReaderScreenProvider
+import com.example.bottomapp.shared.formats.pdf.PdfPreviewGenerator
+import com.example.bottomapp.shared.formats.pdf.ui.PdfReaderScreenProvider
+import com.example.bottomapp.shared.formats.pdf.ui.state.PdfScreenViewModel
 import com.example.bottomapp.shared.ui.components.EditModalViewModel
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.Fb2ReaderScreenProvider
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.IReaderScreenProvider
-import com.example.bottomapp.shared.ui.screens.mainscreen.readerscreenproviders.PdfReaderScreenProvider
+import com.example.bottomapp.shared.ui.screens.homescreen.HoomeScreenViewModel
 import com.example.bottomapp.shared.ui.screens.settingsscreen.SettingsViewModel
-import kotlinx.serialization.json.Json
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -37,52 +32,30 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import com.example.bottomapp.shared.backend.domain.FormatType as SharedFormatType
 
 class ReaderApp : Application() {
     override fun onCreate() {
         super.onCreate()
         val appModule = module {
-            // Shared module - Settings and Preferences
             single<PreferencesStore> {
                 PreferencesStore(androidContext())
             }
 
-            // Android-specific UI providers
+            single<IReaderScreenProvider>(named(FormatType.PDF)) { PdfReaderScreenProvider(get(), get()) }
+            single<IReaderScreenProvider>(named(FormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
 
-            single<IReaderScreenProvider>(named(SharedFormatType.PDF)) { PdfReaderScreenProvider(get()) }
-            single<IReaderScreenProvider>(named(SharedFormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
+            single<IPreviewGenerator>(named(FormatType.PDF)) { PdfPreviewGenerator() }
+            single<IPreviewGenerator>(named(FormatType.FB2)) { Fb2PreviewGenerator() }
 
-            single<IPreviewGenerator>(named(SharedFormatType.PDF)) { PdfPreviewGenerator() }
-            single<IPreviewGenerator>(named(SharedFormatType.FB2)) { Fb2PreviewGenerator() }
-
-            // Android-specific storage (legacy, kept for backward compatibility)
-            singleOf(::StorageAdapter) bind StorageAdapter::class
+            singleOf(::BookMetaInfoDeserializer) bind BookMetaInfoDeserializer::class
             singleOf(::BookManager) bind BookManager::class
 
-            // Image loader for Coil
             single {
                 ImageLoader.Builder(androidContext()).memoryCachePolicy(CachePolicy.ENABLED)
                     .memoryCache {
                         MemoryCache.Builder(androidContext()).maxSizePercent(0.25).build()
                     }.build()
             }
-
-            single<Json> {
-                Json {
-                    prettyPrint = true
-                    ignoreUnknownKeys = true
-                    encodeDefaults = true
-                }
-            }
-
-            /*.registerTypeAdapterFactory(
-                    RuntimeTypeAdapterFactory.of(Progress, "type")
-                        .registerSubtype(PdfProgress::class.java, "pdf")
-                        .registerSubtype(Fb2Progress::class.java, "fb2")
-                        .registerSubtype(DjvuProgress::class.java, "djvu")
-                ).registerTypeAdapter(Uri::class.java, UriTypeAdapter())*/
-
 
             single {
                 BookStorage(
@@ -94,8 +67,6 @@ class ReaderApp : Application() {
             }
 
             singleOf(::BookManager) bind BookManager::class
-            singleOf(::SettingsManager) bind SettingsManager::class
-            // ViewModels
             singleOf(::BookRepository) bind BookRepository::class
 
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
@@ -106,8 +77,8 @@ class ReaderApp : Application() {
                 HoomeScreenViewModel(
                     get(),
                     mapOf(
-                        FileType.pdf to get(qualifier = named(SharedFormatType.PDF)),
-                        FileType.fb2 to get(qualifier = named(SharedFormatType.FB2))
+                        FileType.pdf to get(qualifier = named(FormatType.PDF)),
+                        FileType.fb2 to get(qualifier = named(FormatType.FB2))
                     ),
                     get(),
                     get()

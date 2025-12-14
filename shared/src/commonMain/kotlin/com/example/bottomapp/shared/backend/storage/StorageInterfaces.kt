@@ -1,11 +1,8 @@
 package com.example.bottomapp.shared.backend.storage
 
-import com.example.bottomapp.shared.backend.domain.BookMetaInfo
+import com.example.bottomapp.shared.formats.abstractions.BookMetaInfo
 import kotlinx.serialization.Serializable
 
-/**
- * Book storage entry with metadata and preview
- */
 @Serializable
 data class BookStorageEntry(
     val title: String,
@@ -14,9 +11,6 @@ data class BookStorageEntry(
     val bookMetaInfo: BookMetaInfo
 )
 
-/**
- * Book repository interface for database operations
- */
 interface IBookRepository {
     suspend fun saveBooks(books: List<BookStorageEntry>)
     suspend fun addBook(book: BookStorageEntry)

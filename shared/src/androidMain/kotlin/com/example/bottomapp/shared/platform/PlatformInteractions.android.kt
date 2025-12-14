@@ -5,9 +5,6 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.core.net.toUri
 
-/**
- * Android implementation of MessageHandler
- */
 actual class MessageHandler(
     private val context: Context
 ) {
@@ -20,9 +17,6 @@ actual class MessageHandler(
     }
 }
 
-/**
- * Android implementation of FileUriHandler
- */
 actual class FileUriHandler(
     private val context: Context
 ) {

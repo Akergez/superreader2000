@@ -27,9 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import com.example.bottomapp.shared.ui.screens.homescreen.components.IconScrollSelector
+import com.example.bottomapp.shared.ui.screens.settingsscreen.components.IconScrollSelector
 import com.example.bottomapp.shared.ui.screens.readerscreens.common.FlipMode
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import pdfreaderjetpackcompose.shared.generated.resources.Res
+import pdfreaderjetpackcompose.shared.generated.resources.apply_inversion
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,7 +86,7 @@ fun SettingsModal(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                   "", //getString(LocalContext.current, R.string.apply_inversion),
+                   stringResource( Res.string.apply_inversion),
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Spacer(modifier = Modifier.weight(1f))

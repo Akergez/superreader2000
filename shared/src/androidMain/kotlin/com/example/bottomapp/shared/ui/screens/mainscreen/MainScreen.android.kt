@@ -74,41 +74,10 @@ actual fun rememberStorageDirectoryPicker(
     }
 }
 
-/**
- * Android implementation of string resource getter
- */
-@Composable
-actual fun getStringResource(key: String): String {
-    val context = LocalContext.current
-    val resId = when (key) {
-        "choose_storage" -> context.resources.getIdentifier("choose_storage", "string", context.packageName)
-        "choose_storage_description" -> context.resources.getIdentifier("choose_storage_description", "string", context.packageName)
-        "choose" -> context.resources.getIdentifier("choose", "string", context.packageName)
-        else -> 0
-    }
-    return if (resId != 0) {
-        context.getString(resId)
-    } else {
-        // Fallback values
-        when (key) {
-            "choose_storage" -> "Choose Storage"
-            "choose_storage_description" -> "Please select a directory where your books are stored"
-            "choose" -> "Choose"
-            else -> key
-        }
-    }
-}
-
-/**
- * Android implementation of URL encoding
- */
 actual fun urlEncode(value: String): String {
     return URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
 }
 
-/**
- * Android implementation of URL decoding
- */
 actual fun urlDecode(value: String): String {
     return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
         URLDecoder.decode(value, StandardCharsets.UTF_8)

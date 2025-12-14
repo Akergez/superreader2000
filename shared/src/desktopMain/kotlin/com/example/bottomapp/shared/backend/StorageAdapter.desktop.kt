@@ -1,16 +1,13 @@
 package com.example.bottomapp.shared.backend
 
-import com.example.bottomapp.shared.backend.bookExtractors.BookInfoExtractorFactory
-import com.example.bottomapp.shared.backend.bookExtractors.IBookInfoExtractorFactory
-import com.example.bottomapp.shared.backend.domain.BookMetaInfo
-import com.example.bottomapp.shared.backend.domain.FormatType
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
-import com.example.bottomapp.shared.backend.settings.DefaultSettingsManager
 import com.example.bottomapp.shared.backend.settings.ISettingsManager
-import com.example.bottomapp.shared.backend.storage.Book
 import com.example.bottomapp.shared.backend.storage.IDeserializer
 import com.example.bottomapp.shared.backend.storage.INameProvider
 import com.example.bottomapp.shared.backend.storage.StorageManager
+import com.example.bottomapp.shared.formats.abstractions.BookInfoExtractorFactory
+import com.example.bottomapp.shared.formats.abstractions.BookMetaInfo
+import com.example.bottomapp.shared.formats.abstractions.FormatType
 
 actual class BookStorage(
     settingsManager: ISettingsManager,
