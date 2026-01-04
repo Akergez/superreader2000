@@ -9,6 +9,7 @@ import com.example.bottomapp.shared.backend.BookStorage
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.shared.backend.storage.BookMetaInfoDeserializer
 import com.example.bottomapp.shared.backend.storage.BookRepository
+import com.example.bottomapp.shared.backend.storage.FileService
 import com.example.bottomapp.shared.backend.storage.PreferencesStore
 import com.example.bottomapp.shared.di.androidPlatformModule
 import com.example.bottomapp.shared.di.commonModule
@@ -41,6 +42,10 @@ class ReaderApp : Application() {
                 PreferencesStore(androidContext())
             }
 
+            single<FileService> {
+                FileService(androidContext())
+            }
+
             single<IReaderScreenProvider>(named(FormatType.PDF)) { PdfReaderScreenProvider(get(), get()) }
             single<IReaderScreenProvider>(named(FormatType.FB2)) { Fb2ReaderScreenProvider(get()) }
 
@@ -59,10 +64,11 @@ class ReaderApp : Application() {
 
             single {
                 BookStorage(
-                    androidContext(), get(), get(), get(), mapOf(
+                    get(), get(), get(), mapOf(
                         FormatType.PDF to get(qualifier = named(FormatType.PDF)),
                         FormatType.FB2 to get(qualifier = named(FormatType.FB2))
-                    )
+                    ),
+                    get()
                 )
             }
 

@@ -5,13 +5,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import com.example.bottomapp.shared.backend.exceptions.FailedToCreateFileException
 import com.example.bottomapp.shared.backend.exceptions.InvalidStorageDirectoryException
 import com.example.bottomapp.shared.backend.previewGenerators.IPreviewGenerator
 import com.example.bottomapp.shared.formats.abstractions.IBookInfoExtractorFactory
 import com.example.bottomapp.shared.backend.previewGenerators.FileWrapper
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
+import com.example.bottomapp.shared.backend.previewGenerators.Image
 import com.example.bottomapp.shared.backend.settings.ISettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -21,297 +22,88 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
-actual class FileWrapper actual constructor(path: String) {
-    val file : File = DocumentFile.fromTreeUri(path)
-}
+actual class FileService(val context: Context) {
+    actual fun getFileFromPath(path: String): DocumentFileWrapper? {
+        val documentFile = DocumentFile.fromTreeUri(context, path.toUri()) ?: return null
+        return DocumentFileWrapper(documentFile)
+    }
 
-actual abstract class StorageManager<T>(
-    val context: Context,
-    private val settingsManager: ISettingsManager,
-    private val deserializer: IDeserializer<T>,
-    private val nameProvider: INameProvider<T>,
-    private val infoExtractor: IBookInfoExtractorFactory<T>,
-    private val previewGeneratorProvider: (T) -> IPreviewGenerator
-) {
-    private val fileCache = HashMap<String, File>()
-
-    actual suspend fun updateBundlePreview(newBundlePreview: String, bundleName: String): Result<String> =
-        withContext(Dispatchers.IO) {
-            Log.i("StorageManager", "Updating preview for $bundleName")
-            val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@withContext Result.failure(
-                Exception("Storage directory not set")
-            )
-            val storageDir =
-                DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                    Exception("Invalid storage directory")
-                )
-            val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
-                Exception("Bundle not found")
-            )
-            val fileName = nameProvider.previewFilename(bundleName)
-
-            val existingFile =
-                bundleDir.findFile(fileName) ?: bundleDir.createFile("image/jpeg", fileName)
-                ?: return@withContext Result.failure(Exception("Failed to create preview file"))
-
-            context.contentResolver.openInputStream(newBundlePreview.toUri())?.use { inputStream ->
-                context.contentResolver.openOutputStream(existingFile.uri)?.use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-            return@withContext Result.success(existingFile.uri.toString())
-        }
-
-   actual suspend fun createBundle(
-        bundleName: String, file: String, meta: T, mimeType: String
-    ): Result<BundleCreateResult<T>> = withContext(Dispatchers.IO) {
-        Log.i("StorageManager", "Creating bundle $bundleName")
-        val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@withContext Result.failure(
-            Error("Storage directory not set")
-        )
-        val storageDir =
-            DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                Error("Invalid storage directory")
-            )
-
-        val existingFile = storageDir.findFile(bundleName)
-        if (existingFile != null) {
-            return@withContext Result.failure(Error("Bundle already exists"))
-        }
-
-        val bundleStorage = storageDir.createDirectory(bundleName)
-            ?: return@withContext Result.failure(Error("Failed to create bundle directory"))
-
-        val destFile = bundleStorage.createFile(mimeType, nameProvider.fileName(bundleName, meta))
-            ?: return@withContext Result.failure(
-                Error("Failed to create destination file")
-            )
-
-        context.contentResolver.openInputStream(file.toUri())?.use { input ->
-            context.contentResolver.openOutputStream(destFile.uri)?.use { output ->
-                input.copyTo(output)
+    actual fun copy(source: String, destination: String) {
+        context.contentResolver.openInputStream(source.toUri())?.use { inputStream ->
+            context.contentResolver.openOutputStream(destination.toUri())?.use { outputStream ->
+                inputStream.copyTo(outputStream)
             }
         }
+    }
 
-        val metaFile =
-            bundleStorage.createFile("application/json", nameProvider.jsonMetaFilename(bundleName))
-                ?: return@withContext Result.failure(
-                    FailedToCreateFileException()
-                )
-
-        val jsonString = deserializer.serialize(meta)
-       context.contentResolver.openOutputStream(metaFile.uri)?.use { output ->
-            output.write(jsonString.toByteArray())
+    actual fun writeText(path: String, content: String) {
+        context.contentResolver.openOutputStream(path.toUri())?.use { output ->
+            output.write(content.toByteArray())
         }
+    }
 
-        val previewFile =
-            bundleStorage.createFile("image/jpeg", nameProvider.previewFilename(bundleName))
-                ?: return@withContext Result.failure(
-                    Error("Failed to create preview file")
-                )
-        var bookFile: File? = null
-        getBookFile(bundleName, meta).onSuccess { bookFile = it.file }
-            .onFailure { return@withContext Result.failure(it) }
-
-        val previewBitmap = previewGeneratorProvider(meta).generatePreview(FileWrapper(bookFile!!))?.bitmap
-            ?: return@withContext Result.failure(
-                Error("Failed to generate preview bitmap")
-            )
-       context.contentResolver.openOutputStream(previewFile.uri)?.use { output ->
-            previewBitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+    actual fun writeBitmap(path: String, bitmap: Image) {
+        context.contentResolver.openOutputStream(path.toUri())?.use { output ->
+            bitmap.bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
         }
-        return@withContext Result.success(
-            BundleCreateResult<T>(
-                destFile.uri.toString(),
-                bundleName,
-                metaFile.uri.toString(),
-                previewFile.uri.toString(),
-                meta,
-                infoExtractor.createExtractor(meta).getAuthor(bookFile!!)
-            )
-        )
     }
 
-    actual suspend fun renameBundle(
-        old: String, new: String, meta: T
-    ): Result<BundleEditResult<T>> = withContext(Dispatchers.IO) {
-        Log.i("StorageManager", "Renaming bundle $old to $new")
-        val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@withContext Result.failure(
-            Exception("Storage directory not set")
-        )
-        val storageDir =
-            DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                Exception("Invalid storage directory")
-            )
-
-        val bundleDir = storageDir.findFile(old)
-            ?: return@withContext Result.failure(Exception("Bundle not found"))
-
-        bundleDir.renameTo(new)
-
-        val oldJsonPath = bundleDir.findFile(nameProvider.jsonMetaFilename(old))
-            ?: return@withContext Result.failure(Exception("Metadata file not found"))
-        val oldImagePath = bundleDir.findFile(nameProvider.previewFilename(old))
-            ?: return@withContext Result.failure(Exception("Preview file not found"))
-        val oldFilePath = bundleDir.findFile(nameProvider.fileName(old, meta))
-            ?: return@withContext Result.failure(Exception("Book file not found"))
-
-        oldJsonPath.renameTo(nameProvider.jsonMetaFilename(new))
-        oldImagePath.renameTo(nameProvider.previewFilename(new))
-        oldFilePath.renameTo(nameProvider.fileName(new, meta))
-
-        return@withContext Result.success(
-            BundleEditResult(
-                oldFilePath.uri.toString(),
-                new,
-                oldJsonPath.uri.toString(),
-                oldImagePath.uri.toString(),
-                meta,
-            )
-        )
+    actual fun readText(path: String): String? {
+        return context.contentResolver.openInputStream(path.toUri())?.bufferedReader()?.use { it.readText() }
     }
 
-   actual suspend fun deleteBundle(bundleName: String): Result<Unit> = withContext(Dispatchers.IO) {
-        Log.i("StorageManager", "Deleting bundle $bundleName")
-        val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@withContext Result.failure(
-            Exception("Storage directory not set")
-        )
-        val storageDir =
-            DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                InvalidStorageDirectoryException()
-            )
-
-        val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
-            Exception("Bundle not found")
-        )
-
-        bundleDir.delete()
-
-        return@withContext Result.success(Unit)
-    }
-
-    private fun getPreviewUri(bundleName: String): Result<Uri?> {
-        Log.i("StorageManager", "Getting preview for $bundleName")
-        val storageUri = settingsManager.getStoragePath()?.toUri()
-            ?: return Result.failure(Exception("Storage directory not set"))
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri) ?: return Result.failure(
-            InvalidStorageDirectoryException()
-        )
-        val bundleDir =
-            storageDir.findFile(bundleName) ?: return Result.failure(Exception("Bundle not found"))
-
-        val previewFile =
-            bundleDir.findFile(nameProvider.previewFilename(bundleName)) ?: return Result.failure(
-                Exception("Preview file not found")
-            )
-        return Result.success(previewFile.uri)
-    }
-
-    actual suspend fun updateBundleMeta(bundleName: String, meta: T): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            Log.i("StorageManager", "Updating metadata for $bundleName")
-            val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@withContext Result.failure(
-                Exception("Storage directory not set")
-            )
-            val storageDir =
-                DocumentFile.fromTreeUri(context, storageUri) ?: return@withContext Result.failure(
-                    InvalidStorageDirectoryException()
-                )
-
-            val bundleDir = storageDir.findFile(bundleName) ?: return@withContext Result.failure(
-                Exception("Bundle not found")
-            )
-
-            val metaFile = bundleDir.findFile(nameProvider.jsonMetaFilename(bundleName))
-                ?: return@withContext Result.failure(
-                    Exception("Metadata file not found")
-                )
-            metaFile.delete()
-            val updatedMetaFile =
-                bundleDir.createFile("application/json", nameProvider.jsonMetaFilename(bundleName))
-                    ?: return@withContext Result.failure(
-                        Exception("Failed to create metadata file")
-                    )
-
-            val jsonString = deserializer.serialize(meta)
-            context.contentResolver.openOutputStream(updatedMetaFile.uri)?.use { output ->
-                output.write(jsonString.toByteArray())
-            }
-            return@withContext Result.success(Unit)
-        }
-
-    actual suspend fun listAllBundles(): List<BundleEditResult<T>?> = coroutineScope {
-        Log.i("StorageManager", "Listing all bundles")
-        val storageUri = settingsManager.getStoragePath()?.toUri() ?: return@coroutineScope emptyList()
-        val storageDir =
-            DocumentFile.fromTreeUri(context, storageUri) ?: return@coroutineScope emptyList()
-
-        val files = storageDir.listFiles()
-        files.map { file ->
-            async(Dispatchers.IO) {
-                if (file.isDirectory) {
-                    val metaFile = file.findFile(nameProvider.jsonMetaFilename(file.name!!))
-                    if (metaFile != null && metaFile.exists()) {
-                        val jsonString =
-                            context.contentResolver.openInputStream(metaFile.uri)?.bufferedReader()
-                                .use { it?.readText() }
-                        val bookMetaInfo = deserializer.deserialize(jsonString!!)
-                        val bookFile = file.findFile(nameProvider.previewFilename(file.name!!))
-                        val previewFile =
-                            file.findFile(nameProvider.fileName(file.name!!, bookMetaInfo))
-                                ?: return@async null
-                        val name = file?.name ?: return@async null
-                        val bookFileUri = bookFile?.uri ?: return@async null
-                        BundleEditResult(
-                            previewFile.uri.toString(), name, metaFile.uri.toString(), bookFileUri.toString(), bookMetaInfo
-                        )
-                    } else {
-                        null
-                    }
-                } else {
-                    null
-                }
-            }
-        }.awaitAll()
-    }
-
-   actual fun getBookFile(bundleName: String, meta: T): Result<FileWrapper> {
-        Log.i("StorageManager", "Getting book file for $bundleName")
-        // Check if the file is already in the cache
-        val storageUri = settingsManager.getStoragePath()
-            ?: return Result.failure(Exception("Storage directory not set"))
-        fileCache[bundleName]?.let {
-            return Result.success(FileWrapper(it))
-        }
-
-        val storageDir = DocumentFile.fromTreeUri(context, storageUri.toUri()) ?: return Result.failure(
-            InvalidStorageDirectoryException()
-        )
-        val bundleDir = storageDir.findFile(bundleName) ?: return Result.failure(
-            Exception("Bundle not found")
-        )
-        val documentFile =
-            bundleDir.findFile(nameProvider.fileName(bundleName, meta)) ?: return Result.failure(
-                Exception("File not found in storage directory")
-            )
-
-        val destFile = File(context.filesDir, nameProvider.fileName(bundleName, meta))
-        context.contentResolver.openInputStream(documentFile.uri)?.use { input ->
+    actual fun copyToLocalFile(source: DocumentFileWrapper, destFileName: String): File {
+        val destFile = File(context.filesDir, destFileName)
+        context.contentResolver.openInputStream(source.uri)?.use { input ->
             FileOutputStream(destFile).use { output ->
                 input.copyTo(output)
             }
         }
-
-        // Cache the file
-        fileCache[bundleName] = destFile
-
-        return Result.success(FileWrapper(destFile))
-    }
-
-    actual fun clearFileCache() {
-        fileCache.values.forEach { it.delete() }
-        fileCache.clear()
+        return destFile
     }
 }
 
 actual class ContentResolverWrapper(val ContentResolver: ContentResolver)
+actual class DocumentFileWrapper(val file: DocumentFile) {
+    val uri: Uri get() = file.uri
+    actual val name: String? get() = file.name
+
+    actual fun exists(): Boolean = file.exists()
+
+    actual fun findFile(name: String): DocumentFileWrapper? {
+        return DocumentFileWrapper(
+            file.findFile(name) ?: return null
+        )
+    }
+
+    actual fun absolutePath(): String {
+        return file.uri.toString()
+    }
+
+    actual fun createDirectory(name: String): DocumentFileWrapper? {
+        val newDir = file.createDirectory(name) ?: return null
+        return DocumentFileWrapper(newDir)
+    }
+
+    actual fun createFile(mimeType: String, name: String): DocumentFileWrapper? {
+        val file = file.createFile(mimeType, name) ?: return null
+        return DocumentFileWrapper(file)
+    }
+
+    actual fun renameTo(name: String): Boolean {
+       return file.renameTo(name)
+    }
+
+    actual fun delete(): Boolean {
+        file.delete()
+        return true
+    }
+
+    actual fun listFiles(): List<DocumentFileWrapper> {
+       return file.listFiles().map { DocumentFileWrapper(it) }
+    }
+
+    actual fun isDirectory(): Boolean {
+        return file.isDirectory
+    }
+}

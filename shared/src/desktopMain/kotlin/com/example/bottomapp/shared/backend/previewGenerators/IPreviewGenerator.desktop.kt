@@ -3,7 +3,7 @@ package com.example.bottomapp.shared.backend.previewGenerators
 import java.awt.image.BufferedImage
 import java.io.File
 
-actual class FileWrapper(val file: File)
+actual class FileWrapper actual constructor(actual val file: File)
 
 actual class Image(val bufferedImage: BufferedImage) {
     actual val width: Int

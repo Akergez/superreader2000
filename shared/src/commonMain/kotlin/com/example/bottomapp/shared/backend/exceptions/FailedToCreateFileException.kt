@@ -5,3 +5,4 @@ class FailedToCreateFileException : Exception {
 
     constructor() : super("Failed to create destination file")
 }
+

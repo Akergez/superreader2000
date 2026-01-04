@@ -8,6 +8,7 @@ import com.example.bottomapp.shared.formats.abstractions.BookInfoExtractorFactor
 import com.example.bottomapp.shared.backend.storage.AppDatabase
 import com.example.bottomapp.shared.backend.storage.BookMetaInfoDeserializer
 import com.example.bottomapp.shared.backend.storage.BookRepository
+import com.example.bottomapp.shared.backend.storage.FileService
 import com.example.bottomapp.shared.backend.storage.IDeserializer
 import com.example.bottomapp.shared.backend.storage.INameProvider
 import com.example.bottomapp.shared.formats.abstractions.BookMetaInfo
@@ -26,6 +27,10 @@ fun desktopPlatformModule(): Module = module {
 
     single<FileUriHandler> {
         FileUriHandler()
+    }
+
+    single<FileService> {
+        FileService()
     }
 
     single {
@@ -52,7 +57,8 @@ fun desktopPlatformModule(): Module = module {
             mapOf(
                 FormatType.PDF to get(qualifier = named(FormatType.PDF)),
                 FormatType.FB2 to get(qualifier = named(FormatType.FB2))
-            )
+            ),
+            get()
         )
     }
 

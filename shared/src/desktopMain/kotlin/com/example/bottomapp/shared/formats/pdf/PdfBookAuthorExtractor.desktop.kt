@@ -2,7 +2,6 @@ package com.example.bottomapp.shared.formats.pdf
 
 import com.example.bottomapp.shared.formats.abstractions.BookMetaInfo
 import com.example.bottomapp.shared.formats.abstractions.IBookInfoExtractor
-import org.apache.pdfbox.pdmodel.PDDocument
 import java.io.File
 
 actual class PdfBookAuthorExtractor :

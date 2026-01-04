@@ -1,5 +1,7 @@
 package com.example.bottomapp.shared.backend.previewGenerators
 
+import java.io.File
+
 interface IPreviewGenerator {
     suspend fun generatePreview(filePath: FileWrapper): Image?
 }
@@ -9,6 +11,6 @@ expect class Image {
     val height: Int
 }
 
-expect class FileWrapper {
-
+expect class FileWrapper(file: File) {
+    val file: File
 }

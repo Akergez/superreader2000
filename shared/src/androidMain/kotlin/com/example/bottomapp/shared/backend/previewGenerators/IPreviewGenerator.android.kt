@@ -8,4 +8,4 @@ actual class Image(val bitmap: Bitmap) {
     actual val height: Int get() = bitmap.height
 }
 
-actual class FileWrapper(val file: File)
+actual class FileWrapper actual constructor(actual val file: File)
