@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @SerialName("djvu")
 data class DjvuProgress(
     val currentPage: Int,
-    val totalPages: Int
+    val totalPages: Int?
 ) : Progress() {
     override val formatType: FormatType = FormatType.DJVU
 
@@ -17,6 +17,6 @@ data class DjvuProgress(
         if (totalPages == 0) {
             return 0.0
         }
-        return currentPage / totalPages.toDouble() * 100
+        return currentPage / (totalPages?.toDouble() ?: 1.0) * 100
     }
 }

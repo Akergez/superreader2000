@@ -15,6 +15,7 @@ import com.example.bottomapp.shared.formats.abstractions.FileType
 import com.example.bottomapp.shared.formats.abstractions.FormatType
 import com.example.bottomapp.shared.formats.abstractions.Progress
 import com.example.bottomapp.shared.formats.djvu.DjvuBookAuthorExtractor
+import com.example.bottomapp.shared.formats.djvu.DjvuCreateFactory
 import com.example.bottomapp.shared.formats.djvu.DjvuProgress
 import com.example.bottomapp.shared.formats.fb2.Fb2BookAuthorExtractor
 import com.example.bottomapp.shared.formats.fb2.Fb2Progress
@@ -60,13 +61,15 @@ fun commonModule(): Module = module {
         BookInfoExtractorFactory(
             mapOf(
                 FormatType.PDF to get(qualifier = named(FormatType.PDF)),
-                FormatType.FB2 to get(qualifier = named(FormatType.FB2))
+                FormatType.FB2 to get(qualifier = named(FormatType.FB2)),
+                FormatType.DJVU to get(qualifier = named(FormatType.DJVU))
             )
         )
     }
 
     single<IBookCreateFactory>(named(FileType.pdf)) { PdfCreateFactory() }
     single<IBookCreateFactory>(named(FileType.fb2)) { Fb2CreateFactory() }
+    single<IBookCreateFactory>(named(FileType.djvu)) { DjvuCreateFactory() }
 
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.PDF)) { BookExtractorFactory().createPdfExtractor() }
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.DJVU)) { BookExtractorFactory().createDjvuExtractor() }
