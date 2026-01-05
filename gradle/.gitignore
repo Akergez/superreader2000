@@ -1,0 +1,9 @@
+# Gradle wrapper cache
+**/gradle/wrapper/gradle-wrapper.jar
+**/gradle/wrapper/gradle-wrapper.properties
+
+# Note: gradle-wrapper.jar and gradle-wrapper.properties are typically committed
+# but uncomment below if you want to exclude them
+# *.jar
+# *.properties
+

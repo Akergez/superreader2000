@@ -1,0 +1,23 @@
+# Build
+/build
+*.apk
+*.ap_
+*.aab
+
+# Android specific
+*.dex
+.lint/
+lint-results*.xml
+lint-results*.html
+
+# Gradle
+.gradle/
+
+# Local files
+local.properties
+
+# Test results
+test-results/
+
+# Generated
+/generated/
