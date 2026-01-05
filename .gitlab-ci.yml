@@ -249,9 +249,9 @@ release:
     - echo "Creating release"
   release:
     tag_name: ${CI_COMMIT_TAG}
-    name: "SuperReader2000 $CI_COMMIT_TAG"
+    name: "SuperReader2000 ${CI_COMMIT_TAG}"
     description: |
-      ## SuperReader2000 $CI_COMMIT_TAG
+      ## SuperReader2000 ${CI_COMMIT_TAG}
       
       ### Downloads
       
