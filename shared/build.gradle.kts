@@ -144,7 +144,7 @@ kotlin {
     }
 
     android {
-        namespace = "com.example.bottomapp.shared"
+        namespace = "com.akergez.superreader2000.shared"
         compileSdk = 36
 
         defaultConfig {

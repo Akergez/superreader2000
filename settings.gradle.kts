@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PDFReaderJetpackCompose"
-include(":bottomapp")
+rootProject.name = "SuperReader2000"
+include(":superreader2000")
 include(":shared")
 include(":desktopApp")

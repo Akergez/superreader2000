@@ -40,33 +40,37 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "com.example.bottomapp.desktop.MainKt"
+        mainClass = "com.akergez.superreader2000.desktop.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "PDFReaderKMP"
+            // Target formats: RPM for Linux (x86_64 and arm64), DMG for macOS (arm64)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Rpm)
+
+            packageName = "SuperReader2000"
             packageVersion = "1.0.0"
             description = "Cross-platform PDF, DjVu, and FB2 Reader"
-            vendor = "PDFReaderKMP"
+            vendor = "Akergez"
 
-            windows {
-                shortcut = true
-                upgradeUuid = "D6E29113-99C0-42B0-9929-F0151DA11000"
-            }
+            // Include all target architectures
+            includeAllModules = true
 
             linux {
-                packageName = "pdfreaderkmp"
-                debMaintainer = "support@pdfreaderkmp.com"
+                packageName = "superreader2000"
+                debMaintainer = "support@akergez.com"
                 menuGroup = "Office"
                 appRelease = "1"
                 appCategory = "Office"
                 rpmLicenseType = "Apache-2.0"
+                // RPM will be built for x86_64 and arm64 based on the build machine
+                // To build for specific arch, use: ./gradlew packageRpm -PtargetArch=<arch>
             }
 
             macOS {
-                bundleID = "com.example.pdfreaderkmp"
-                dockName = "PDF Reader KMP"
+                bundleID = "com.akergez.superreader2000"
+                dockName = "SuperReader2000"
                 appStore = false
+                // Build for arm64 (Apple Silicon)
+                // DMG will be created for the target architecture
             }
         }
     }
