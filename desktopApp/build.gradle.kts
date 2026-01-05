@@ -8,7 +8,7 @@ plugins {
 
 kotlin {
     jvm()
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     sourceSets {
         val jvmMain by getting {
@@ -56,11 +56,11 @@ compose.desktop {
 
             linux {
                 packageName = "superreader2000"
-                debMaintainer = "support@akergez.com"
+                debMaintainer = "ragusseven@gmail.com"
                 menuGroup = "Office"
                 appRelease = "1"
                 appCategory = "Office"
-                rpmLicenseType = "Apache-2.0"
+                rpmLicenseType = "GPL-3.0"
                 // RPM will be built for x86_64 and arm64 based on the build machine
                 // To build for specific arch, use: ./gradlew packageRpm -PtargetArch=<arch>
                 iconFile.set(project.file("src/jvmMain/resources/icon.png"))
