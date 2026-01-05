@@ -43,6 +43,9 @@ build:android:
       if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
         echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > $CI_PROJECT_DIR/release.keystore
         export KEYSTORE_PATH=$CI_PROJECT_DIR/release.keystore
+        export KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+        export KEY_ALIAS=$KEY_ALIAS
+        export KEY_PASSWORD=$KEY_PASSWORD
       fi
   script:
     - chmod +x ./gradlew
