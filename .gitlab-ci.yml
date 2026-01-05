@@ -199,7 +199,7 @@ package:publish:
       done
       
       # Upload Linux RPMs
-      for file in desktopApp/build/compose/binaries/main/rpm/*.rpm; do
+      for file in desktopApp/build/compose/binaries/main-release/rpm/*.rpm; do
         if [ -f "$file" ]; then
           filename=$(basename "$file")
           echo "Uploading $filename..."
