@@ -228,7 +228,7 @@ package:publish:
 # =============================================================================
 release:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image: registry.gitlab.com/gitlab-org/release-cli:v0.24.0
   needs:
     - job: package:publish
   script:
