@@ -230,6 +230,20 @@ release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:v0.24.0
   needs:
+    - job: build:android
+      artifacts: true
+    - job: build:linux-x86_64
+      artifacts: true
+      optional: true
+    - job: build:linux-arm64
+      artifacts: true
+      optional: true
+    - job: build:macos-arm64
+      artifacts: true
+      optional: true
+    - job: build:macos-x86_64
+      artifacts: true
+      optional: true
     - job: package:publish
   script:
     - echo "Creating release"
