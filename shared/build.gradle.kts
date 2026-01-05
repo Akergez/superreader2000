@@ -23,7 +23,7 @@ kotlin {
     androidTarget {
     }
 
-    jvmToolchain(21)
+    jvmToolchain(17)
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")

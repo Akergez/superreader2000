@@ -25,7 +25,7 @@ variables:
 # =============================================================================
 build:android:
   stage: build
-  image: eclipse-temurin:21-jdk
+  image: eclipse-temurin:17-jdk
   <<: *gradle_cache
   before_script:
     # Install Android SDK
@@ -67,13 +67,28 @@ build:linux-x86_64:
   stage: build
   image: fedora:latest
   <<: *gradle_cache
+
+  variables:
+    JAVA_VERSION: "17.0.10+7"
+    JAVA_HOME: "$CI_PROJECT_DIR/.jdk"
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
   before_script:
-    - dnf install -y java-21-openjdk java-21-openjdk-devel rpm-build
-    - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-    # Remove hardcoded org.gradle.java.home from gradle.properties (it's set for local macOS)
+    - dnf install -y curl tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
+
+    - |
+      curl -L -o jdk.tar.gz \
+        https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.10_7.tar.gz
+
+    - mkdir -p .jdk
+    - tar -xzf jdk.tar.gz --strip-components=1 -C .jdk
+
+    - export PATH="$JAVA_HOME/bin:$PATH"
+    - java -version
+    - ls "$JAVA_HOME/jmods"
+
   script:
-    - chmod +x ./gradlew
-    - ./gradlew :desktopApp:packageRpm
+    - ./gradlew desktopApp:packageReleaseRpm --no-daemon
   artifacts:
     paths:
       - desktopApp/build/compose/binaries/main/rpm/*.rpm
