@@ -262,11 +262,6 @@ release:
       
       **Android**: Download the APK and install (enable "Install from unknown sources" if needed)
       
-      **Linux (RPM)**:
-      ```bash
-        dnf install ./superreader2000-*.rpm
-      ```
-      
       **macOS**: Mount the DMG and drag SuperReader2000 to Applications folder
     assets:
       links:
