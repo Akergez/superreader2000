@@ -19,12 +19,17 @@ val localProperties = Properties().apply {
 android {
     signingConfigs {
         create("release") {
-            val keystorePath = localProperties.getProperty("RELEASE_STORE_FILE")
-            if (keystorePath != null) {
+            // Support both local.properties and environment variables (for CI/CD)
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+                ?: localProperties.getProperty("RELEASE_STORE_FILE")
+            if (keystorePath != null && file(keystorePath).exists()) {
                 storeFile = file(keystorePath)
-                storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
-                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
-                keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                    ?: localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                    ?: localProperties.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+                    ?: localProperties.getProperty("RELEASE_KEY_PASSWORD")
             }
         }
     }
@@ -48,6 +53,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Use release signing config if available
+            signingConfig = signingConfigs.findByName("release")?.takeIf {
+                it.storeFile?.exists() == true
+            } ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {

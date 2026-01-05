@@ -123,7 +123,23 @@ Output: `desktopApp/build/compose/binaries/main/dmg/SuperReader2000-1.0.0.dmg`
 
 > ⚠️ **RPM packages can ONLY be built on Linux systems.** Running `packageRpm` on macOS or Windows will not produce an RPM file - no error will be shown, but the rpm folder will not be created.
 
-#### Prerequisites (Linux only)
+#### Option A: Build on macOS using Docker (Recommended)
+
+Make sure Docker Desktop is installed and running, then:
+```bash
+docker run --rm -v "$(pwd)":/app -w /app fedora:latest bash -c "
+  dnf install -y java-17-openjdk java-17-openjdk-devel rpm-build && 
+  export JAVA_HOME=/usr/lib/jvm/java-17-openjdk && 
+  ./gradlew :desktopApp:packageRpm
+"
+```
+Output: `desktopApp/build/compose/binaries/main/rpm/superreader2000-1.0.0-1.x86_64.rpm`
+
+> Note: This builds an x86_64 RPM. For arm64 RPM, use `--platform linux/arm64` flag with Docker.
+
+#### Option B: Build natively on Linux
+
+##### Prerequisites
 Install `rpmbuild` tool before building:
 ```bash
 # Fedora/RHEL/CentOS
@@ -133,14 +149,14 @@ sudo dnf install rpm-build
 sudo apt install rpm
 ```
 
-#### Build for x86_64
+##### Build for x86_64
 Build on a Linux x86_64 machine:
 ```bash
 ./gradlew :desktopApp:packageRpm
 ```
 Output: `desktopApp/build/compose/binaries/main/rpm/superreader2000-1.0.0-1.x86_64.rpm`
 
-#### Build for arm64
+##### Build for arm64
 Build on a Linux arm64 machine:
 ```bash
 ./gradlew :desktopApp:packageRpm
@@ -186,4 +202,61 @@ For CI/CD pipelines, use separate build agents/runners for each target platform:
 - JDK 17+
 - For RPM: `rpmbuild` tool (`dnf install rpm-build` on Fedora/RHEL)
 - For DMG: Xcode command line tools (`xcode-select --install`)
+
+---
+
+## GitLab CI/CD Setup
+
+The project includes a `.gitlab-ci.yml` file that automates building for all platforms, publishing to GitLab Package Registry, and creating releases.
+
+### Required CI/CD Variables
+
+Set these variables in **GitLab → Settings → CI/CD → Variables**:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `ANDROID_KEYSTORE_BASE64` | Variable (masked) | Base64-encoded Android keystore file |
+| `KEYSTORE_PASSWORD` | Variable (masked) | Keystore password |
+| `KEY_ALIAS` | Variable (masked) | Key alias in the keystore |
+| `KEY_PASSWORD` | Variable (masked) | Key password |
+
+### Encoding Your Keystore
+
+To encode your keystore for CI/CD:
+```bash
+base64 -i my-release-key.jks | pbcopy  # macOS (copies to clipboard)
+# OR
+base64 my-release-key.jks > keystore_base64.txt  # Save to file
+```
+
+### Required GitLab Runners
+
+The pipeline requires runners with specific tags:
+
+| Platform | Required Tags | Description |
+|----------|---------------|-------------|
+| Android | `docker` | Any Docker-capable runner |
+| Linux x86_64 | `docker`, `linux`, `amd64` | Linux x86_64 runner |
+| Linux arm64 | `docker`, `linux`, `arm64` | Linux ARM64 runner |
+| macOS arm64 | `macos`, `arm64` | Apple Silicon Mac runner |
+| macOS x86_64 | `macos`, `amd64` | Intel Mac runner |
+
+> **Note**: If you don't have all runner types, some builds will be skipped (`allow_failure: true`).
+
+### Creating a Release
+
+Releases are automatically created when you push a tag:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This will:
+1. Build all artifacts (APK, AAB, RPM, DMG)
+2. Upload to GitLab Package Registry
+3. Create a GitLab Release with download links
+
+### Manual Workflow
+
+For builds on the default branch (without tags), artifacts are still built and uploaded to the Package Registry, but no formal release is created.
 
