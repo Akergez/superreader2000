@@ -232,7 +232,7 @@ release:
   needs:
     - job: package:publish
   before_script:
-    - apk add --no-cache bash coreutils sudo
+    - apk add --no-cache bash coreutils
   script:
     - echo "Creating release for tag ${CI_COMMIT_TAG}"
     - echo "Project ID ${CI_PROJECT_ID}"
@@ -264,7 +264,7 @@ release:
       
       **Linux (RPM)**:
       ```bash
-      sudo dnf install ./superreader2000-*.rpm
+        dnf install ./superreader2000-*.rpm
       ```
       
       **macOS**: Mount the DMG and drag SuperReader2000 to Applications folder
