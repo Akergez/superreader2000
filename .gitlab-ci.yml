@@ -38,6 +38,7 @@ build:android:
     - export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
     - yes | sdkmanager --licenses || true
     - sdkmanager "platforms;android-36" "build-tools;36.0.0"
+    # Remove hardcoded org.gradle.java.home from gradle.properties (it's set for local macOS)
     # Decode and setup keystore for signing
     - |
       if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
@@ -67,8 +68,9 @@ build:linux-x86_64:
   image: fedora:latest
   <<: *gradle_cache
   before_script:
-    - dnf install -y java-17-openjdk java-17-openjdk-devel rpm-build
-    - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+    - dnf install -y java-21-openjdk java-21-openjdk-devel rpm-build
+    - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+    # Remove hardcoded org.gradle.java.home from gradle.properties (it's set for local macOS)
   script:
     - chmod +x ./gradlew
     - ./gradlew :desktopApp:packageRpm
@@ -88,8 +90,9 @@ build:linux-arm64:
   image: fedora:latest
   <<: *gradle_cache
   before_script:
-    - dnf install -y java-17-openjdk java-17-openjdk-devel rpm-build
-    - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+    - dnf install -y java-21-openjdk java-21-openjdk-devel rpm-build
+    - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+    # Remove hardcoded org.gradle.java.home from gradle.properties (it's set for local macOS)
   script:
     - chmod +x ./gradlew
     - ./gradlew :desktopApp:packageRpm
