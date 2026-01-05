@@ -74,7 +74,7 @@ build:linux-x86_64:
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
   before_script:
-    - dnf install -y curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
+    - dnf install -y rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
 
     - |
       curl -L -o jdk.tar.gz \
@@ -88,12 +88,11 @@ build:linux-x86_64:
     - ls "$JAVA_HOME/jmods"
 
   script:
-    - ./gradlew desktopApp:createRuntimeImage --no-daemon --stacktrace --info -Dorg.gradle.logging.level=info
+    - ./gradlew desktopApp:packageReleaseRpm
 
   artifacts:
     paths:
-      - desktopApp/build/compose/binaries/main/rpm/*.rpm
-      - desktopApp/
+      - desktopApp/build/compose/binaries/main-release/rpm/*.rpm
     expire_in: 1 week
   rules:
     - if: $CI_COMMIT_TAG
@@ -106,21 +105,37 @@ build:linux-arm64:
   stage: build
   image: fedora:latest
   <<: *gradle_cache
+  tags:
+    - saas-linux-small-arm64
+  variables:
+    JAVA_VERSION: "17.0.10+7"
+    JAVA_HOME: "$CI_PROJECT_DIR/.jdk"
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
   before_script:
-    - dnf install -y java-21-openjdk java-21-openjdk-devel rpm-build
-    - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-    # Remove hardcoded org.gradle.java.home from gradle.properties (it's set for local macOS)
+    - dnf install -y rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
+
+    - |
+      curl -L -o jdk.tar.gz \
+        https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.10_7.tar.gz
+
+    - mkdir -p .jdk
+    - tar -xzf jdk.tar.gz --strip-components=1 -C .jdk
+
+    - export PATH="$JAVA_HOME/bin:$PATH"
+    - java -version
+    - ls "$JAVA_HOME/jmods"
+
   script:
-    - chmod +x ./gradlew
-    - ./gradlew :desktopApp:packageRpm
+    - ./gradlew desktopApp:packageReleaseRpm
+
   artifacts:
     paths:
-      - desktopApp/build/compose/binaries/main/rpm/*.rpm
+      - desktopApp/build/compose/binaries/main-release/rpm/*.rpm
     expire_in: 1 week
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  allow_failure: true  # arm64 runners may not be available
 
 # =============================================================================
 # macOS DMG Build (arm64 - Apple Silicon)
