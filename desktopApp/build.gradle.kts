@@ -63,6 +63,7 @@ compose.desktop {
                 rpmLicenseType = "Apache-2.0"
                 // RPM will be built for x86_64 and arm64 based on the build machine
                 // To build for specific arch, use: ./gradlew packageRpm -PtargetArch=<arch>
+                iconFile.set(project.file("src/jvmMain/resources/icon.png"))
             }
 
             macOS {
@@ -71,6 +72,7 @@ compose.desktop {
                 appStore = false
                 // Build for arm64 (Apple Silicon)
                 // DMG will be created for the target architecture
+                iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
             }
         }
     }

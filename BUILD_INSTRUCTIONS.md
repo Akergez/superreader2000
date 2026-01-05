@@ -16,11 +16,90 @@ This project supports building for:
 ```
 Output: `superreader2000/build/outputs/apk/debug/superreader2000-debug.apk`
 
-### Release APK
+### Release APK (unsigned)
 ```bash
 ./gradlew :superreader2000:assembleRelease
 ```
 Output: `superreader2000/build/outputs/apk/release/superreader2000-release.apk`
+
+### Signed Release APK
+
+#### Step 1: Generate a Keystore (one-time setup)
+```bash
+keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias
+```
+- Store the keystore file securely and remember your passwords
+- **Never commit the keystore to version control**
+
+#### Step 2: Configure Signing in build.gradle.kts
+
+Add signing config to `superreader2000/build.gradle.kts`:
+```kotlin
+android {
+    signingConfigs {
+        create("release") {
+            storeFile = file("path/to/my-release-key.jks")
+            storePassword = "your-store-password"
+            keyAlias = "my-key-alias"
+            keyPassword = "your-key-password"
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            // ...existing config...
+        }
+    }
+}
+```
+
+#### Step 2 (Alternative): Use Environment Variables (recommended for CI/CD)
+```kotlin
+android {
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            // ...existing config...
+        }
+    }
+}
+```
+
+Then set environment variables before building:
+```bash
+export KEYSTORE_PATH=/path/to/my-release-key.jks
+export KEYSTORE_PASSWORD=your-store-password
+export KEY_ALIAS=my-key-alias
+export KEY_PASSWORD=your-key-password
+./gradlew :superreader2000:assembleRelease
+```
+
+#### Step 3: Build the Signed APK
+```bash
+./gradlew :superreader2000:assembleRelease
+```
+Output: `superreader2000/build/outputs/apk/release/superreader2000-release.apk`
+
+#### Manual Signing (without modifying build.gradle.kts)
+You can also sign an unsigned APK manually:
+```bash
+# Build unsigned APK
+./gradlew :superreader2000:assembleRelease
+
+# Sign with apksigner (from Android SDK build-tools)
+apksigner sign --ks my-release-key.jks --out superreader2000-signed.apk superreader2000/build/outputs/apk/release/superreader2000-release-unsigned.apk
+
+# Verify signature
+apksigner verify superreader2000-signed.apk
+```
 
 ### App Bundle (AAB) for Play Store
 ```bash
@@ -38,23 +117,35 @@ Build on a macOS arm64 machine:
 ```bash
 ./gradlew :desktopApp:packageDmg
 ```
-Output: `desktopApp/build/compose/binaries/main/dmg/PDFReaderKMP-1.0.0.dmg`
+Output: `desktopApp/build/compose/binaries/main/dmg/SuperReader2000-1.0.0.dmg`
 
 ### Linux RPM
+
+> ⚠️ **RPM packages can ONLY be built on Linux systems.** Running `packageRpm` on macOS or Windows will not produce an RPM file - no error will be shown, but the rpm folder will not be created.
+
+#### Prerequisites (Linux only)
+Install `rpmbuild` tool before building:
+```bash
+# Fedora/RHEL/CentOS
+sudo dnf install rpm-build
+
+# Ubuntu/Debian (if building RPM on Debian-based systems)
+sudo apt install rpm
+```
 
 #### Build for x86_64
 Build on a Linux x86_64 machine:
 ```bash
 ./gradlew :desktopApp:packageRpm
 ```
-Output: `desktopApp/build/compose/binaries/main/rpm/pdfreaderkmp-1.0.0-1.x86_64.rpm`
+Output: `desktopApp/build/compose/binaries/main/rpm/superreader2000-1.0.0-1.x86_64.rpm`
 
 #### Build for arm64
 Build on a Linux arm64 machine:
 ```bash
 ./gradlew :desktopApp:packageRpm
 ```
-Output: `desktopApp/build/compose/binaries/main/rpm/pdfreaderkmp-1.0.0-1.aarch64.rpm`
+Output: `desktopApp/build/compose/binaries/main/rpm/superreader2000-1.0.0-1.aarch64.rpm`
 
 ---
 
