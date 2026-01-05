@@ -88,10 +88,12 @@ build:linux-x86_64:
     - ls "$JAVA_HOME/jmods"
 
   script:
-    - ./gradlew desktopApp:packageReleaseRpm --no-daemon
+    - ./gradlew desktopApp:createRuntimeImage --no-daemon --stacktrace --info -Dorg.gradle.logging.level=info
+
   artifacts:
     paths:
       - desktopApp/build/compose/binaries/main/rpm/*.rpm
+      - desktopApp/
     expire_in: 1 week
   rules:
     - if: $CI_COMMIT_TAG
