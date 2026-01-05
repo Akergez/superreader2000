@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("djvu")
+@SerialName("DJVU")
 data class DjvuProgress(
     val currentPage: Int,
     val totalPages: Int?

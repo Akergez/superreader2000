@@ -6,16 +6,16 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("pdf")
+@SerialName("PDF")
 data class PdfProgress(
-    val currentPage: Int,
+    val pageIndex: Int,
     val totalPages: Int
 ) : Progress() {
     override fun getProgressInPercent(): Double {
         if (totalPages == 0) {
             return 0.0
         }
-        return currentPage / totalPages.toDouble() * 100
+        return kotlin.math.round(pageIndex / totalPages.toDouble() * 100)
     }
 
     override val formatType: FormatType = FormatType.PDF

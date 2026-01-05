@@ -29,12 +29,12 @@ class PdfScreenViewModel(
         val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
         val pdfFlipMode = settingsManager.getFlipMode()
         _pdfScreenState.value = PdfScreenState(
-            pdfBookDomainModel.readProgress().currentPage,
+            pdfBookDomainModel.readProgress().pageIndex,
             ReaderMode.Reading,
             pdfFlipMode,
             docThemeMode
         )
-        currentPage = pdfBookDomainModel.readProgress().currentPage
+        currentPage = pdfBookDomainModel.readProgress().pageIndex
     }
 
     fun switchReaderMode(newMode: ReaderMode) {

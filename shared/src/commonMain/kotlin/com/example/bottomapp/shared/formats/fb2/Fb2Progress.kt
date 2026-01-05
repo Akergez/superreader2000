@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-@SerialName("fb2")
+@SerialName("FB2")
 data class Fb2Progress(
     val characterPosition: Int = 0,
     val totalCharacters: Int = 0
