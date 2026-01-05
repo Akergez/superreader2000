@@ -27,8 +27,6 @@ build:android:
   stage: build
   image: eclipse-temurin:17-jdk
   <<: *gradle_cache
-  tags:
-    - docker
   before_script:
     # Install Android SDK
     - apt-get update && apt-get install -y wget unzip
@@ -65,10 +63,6 @@ build:linux-x86_64:
   stage: build
   image: fedora:latest
   <<: *gradle_cache
-  tags:
-    - docker
-    - linux
-    - amd64
   before_script:
     - dnf install -y java-17-openjdk java-17-openjdk-devel rpm-build
     - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
@@ -90,10 +84,6 @@ build:linux-arm64:
   stage: build
   image: fedora:latest
   <<: *gradle_cache
-  tags:
-    - docker
-    - linux
-    - arm64
   before_script:
     - dnf install -y java-17-openjdk java-17-openjdk-devel rpm-build
     - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
@@ -116,8 +106,7 @@ build:macos-arm64:
   stage: build
   <<: *gradle_cache
   tags:
-    - macos
-    - arm64
+    - saas-macos-medium-m1
   before_script:
     - export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || echo "/opt/homebrew/opt/openjdk@17")
   script:
@@ -132,36 +121,11 @@ build:macos-arm64:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # =============================================================================
-# macOS DMG Build (x86_64 - Intel)
-# =============================================================================
-build:macos-x86_64:
-  stage: build
-  <<: *gradle_cache
-  tags:
-    - macos
-    - amd64
-  before_script:
-    - export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || echo "/usr/local/opt/openjdk@17")
-  script:
-    - chmod +x ./gradlew
-    - ./gradlew :desktopApp:packageDmg
-  artifacts:
-    paths:
-      - desktopApp/build/compose/binaries/main/dmg/*.dmg
-    expire_in: 1 week
-  rules:
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  allow_failure: true  # Intel Mac runners may not be available
-
-# =============================================================================
 # Publish to GitLab Package Registry
 # =============================================================================
 package:publish:
   stage: package
   image: curlimages/curl:latest
-  tags:
-    - docker
   needs:
     - job: build:android
       artifacts: true
@@ -226,8 +190,6 @@ package:publish:
 release:create:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  tags:
-    - docker
   needs:
     - job: package:publish
   script:
