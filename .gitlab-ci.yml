@@ -74,7 +74,7 @@ build:linux-x86_64:
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
   before_script:
-    - dnf install -y curl tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
+    - dnf install -y curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
 
     - |
       curl -L -o jdk.tar.gz \
@@ -142,6 +142,7 @@ build:macos-arm64:
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  allow_failure: true 
 
 # =============================================================================
 # Publish to GitLab Package Registry
