@@ -231,13 +231,6 @@ release:create:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
     - job: package:publish
-  script:
-    - |
-      VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
-      PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}"
-      
-      echo "Creating release for version: $VERSION"
-      echo "Package URL base: $PACKAGE_URL"
   release:
     tag_name: $CI_COMMIT_TAG
     name: "SuperReader2000 $CI_COMMIT_TAG"
