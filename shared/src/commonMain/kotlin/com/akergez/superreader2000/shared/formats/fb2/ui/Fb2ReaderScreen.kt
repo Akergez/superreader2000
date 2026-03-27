@@ -16,107 +16,122 @@ import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
 import com.akergez.superreader2000.shared.formats.fb2.Fb2BookDomainModel
 import com.akergez.superreader2000.shared.formats.fb2.Fb2Progress
 import com.akergez.superreader2000.shared.formats.fb2.Fb2RenderHelper
+import com.akergez.superreader2000.shared.formats.fb2.RenderConfig
 import com.akergez.superreader2000.shared.formats.fb2.ui.Fb2ViewerProvider
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
-
 @Composable
-fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: ISettingsManager = koinInject()) {
-    var currentPage by remember { mutableStateOf<Int?>(null) }
-    var mode by remember { mutableStateOf(ReaderMode.Reading) }
+fun Fb2ReaderScreen(
+    book: Fb2BookDomainModel,
+    settingsManager: ISettingsManager = koinInject(),
+) {
     val textMeasurer = rememberTextMeasurer()
-
-    var componentHeight by remember { mutableIntStateOf(0) }
-    var componentWidth by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
+    var currentPage by remember { mutableStateOf<Int?>(null) }
+    var mode by remember { mutableStateOf(ReaderMode.Reading) }
+
+    var componentWidth by remember { mutableIntStateOf(0) }
+    var componentHeight by remember { mutableIntStateOf(0) }
+
+    val renderConfig = remember {
+        MutableStateFlow(RenderConfig(pageWidth = 0, pageHeight = 0))
+    }
+
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-    val lock = Any()
 
-    LaunchedEffect(componentHeight) {
-        CoroutineScope(Dispatchers.IO).launch {
-            if (componentHeight > 1) {
-                val fb2File = book.getFile()
-                var newPage: Int
-                synchronized(lock) {
-                    if (fb2RenderHelper.value == null) {
-                        fb2RenderHelper.value = Fb2RenderHelper(
-                            componentWidth - (density.density * (16 + 32)).toInt(),
-                            componentHeight - (density.density * (16 + 40)).toInt(),
-                            textMeasurer,
-                            fb2File
-                        )
-                    }
-                    val offset = book.readProgress().characterPosition
-                    newPage = if (offset > 0) {
-                        fb2RenderHelper.value!!.getPageIndexByWordOffset(offset)
-                    } else {
-                        0
-                    }
+    LaunchedEffect(componentWidth, componentHeight) {
+        println(">>> LaunchedEffect w=$componentWidth h=$componentHeight")
+        if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
-                }
-                withContext(Dispatchers.Main) {
-                    currentPage = newPage
-                }
+        val paddingPx = (density.density * (16 + 32)).toInt()
+        val topBarPx  = (density.density * (16 + 40)).toInt()
+
+        val newConfig = RenderConfig(
+            pageWidth  = (componentWidth - paddingPx).coerceAtLeast(1),
+            pageHeight = (componentHeight - topBarPx).coerceAtLeast(1),
+        )
+        println(">>> newConfig=$newConfig")
+
+        if (fb2RenderHelper.value == null) {
+            println(">>> creating helper")
+            renderConfig.value = newConfig
+
+            val helper = withContext(Dispatchers.IO) {
+                Fb2RenderHelper(renderConfig, textMeasurer, book.getFile())
             }
+            fb2RenderHelper.value = helper
+            println(">>> helper created")
+
+            val offset = book.readProgress().characterPosition
+            println(">>> readProgress offset=$offset")
+            currentPage = if (offset > 0) {
+                withContext(Dispatchers.IO) { helper.getPageIndexByWordOffset(offset) }
+            } else {
+                0
+            }
+            println(">>> currentPage=$currentPage")
+        } else {
+            println(">>> updating config only")
+            renderConfig.value = newConfig
         }
     }
 
-    val onPageChange = { pageIndex: Int ->
-        if (fb2RenderHelper.value != null) {
-            val helper = fb2RenderHelper.value!!
+    val onPageChange: (Int) -> Unit = { pageIndex: Int ->
+        val helper = fb2RenderHelper.value
+        if (helper != null) {
+            currentPage = pageIndex
             if (helper.pageWordSum.size > pageIndex) {
                 CoroutineScope(Dispatchers.IO).launch {
                     book.saveProgress(
                         Fb2Progress(
-                            helper.pageWordSum[pageIndex],
-                            helper.totalWords.value ?: 0
+                            characterPosition = helper.pageWordSum[pageIndex],
+                            totalCharacters   = helper.totalWords.value ?: 0,
                         )
                     )
                 }
             }
-            currentPage = pageIndex
         }
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .onGloballyPositioned {
-            componentHeight = it.size.height
-            componentWidth = it.size.width
-        }) {
-        if (fb2RenderHelper.value != null && currentPage != null) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned {
+                componentWidth  = it.size.width
+                componentHeight = it.size.height
+                println(">>> onGloballyPositioned w=${it.size.width} h=${it.size.height}")
+            }
+    ) {
+        val helper = fb2RenderHelper.value
+        val page   = currentPage
+        println(">>> render: helper=${helper != null} page=$page")
+
+        if (helper != null && page != null) {
             val curlMode = remember { settingsManager.getFlipMode() }
-            //Log.d("Fb2ReaderScreen", "$currentPage")
             BookContent(
-                currentPage = currentPage!!,
-                totalPages = fb2RenderHelper.value!!.pagesCount,
-                mode = mode,
-                onPageChange = onPageChange,
-                onToggleMode = { newMode -> mode = newMode },
-                flipMode = curlMode,
-                getPage = { page -> fb2RenderHelper.value!!.openPage(page, false) },
-                documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
-                updateDocumentThemeMode = { docThemeMode ->
-                    settingsManager.setDocumentsTheme(
-                        docThemeMode
-                    )
-                },
-                updateFlipMode = { flipMode -> settingsManager.setFlipMode(flipMode) },
-                onCarouselBack = { mode = ReaderMode.Reading },
-                title = book.getMetadata().title,
-                tableOfContent = fb2RenderHelper.value!!.tableOfContents,
-                viewerProvider = Fb2ViewerProvider()
+                currentPage             = page,
+                totalPages              = helper.pagesCount,
+                mode                    = mode,
+                onPageChange            = onPageChange,
+                onToggleMode            = { newMode -> mode = newMode },
+                flipMode                = curlMode,
+                getPage                 = { p -> helper.openPage(p, false) },
+                documentTheme           = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
+                updateDocumentThemeMode = { settingsManager.setDocumentsTheme(it) },
+                updateFlipMode          = { settingsManager.setFlipMode(it) },
+                onCarouselBack          = { mode = ReaderMode.Reading },
+                title                   = book.getMetadata().title,
+                tableOfContent          = helper.tableOfContents,
+                viewerProvider          = Fb2ViewerProvider(),
             )
-        } else {
-            //Text(getString(LocalContext.current, R.string.loading))
         }
     }
-
 }
