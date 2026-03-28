@@ -159,25 +159,24 @@ package:publish:
   script:
     - PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}"
     - |
+      # Android
       for file in superreader2000/build/outputs/apk/release/*.apk; do
-        if [ -f "$file" ]; then
-          filename="SuperReader2000-${VERSION}.apk"
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/${filename}"
-        fi
+        [ -f "$file" ] && curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}.apk"
       done
     - |
+      # Linux RPMs
       for file in desktopApp/build/compose/binaries/main-release/rpm/*.rpm; do
         if [ -f "$file" ]; then
           arch=$(basename "$file" | grep -oE "x86_64|aarch64")
-          filename="SuperReader2000-${VERSION}-${arch}-rpm.rpm"
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/${filename}"
+          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}-${arch}-rpm.rpm"
         fi
       done
     - |
+      # macOS DMG
       for file in desktopApp/build/compose/binaries/main/dmg/*.dmg; do
         if [ -f "$file" ]; then
-          filename="SuperReader2000-${VERSION}-macOS.dmg"
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/${filename}"
+          arch=$(basename "$file" | grep -oE "arm64|x86_64" || echo "")
+          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}-${arch}-macOS.dmg"
         fi
       done
   rules:
@@ -194,10 +193,6 @@ release:
     - job: package:publish
   script:
     - echo "Creating release for tag ${CI_COMMIT_TAG}"
-    - echo "Project ID ${CI_PROJECT_ID}"
-    - echo "API URL ${CI_API_V4_URL}"
-    - echo "Full URL example ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/superreader2000-release.apk"
-    - echo "Creating release"
   release:
     tag_name: ${CI_COMMIT_TAG}
     name: "SuperReader2000 ${VERSION}"
@@ -206,7 +201,7 @@ release:
       - Android APK: SuperReader2000-${VERSION}.apk
       - Linux RPM (x86_64): SuperReader2000-${VERSION}-x86_64-rpm.rpm
       - Linux RPM (arm64): SuperReader2000-${VERSION}-aarch64-rpm.rpm
-      - macOS DMG: SuperReader2000-${VERSION}-macOS.dmg
+      - macOS DMG (arm64/x86_64): SuperReader2000-${VERSION}-macOS.dmg
     assets:
       links:
         - name: "Android APK"
