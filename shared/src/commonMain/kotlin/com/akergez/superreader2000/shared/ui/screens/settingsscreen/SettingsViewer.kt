@@ -38,8 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.akergez.superreader2000.shared.backend.settings.AppThemeMode
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
-import com.akergez.superreader2000.shared.ui.components.BottomNavigationBar
-import com.akergez.superreader2000.shared.ui.screens.Screen
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.components.IconScrollSelector
 import com.akergez.superreader2000.shared.ui.screens.mainscreen.rememberStorageDirectoryPicker
 import org.jetbrains.compose.resources.stringResource
@@ -60,8 +58,7 @@ import superreader2000.shared.generated.resources.title_storage_address
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-public fun SettingsScreen(navController: Any) {
-    val actualNavController = navController as NavController
+fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Unit = {}) {
     val settingsViewModel: SettingsViewModel = koinViewModel()
     val settings by settingsViewModel.settingsState.collectAsState()
     val directoryLauncher = rememberStorageDirectoryPicker(
@@ -71,14 +68,10 @@ public fun SettingsScreen(navController: Any) {
         onPermissionGranted = {}
     )
 
-    val neededResourceDONOTDELETE = stringResource(Res.string.error_book_already_exists)
+    @Suppress("UNUSED_VARIABLE", "UNUSED_EXPRESSION")
+    stringResource(Res.string.error_book_already_exists)
 
-    Scaffold(bottomBar = {
-        BottomNavigationBar(
-            actualNavController,
-            Screen.SETTINGS_SCREEN
-        )
-    }) { innerPadding ->
+    Scaffold(bottomBar = bottomBar) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -211,5 +204,3 @@ fun <TEnum> ThemeSelector(
         }
     }
 }
-
-

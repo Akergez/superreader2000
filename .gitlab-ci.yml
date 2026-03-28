@@ -1,7 +1,5 @@
 # GitLab CI/CD Pipeline for SuperReader2000
-# Builds for Android, Linux (RPM), and macOS (DMG)
-# Publishes artifacts to GitLab Package Registry and creates releases
-
+# Build Android, Linux (RPM), macOS (DMG) with versioned filenames
 stages:
   - build
   - package
@@ -10,8 +8,8 @@ stages:
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  VERSION: "${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
 
-# Cache Gradle dependencies
 .gradle_cache: &gradle_cache
   cache:
     key: "$CI_COMMIT_REF_SLUG"
@@ -28,7 +26,6 @@ build:android:
   image: eclipse-temurin:17-jdk
   <<: *gradle_cache
   before_script:
-    # Install Android SDK
     - apt-get update && apt-get install -y wget unzip
     - export ANDROID_HOME=/opt/android-sdk
     - mkdir -p $ANDROID_HOME/cmdline-tools
@@ -38,8 +35,6 @@ build:android:
     - export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
     - yes | sdkmanager --licenses || true
     - sdkmanager "platforms;android-36" "build-tools;36.0.0"
-    # Remove hardcoded org.gradle.java.home from gradle.properties (it's set for local macOS)
-    # Decode and setup keystore for signing
     - |
       if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
         echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > $CI_PROJECT_DIR/release.keystore
@@ -50,8 +45,12 @@ build:android:
       fi
   script:
     - chmod +x ./gradlew
-    # Build signed release APK
     - ./gradlew :superreader2000:assembleRelease
+    - |
+      # Переименование APK с версией
+      APK_SRC=$(ls superreader2000/build/outputs/apk/release/*.apk | head -n1)
+      APK_NAME="SuperReader2000-${VERSION}.apk"
+      mv "$APK_SRC" "superreader2000/build/outputs/apk/release/$APK_NAME"
   artifacts:
     paths:
       - superreader2000/build/outputs/apk/release/*.apk
@@ -67,29 +66,23 @@ build:linux-x86_64:
   stage: build
   image: fedora:latest
   <<: *gradle_cache
-
   variables:
-    JAVA_VERSION: "17.0.10+7"
     JAVA_HOME: "$CI_PROJECT_DIR/.jdk"
-    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-
   before_script:
     - dnf install -y rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
-
     - |
       curl -L -o jdk.tar.gz \
         https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.10_7.tar.gz
-
     - mkdir -p .jdk
     - tar -xzf jdk.tar.gz --strip-components=1 -C .jdk
-
     - export PATH="$JAVA_HOME/bin:$PATH"
-    - java -version
-    - ls "$JAVA_HOME/jmods"
-
   script:
     - ./gradlew desktopApp:packageReleaseRpm
-
+    - |
+      # Переименование RPM с версией
+      RPM_SRC=$(ls desktopApp/build/compose/binaries/main-release/rpm/*x86_64.rpm | head -n1)
+      RPM_NAME="SuperReader2000-${VERSION}-x86_64.rpm"
+      mv "$RPM_SRC" "desktopApp/build/compose/binaries/main-release/rpm/$RPM_NAME"
   artifacts:
     paths:
       - desktopApp/build/compose/binaries/main-release/rpm/*.rpm
@@ -108,27 +101,21 @@ build:linux-arm64:
   tags:
     - saas-linux-small-arm64
   variables:
-    JAVA_VERSION: "17.0.10+7"
     JAVA_HOME: "$CI_PROJECT_DIR/.jdk"
-    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-
   before_script:
     - dnf install -y rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
-
     - |
       curl -L -o jdk.tar.gz \
         https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.10_7.tar.gz
-
     - mkdir -p .jdk
     - tar -xzf jdk.tar.gz --strip-components=1 -C .jdk
-
     - export PATH="$JAVA_HOME/bin:$PATH"
-    - java -version
-    - ls "$JAVA_HOME/jmods"
-
   script:
     - ./gradlew desktopApp:packageReleaseRpm
-
+    - |
+      RPM_SRC=$(ls desktopApp/build/compose/binaries/main-release/rpm/*aarch64.rpm | head -n1)
+      RPM_NAME="SuperReader2000-${VERSION}-arm64.rpm"
+      mv "$RPM_SRC" "desktopApp/build/compose/binaries/main-release/rpm/$RPM_NAME"
   artifacts:
     paths:
       - desktopApp/build/compose/binaries/main-release/rpm/*.rpm
@@ -138,18 +125,22 @@ build:linux-arm64:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # =============================================================================
-# macOS DMG Build (arm64 - Apple Silicon)
+# macOS DMG Build (arm64)
 # =============================================================================
 build:macos-arm64:
   stage: build
   <<: *gradle_cache
   tags:
-    - saas-macos-large-m2pro 
+    - saas-macos-large-m2pro
   before_script:
     - export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || echo "/opt/homebrew/opt/openjdk@17")
   script:
     - chmod +x ./gradlew
     - ./gradlew :desktopApp:packageDmg
+    - |
+      DMG_SRC=$(ls desktopApp/build/compose/binaries/main/dmg/*.dmg | head -n1)
+      DMG_NAME="SuperReader2000-${VERSION}-macOS.dmg"
+      mv "$DMG_SRC" "desktopApp/build/compose/binaries/main/dmg/$DMG_NAME"
   artifacts:
     paths:
       - desktopApp/build/compose/binaries/main/dmg/*.dmg
@@ -157,7 +148,7 @@ build:macos-arm64:
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  allow_failure: true 
+  allow_failure: true
 
 # =============================================================================
 # Publish to GitLab Package Registry
@@ -177,109 +168,58 @@ package:publish:
     - job: build:macos-arm64
       artifacts: true
       optional: true
-    - job: build:macos-x86_64
-      artifacts: true
-      optional: true
   script:
-    - |
-      VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
-      PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}"
-      
-      echo "Publishing artifacts to GitLab Package Registry..."
-      
-      # Upload Android APK
-      for file in superreader2000/build/outputs/apk/release/*.apk; do
-        if [ -f "$file" ]; then
-          filename=$(basename "$file")
-          echo "Uploading $filename..."
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-               --upload-file "$file" \
-               "${PACKAGE_URL}/${filename}"
-        fi
-      done
-      
-      # Upload Linux RPMs
-      for file in desktopApp/build/compose/binaries/main-release/rpm/*.rpm; do
-        if [ -f "$file" ]; then
-          filename=$(basename "$file")
-          echo "Uploading $filename..."
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-               --upload-file "$file" \
-               "${PACKAGE_URL}/${filename}"
-        fi
-      done
-      
-      # Upload macOS DMGs
-      for file in desktopApp/build/compose/binaries/main/dmg/*.dmg; do
-        if [ -f "$file" ]; then
-          filename=$(basename "$file")
-          echo "Uploading $filename..."
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-               --upload-file "$file" \
-               "${PACKAGE_URL}/${filename}"
-        fi
-      done
+    - PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}"
+    - echo "Uploading Android APK..."
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --upload-file superreader2000/build/outputs/apk/release/SuperReader2000-${VERSION}.apk \
+        "${PACKAGE_URL}/SuperReader2000-${VERSION}.apk"
+    - echo "Uploading Linux RPMs..."
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --upload-file desktopApp/build/compose/binaries/main-release/rpm/SuperReader2000-${VERSION}-x86_64.rpm \
+        "${PACKAGE_URL}/SuperReader2000-${VERSION}-x86_64.rpm"
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --upload-file desktopApp/build/compose/binaries/main-release/rpm/SuperReader2000-${VERSION}-arm64.rpm \
+        "${PACKAGE_URL}/SuperReader2000-${VERSION}-arm64.rpm"
+    - echo "Uploading macOS DMG..."
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --upload-file desktopApp/build/compose/binaries/main/dmg/SuperReader2000-${VERSION}-macOS.dmg \
+        "${PACKAGE_URL}/SuperReader2000-${VERSION}-macOS.dmg"
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # =============================================================================
-# Create GitLab Release with Download Links
+# Create GitLab Release
 # =============================================================================
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:v0.24.0
   needs:
     - job: package:publish
-  before_script:
-    - apk add --no-cache bash coreutils
-  script:
-    - echo "Creating release for tag ${CI_COMMIT_TAG}"
-    - echo "Project ID ${CI_PROJECT_ID}"
-    - echo "API URL ${CI_API_V4_URL}"
-    - echo "Full URL example ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/superreader2000-release.apk"
-    - echo "Creating release"
   release:
     tag_name: ${CI_COMMIT_TAG}
-    name: "SuperReader2000 ${CI_COMMIT_TAG}"
+    name: "SuperReader2000 ${VERSION}"
     description: |
-      ## SuperReader2000 ${CI_COMMIT_TAG}
+      ## Downloads
       
-      ### Downloads
-      
-      #### Android
-      - **APK**: For direct installation on Android devices
-      
-      #### Linux
-      - **RPM (x86_64)**: For Fedora, RHEL, CentOS (Intel/AMD 64-bit)
-      - **RPM (arm64)**: For Fedora, RHEL, CentOS (ARM 64-bit)
-      
-      #### macOS
-      - **DMG (arm64)**: For Apple Silicon Macs (M1/M2/M3)
-      - **DMG (x86_64)**: For Intel Macs
-      
-      ### Installation
-      
-      **Android**: Download the APK and install (enable "Install from unknown sources" if needed)
-      
-      **macOS**: Mount the DMG and drag SuperReader2000 to Applications folder
+      - **Android APK**: SuperReader2000-${VERSION}.apk
+      - **Linux RPM (x86_64)**: SuperReader2000-${VERSION}-x86_64.rpm
+      - **Linux RPM (arm64)**: SuperReader2000-${VERSION}-arm64.rpm
+      - **macOS DMG**: SuperReader2000-${VERSION}-macOS.dmg
     assets:
       links:
         - name: "Android APK"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/superreader2000-release.apk"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}.apk"
           link_type: package
         - name: "Linux RPM (x86_64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/superreader2000-1.0.0-1.x86_64.rpm"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}-x86_64.rpm"
           link_type: package
         - name: "Linux RPM (arm64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/superreader2000-1.0.0-1.aarch64.rpm"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}-arm64.rpm"
           link_type: package
-        - name: "macOS DMG (Apple Silicon)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/SuperReader2000-1.0.0.dmg"
-          link_type: package
-        - name: "macOS DMG (Intel)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/SuperReader2000-1.0.0-x86_64.dmg"
+        - name: "macOS DMG"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}-macOS.dmg"
           link_type: package
   rules:
     - if: $CI_COMMIT_TAG
-

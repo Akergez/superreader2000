@@ -6,6 +6,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -19,15 +22,20 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import com.akergez.superreader2000.shared.backend.BookManager
 import com.akergez.superreader2000.shared.backend.settings.AppThemeMode
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
 import com.akergez.superreader2000.shared.constants.Route
+import com.akergez.superreader2000.shared.ui.components.AppNavigationRail
+import com.akergez.superreader2000.shared.ui.components.BottomNavigationBar
 import com.akergez.superreader2000.shared.ui.screens.Screen
 import com.akergez.superreader2000.shared.ui.screens.homescreen.HomeScreen
 import com.akergez.superreader2000.shared.formats.abstractions.IReaderScreenProvider
@@ -66,6 +74,13 @@ fun MainScreen(
     settingsManager: ISettingsManager = koinInject()
 ) {
     val navController = rememberNavController()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    val currentScreen = when (currentRoute) {
+        Route.Main -> Screen.HOME_SCREEN
+        Route.Settings -> Screen.SETTINGS_SCREEN
+        else -> Screen.HOME_SCREEN
+    }
     val currentTheme by settingsManager.appThemeModeFlow.collectAsState()
 
     AppTheme(
@@ -74,48 +89,74 @@ fun MainScreen(
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = Route.Main,
-                enterTransition = { fadeIn(animationSpec = tween(300)) },
-                exitTransition = { fadeOut(animationSpec = tween(300)) }
-            ) {
-                composable(Route.Main) {
-                    HomeScreen(
-                        onItemClick = { bookLink ->
-                            val encodedFileName = urlEncode(bookLink.bundleName)
-                            navController.navigate(BookReader(encodedFileName))
-                        },
-                        bottomBar = {
-                            com.akergez.superreader2000.shared.ui.components.BottomNavigationBar(
-                                navController,
-                                Screen.HOME_SCREEN
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val density = LocalDensity.current
+                val widthDp = with(density) { constraints.maxWidth.toDp() }
+                val heightDp = with(density) { constraints.maxHeight.toDp() }
+                val isLandscape = widthDp > heightDp
+                val useRail = isLandscape && widthDp >= 600.dp
+                val showRail = useRail && (currentRoute == Route.Main || currentRoute == Route.Settings)
+
+                Row(Modifier.fillMaxSize()) {
+                    if (showRail) {
+                        AppNavigationRail(navController, currentScreen)
+                    }
+
+                    NavHost(
+                        modifier = Modifier.weight(1f),
+                        navController = navController,
+                        startDestination = Route.Main,
+                        enterTransition = { fadeIn(animationSpec = tween(300)) },
+                        exitTransition = { fadeOut(animationSpec = tween(300)) }
+                    ) {
+                        composable(Route.Main) {
+                            HomeScreen(
+                                onItemClick = { bookLink ->
+                                    val encodedFileName = urlEncode(bookLink.bundleName)
+                                    navController.navigate(BookReader(encodedFileName))
+                                },
+                                bottomBar = {
+                                    if (!useRail) {
+                                        BottomNavigationBar(
+                                            navController,
+                                            Screen.HOME_SCREEN
+                                        )
+                                    }
+                                }
                             )
                         }
-                    )
-                }
-                composable(Route.Settings) {
-                    SettingsScreen(
-                        navController = navController
-                    )
-                }
-                composable<BookReader>(
-                    enterTransition = {
-                        slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth })
-                    },
-                    exitTransition = {
-                        slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
-                    },
-                ) { backStackEntry ->
-                    val encodedFileName = backStackEntry.toRoute<BookReader>().fileName
-                    encodedFileName.let {
-                        val fileName = urlDecode(it)
-                        val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
-                        bookLink?.bookMetaInfo?.progress?.let { progress ->
-                            val provider: IReaderScreenProvider = koinInject(
-                                qualifier = named(progress.formatType),
+                        composable(Route.Settings) {
+                            SettingsScreen(
+                                navController = navController,
+                                bottomBar = {
+                                    if (!useRail) {
+                                        BottomNavigationBar(
+                                            navController,
+                                            Screen.SETTINGS_SCREEN
+                                        )
+                                    }
+                                }
                             )
-                            provider.getReaderScreen(bookLink)()
+                        }
+                        composable<BookReader>(
+                            enterTransition = {
+                                slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth })
+                            },
+                            exitTransition = {
+                                slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
+                            },
+                        ) { backStackEntry ->
+                            val encodedFileName = backStackEntry.toRoute<BookReader>().fileName
+                            encodedFileName.let {
+                                val fileName = urlDecode(it)
+                                val bookLink = bookManager.bookFlow.value.find { it.bundleName == fileName }
+                                bookLink?.bookMetaInfo?.progress?.let { progress ->
+                                    val provider: IReaderScreenProvider = koinInject(
+                                        qualifier = named(progress.formatType),
+                                    )
+                                    provider.getReaderScreen(bookLink)()
+                                }
+                            }
                         }
                     }
                 }
@@ -179,4 +220,3 @@ fun StorageSelectionDialog(
         tonalElevation = 8.dp
     )
 }
-
