@@ -1,5 +1,3 @@
-# GitLab CI/CD Pipeline for SuperReader2000
-# Build Android, Linux (RPM), macOS (DMG) with versioned filenames
 stages:
   - build
   - package
@@ -46,12 +44,8 @@ build:android:
   script:
     - chmod +x ./gradlew
     - ./gradlew :superreader2000:assembleRelease
-    - |
-      # Переименование APK с версией
-      APK_SRC=$(ls superreader2000/build/outputs/apk/release/*.apk | head -n1)
-      APK_NAME="SuperReader2000-${VERSION}.apk"
-      mv "$APK_SRC" "superreader2000/build/outputs/apk/release/$APK_NAME"
   artifacts:
+    name: "SuperReader2000-${VERSION}-apk"
     paths:
       - superreader2000/build/outputs/apk/release/*.apk
     expire_in: 1 week
@@ -78,12 +72,8 @@ build:linux-x86_64:
     - export PATH="$JAVA_HOME/bin:$PATH"
   script:
     - ./gradlew desktopApp:packageReleaseRpm
-    - |
-      # Переименование RPM с версией
-      RPM_SRC=$(ls desktopApp/build/compose/binaries/main-release/rpm/*x86_64.rpm | head -n1)
-      RPM_NAME="SuperReader2000-${VERSION}-x86_64.rpm"
-      mv "$RPM_SRC" "desktopApp/build/compose/binaries/main-release/rpm/$RPM_NAME"
   artifacts:
+    name: "SuperReader2000-${VERSION}-x86_64-rpm"
     paths:
       - desktopApp/build/compose/binaries/main-release/rpm/*.rpm
     expire_in: 1 week
@@ -112,11 +102,8 @@ build:linux-arm64:
     - export PATH="$JAVA_HOME/bin:$PATH"
   script:
     - ./gradlew desktopApp:packageReleaseRpm
-    - |
-      RPM_SRC=$(ls desktopApp/build/compose/binaries/main-release/rpm/*aarch64.rpm | head -n1)
-      RPM_NAME="SuperReader2000-${VERSION}-arm64.rpm"
-      mv "$RPM_SRC" "desktopApp/build/compose/binaries/main-release/rpm/$RPM_NAME"
   artifacts:
+    name: "SuperReader2000-${VERSION}-arm64-rpm"
     paths:
       - desktopApp/build/compose/binaries/main-release/rpm/*.rpm
     expire_in: 1 week
@@ -137,11 +124,8 @@ build:macos-arm64:
   script:
     - chmod +x ./gradlew
     - ./gradlew :desktopApp:packageDmg
-    - |
-      DMG_SRC=$(ls desktopApp/build/compose/binaries/main/dmg/*.dmg | head -n1)
-      DMG_NAME="SuperReader2000-${VERSION}-macOS.dmg"
-      mv "$DMG_SRC" "desktopApp/build/compose/binaries/main/dmg/$DMG_NAME"
   artifacts:
+    name: "SuperReader2000-${VERSION}-macOS-dmg"
     paths:
       - desktopApp/build/compose/binaries/main/dmg/*.dmg
     expire_in: 1 week
@@ -170,21 +154,10 @@ package:publish:
       optional: true
   script:
     - PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}"
-    - echo "Uploading Android APK..."
-    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-        --upload-file superreader2000/build/outputs/apk/release/SuperReader2000-${VERSION}.apk \
-        "${PACKAGE_URL}/SuperReader2000-${VERSION}.apk"
-    - echo "Uploading Linux RPMs..."
-    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-        --upload-file desktopApp/build/compose/binaries/main-release/rpm/SuperReader2000-${VERSION}-x86_64.rpm \
-        "${PACKAGE_URL}/SuperReader2000-${VERSION}-x86_64.rpm"
-    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-        --upload-file desktopApp/build/compose/binaries/main-release/rpm/SuperReader2000-${VERSION}-arm64.rpm \
-        "${PACKAGE_URL}/SuperReader2000-${VERSION}-arm64.rpm"
-    - echo "Uploading macOS DMG..."
-    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-        --upload-file desktopApp/build/compose/binaries/main/dmg/SuperReader2000-${VERSION}-macOS.dmg \
-        "${PACKAGE_URL}/SuperReader2000-${VERSION}-macOS.dmg"
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "superreader2000/build/outputs/apk/release/SuperReader2000-${VERSION}.apk" "${PACKAGE_URL}/SuperReader2000-${VERSION}.apk"
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "desktopApp/build/compose/binaries/main-release/rpm/SuperReader2000-${VERSION}-x86_64.rpm" "${PACKAGE_URL}/SuperReader2000-${VERSION}-x86_64.rpm"
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "desktopApp/build/compose/binaries/main-release/rpm/SuperReader2000-${VERSION}-arm64.rpm" "${PACKAGE_URL}/SuperReader2000-${VERSION}-arm64.rpm"
+    - curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "desktopApp/build/compose/binaries/main/dmg/SuperReader2000-${VERSION}-macOS.dmg" "${PACKAGE_URL}/SuperReader2000-${VERSION}-macOS.dmg"
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -202,11 +175,10 @@ release:
     name: "SuperReader2000 ${VERSION}"
     description: |
       ## Downloads
-      
-      - **Android APK**: SuperReader2000-${VERSION}.apk
-      - **Linux RPM (x86_64)**: SuperReader2000-${VERSION}-x86_64.rpm
-      - **Linux RPM (arm64)**: SuperReader2000-${VERSION}-arm64.rpm
-      - **macOS DMG**: SuperReader2000-${VERSION}-macOS.dmg
+      - Android APK: SuperReader2000-${VERSION}.apk
+      - Linux RPM (x86_64): SuperReader2000-${VERSION}-x86_64.rpm
+      - Linux RPM (arm64): SuperReader2000-${VERSION}-arm64.rpm
+      - macOS DMG: SuperReader2000-${VERSION}-macOS.dmg
     assets:
       links:
         - name: "Android APK"
