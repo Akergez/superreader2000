@@ -6,7 +6,6 @@ stages:
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-  VERSION: "${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
 
 .gradle_cache: &gradle_cache
   cache:
@@ -157,6 +156,7 @@ package:publish:
       artifacts: true
       optional: true
   script:
+    - VERSION="${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
     - PACKAGE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}"
     - |
       # Android
@@ -174,10 +174,7 @@ package:publish:
     - |
       # macOS DMG
       for file in desktopApp/build/compose/binaries/main/dmg/*.dmg; do
-        if [ -f "$file" ]; then
-          arch=$(basename "$file" | grep -oE "arm64|x86_64" || echo "")
-          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}-${arch}-macOS.dmg"
-        fi
+        [ -f "$file" ] && curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}-macOS.dmg"
       done
   rules:
     - if: $CI_COMMIT_TAG
@@ -194,27 +191,27 @@ release:
   script:
     - echo "Creating release for tag ${CI_COMMIT_TAG}"
   release:
-    tag_name: ${CI_COMMIT_TAG}
-    name: "SuperReader2000 ${VERSION}"
+    tag_name: $CI_COMMIT_TAG
+    name: "SuperReader2000 $CI_COMMIT_TAG"
     description: |
       ## Downloads
-      - Android APK: SuperReader2000-${VERSION}.apk
-      - Linux RPM (x86_64): SuperReader2000-${VERSION}-x86_64-rpm.rpm
-      - Linux RPM (arm64): SuperReader2000-${VERSION}-aarch64-rpm.rpm
-      - macOS DMG (arm64/x86_64): SuperReader2000-${VERSION}-macOS.dmg
+      - Android APK: SuperReader2000-$CI_COMMIT_TAG.apk
+      - Linux RPM (x86_64): SuperReader2000-$CI_COMMIT_TAG-x86_64-rpm.rpm
+      - Linux RPM (arm64): SuperReader2000-$CI_COMMIT_TAG-aarch64-rpm.rpm
+      - macOS DMG (arm64): SuperReader2000-$CI_COMMIT_TAG-macOS.dmg
     assets:
       links:
         - name: "Android APK"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}.apk"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/SuperReader2000-${CI_COMMIT_TAG}.apk"
           link_type: package
         - name: "Linux RPM (x86_64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}-x86_64-rpm.rpm"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/SuperReader2000-${CI_COMMIT_TAG}-x86_64-rpm.rpm"
           link_type: package
         - name: "Linux RPM (arm64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}-aarch64-rpm.rpm"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/SuperReader2000-${CI_COMMIT_TAG}-aarch64-rpm.rpm"
           link_type: package
         - name: "macOS DMG"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${VERSION}/SuperReader2000-${VERSION}-macOS.dmg"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/SuperReader2000-${CI_COMMIT_TAG}-macOS.dmg"
           link_type: package
   rules:
     - if: $CI_COMMIT_TAG
