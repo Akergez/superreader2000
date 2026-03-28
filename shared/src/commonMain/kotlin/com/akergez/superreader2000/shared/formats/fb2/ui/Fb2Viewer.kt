@@ -13,7 +13,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -31,9 +30,6 @@ fun Fb2Viewer(
     content: Fb2BookContent?,
     modifier: Modifier = Modifier,
     applyInversion: Boolean,
-    scale: Float,
-    offsetX: Float,
-    offsetY: Float,
 ) {
     val backgroundColor = if (applyInversion) Color.Black else Color.White
     val textColor = if (applyInversion) Color.White else Color.Black
@@ -57,24 +53,10 @@ fun Fb2Viewer(
     val textMeasurer = rememberTextMeasurer()
 
     Box(modifier = baseModifier.clipToBounds()) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offsetX,
-                    translationY = offsetY,
-                )
-        ) {
-            // drawText внутри вычисляет Constraints из размера Canvas.
-            // Если Canvas ещё не разложен (нулевой размер) — пропускаем.
+        Canvas(modifier = Modifier.fillMaxSize()) {
             if (size.width <= 0f || size.height <= 0f) return@Canvas
 
-            val canvasSize = Size(
-                width  = size.width.coerceAtLeast(1f),
-                height = size.height.coerceAtLeast(1f),
-            )
+            val canvasSize = Size(size.width, size.height)
 
             content.drawCommands.forEach { cmd ->
                 when (cmd) {

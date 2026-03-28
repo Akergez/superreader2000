@@ -52,7 +52,7 @@ class FB2BoldText : FB2Element {
 
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp)) {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)) {
                 append(text)
             }
         }
@@ -121,7 +121,7 @@ class FB2UnderlineText : FB2Element {
 
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+            withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
                 append(text)
             }
         }
@@ -161,7 +161,7 @@ class FB2LinkText : FB2Element {
             withStyle(
                 SpanStyle(
                     color = Color.Blue,
-                    textDecoration = TextDecoration.LineThrough
+                    textDecoration = TextDecoration.Underline
                 )
             ) {
                 append(text)

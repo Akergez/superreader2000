@@ -23,6 +23,8 @@ import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.Reader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
@@ -55,8 +57,10 @@ fun Fb2ReaderScreen(
         val topBarPx  = (density.density * (16 + 40)).toInt()
 
         val newConfig = RenderConfig(
-            pageWidth  = (componentWidth - paddingPx).coerceAtLeast(1),
-            pageHeight = (componentHeight - topBarPx).coerceAtLeast(1),
+            pageWidth    = (componentWidth - paddingPx).coerceAtLeast(1),
+            pageHeight   = (componentHeight - topBarPx).coerceAtLeast(1),
+            canvasWidth  = componentWidth,
+            canvasHeight = componentHeight,
         )
         println(">>> newConfig=$newConfig")
 
@@ -73,7 +77,12 @@ fun Fb2ReaderScreen(
             val offset = book.readProgress().characterPosition
             println(">>> readProgress offset=$offset")
             currentPage = if (offset > 0) {
-                withContext(Dispatchers.IO) { helper.getPageIndexByWordOffset(offset) }
+                withContext(Dispatchers.IO) {
+                    // Парсинг асинхронный — ждём его завершения перед поиском страницы.
+                    // totalWords становится non-null только после того, как fullText готов.
+                    helper.totalWords.filterNotNull().first()
+                    helper.getPageIndexByWordOffset(offset)
+                }
             } else {
                 0
             }

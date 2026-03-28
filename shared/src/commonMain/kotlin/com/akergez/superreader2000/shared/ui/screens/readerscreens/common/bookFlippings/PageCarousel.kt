@@ -5,7 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -17,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,25 +109,60 @@ fun <TBookContent> PageCarousel(
                     state = lazyListState,
                 ) {
                     items(totalPagesNotNull, key = { it }) { page ->
-                        Box(
-                            Modifier
+                        // Полный viewport — для корректного горизонтального скролла.
+                        BoxWithConstraints(
+                            modifier = Modifier
                                 .fillParentMaxWidth()
-                                .align(Alignment.CenterHorizontally)
+                                .fillParentMaxHeight(),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Card(
-                                Modifier
-                                    .fillParentMaxWidth(0.9f)
-                                    .align(Alignment.Center)
-                                    .shadow(
-                                        elevation = 8.dp,
-                                        shape = RoundedCornerShape(8.dp),
-                                        clip = true
+                            val availW = constraints.maxWidth
+                            val availH = constraints.maxHeight
+                            val pageContent by bookContent(page).collectAsState()
+                            val nativeW = pageContent.nativeWidth
+                            val nativeH = pageContent.nativeHeight
+                            if (nativeW > 0 && nativeH > 0) {
+                                val scale = minOf(
+                                    availW.toFloat() / nativeW,
+                                    availH.toFloat() / nativeH,
+                                )
+                                val scaledWPx = (nativeW * scale).roundToInt()
+                                val scaledHPx = (nativeH * scale).roundToInt()
+
+                                // layout{} измеряет дочерний элемент в нативном размере,
+                                // но сообщает родителю масштабированный размер.
+                                // graphicsLayer визуально уменьшает результат как картинку.
+                                Box(
+                                    modifier = Modifier
+                                        .layout { measurable, _ ->
+                                            val placeable = measurable.measure(
+                                                Constraints.fixed(nativeW, nativeH)
+                                            )
+                                            layout(scaledWPx, scaledHPx) {
+                                                placeable.place(0, 0)
+                                            }
+                                        }
+                                        .graphicsLayer {
+                                            scaleX          = scale
+                                            scaleY          = scale
+                                            transformOrigin = TransformOrigin(0f, 0f)
+                                        }
+                                        .shadow(8.dp, RoundedCornerShape(8.dp), clip = true)
+                                ) {
+                                    BookPage(
+                                        bookContent    = bookContent(page),
+                                        applyInversion = applyInversion,
+                                        viewerProvider = viewerProvider,
                                     )
-                            ) {
-                                BookPage(
-                                    bookContent = bookContent(page),
-                                    applyInversion = applyInversion,
-                                    viewerProvider = viewerProvider
+                                }
+                            } else {
+                                // Заглушка пока нативные размеры ещё не известны.
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize(0.9f)
+                                        .shadow(8.dp, RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surface)
                                 )
                             }
                         }

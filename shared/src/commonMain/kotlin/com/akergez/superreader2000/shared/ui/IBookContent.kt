@@ -5,7 +5,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 
-interface IBookContent
+interface IBookContent {
+    val nativeWidth: Int get() = 0
+    val nativeHeight: Int get() = 0
+}
 
 data class PdfBookContent(val bitmap: ImageBitmap?): IBookContent
 data class DjvuBookContent(val bitmap: ImageBitmap?): IBookContent
@@ -15,6 +18,9 @@ data class Fb2BookContent(
     val imageMap: Map<String, InlineTextContent>,
     val pageIndex: Int,
     val totalPages: Int?,
+    /** Размер страницы в пикселях, для которого рассчитаны drawCommands. */
+    override val nativeWidth: Int = 0,
+    override val nativeHeight: Int = 0,
 ) : IBookContent
 
 sealed class DrawCommand {

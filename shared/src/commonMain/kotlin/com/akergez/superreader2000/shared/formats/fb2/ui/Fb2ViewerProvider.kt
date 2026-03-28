@@ -15,9 +15,6 @@ class Fb2ViewerProvider : IViewerProvider<Fb2BookContent> {
             Fb2Viewer(
                 content = bookContent,
                 applyInversion = applyInversion,
-                offsetY = 0f,
-                offsetX = 0f,
-                scale = 1f
             )
         }
 
