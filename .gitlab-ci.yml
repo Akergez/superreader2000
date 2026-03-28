@@ -174,7 +174,9 @@ package:publish:
     - |
       # macOS DMG
       for file in desktopApp/build/compose/binaries/main/dmg/*.dmg; do
-        [ -f "$file" ] && curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}-macOS.dmg"
+        if [ -f "$file" ]; then
+          curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "$file" "${PACKAGE_URL}/SuperReader2000-${VERSION}-macOS.dmg"
+        fi
       done
   rules:
     - if: $CI_COMMIT_TAG
