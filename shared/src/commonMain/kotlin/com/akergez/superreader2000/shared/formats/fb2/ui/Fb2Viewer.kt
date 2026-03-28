@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -56,24 +57,39 @@ fun Fb2Viewer(
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (size.width <= 0f || size.height <= 0f) return@Canvas
 
-            val canvasSize = Size(size.width, size.height)
+            val nativeW = content.nativeWidth.toFloat()
+            val nativeH = content.nativeHeight.toFloat()
 
-            content.drawCommands.forEach { cmd ->
-                when (cmd) {
-                    is DrawCommand.DrawText -> {
-                        val style = cmd.style.copy(
-                            color = resolveTextColor(cmd.style.color, textColor)
-                        )
-                        drawText(
-                            textMeasurer = textMeasurer,
-                            text         = cmd.text,
-                            topLeft      = Offset(cmd.x, cmd.y - style.fontSize.toPx()),
-                            style        = style,
-                            size         = canvasSize,
-                        )
-                    }
-                    is DrawCommand.DrawInlineImage -> {
-                        // TODO: drawImage когда ImageBitmap будет доступен из imageMap
+            // When the canvas is smaller than the native page (carousel, two-page mode),
+            // scale the drawing down. Always pass the native size to drawText so that
+            // text is measured at the original line width and never re-wraps.
+            val drawScale = if (nativeW > 0f && nativeH > 0f)
+                minOf(size.width / nativeW, size.height / nativeH)
+            else 1f
+
+            val layoutSize = if (nativeW > 0f && nativeH > 0f)
+                Size(nativeW, nativeH)
+            else
+                Size(size.width, size.height)
+
+            withTransform({ scale(drawScale, drawScale, Offset.Zero) }) {
+                content.drawCommands.forEach { cmd ->
+                    when (cmd) {
+                        is DrawCommand.DrawText -> {
+                            val style = cmd.style.copy(
+                                color = resolveTextColor(cmd.style.color, textColor)
+                            )
+                            drawText(
+                                textMeasurer = textMeasurer,
+                                text         = cmd.text,
+                                topLeft      = Offset(cmd.x, cmd.y - style.fontSize.toPx()),
+                                style        = style,
+                                size         = layoutSize,
+                            )
+                        }
+                        is DrawCommand.DrawInlineImage -> {
+                            // TODO: drawImage когда ImageBitmap будет доступен из imageMap
+                        }
                     }
                 }
             }

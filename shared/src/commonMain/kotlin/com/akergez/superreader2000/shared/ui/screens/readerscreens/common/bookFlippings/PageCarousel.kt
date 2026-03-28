@@ -3,21 +3,15 @@ package com.akergez.superreader2000.shared.ui.screens.readerscreens.common.bookF
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Constraints
-import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,10 +33,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.akergez.superreader2000.shared.ui.IBookContent
@@ -72,9 +71,7 @@ fun <TBookContent> PageCarousel(
     onChaptersClick: () -> Unit,
     zoomState: (ZoomState) -> Unit
 ) where TBookContent : IBookContent {
-    val lazyListState = rememberLazyListState(initialPage)
     val totalPagesState by totalPages.collectAsState()
-
     val zoomS = rememberZoomState()
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
@@ -98,155 +95,221 @@ fun <TBookContent> PageCarousel(
         },
     ) { padding ->
         totalPagesState?.let { totalPagesNotNull ->
-            Column(
+            // Detect orientation at the top level so we can size the lazy list correctly.
+            BoxWithConstraints(
                 modifier = modifier
                     .padding(padding)
-                    .zoomable(zoomS)
-                    .padding(top = 16.dp)
+                    .fillMaxSize()
             ) {
-                LazyRow(
-                    modifier = Modifier.weight(0.9f),
-                    state = lazyListState,
-                ) {
-                    items(totalPagesNotNull, key = { it }) { page ->
-                        // Полный viewport — для корректного горизонтального скролла.
-                        BoxWithConstraints(
-                            modifier = Modifier
-                                .fillParentMaxWidth()
-                                .fillParentMaxHeight(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            val availW = constraints.maxWidth
-                            val availH = constraints.maxHeight
-                            val pageContent by bookContent(page).collectAsState()
-                            val nativeW = pageContent.nativeWidth
-                            val nativeH = pageContent.nativeHeight
-                            if (nativeW > 0 && nativeH > 0) {
-                                val scale = minOf(
-                                    availW.toFloat() / nativeW,
-                                    availH.toFloat() / nativeH,
-                                )
-                                val scaledWPx = (nativeW * scale).roundToInt()
-                                val scaledHPx = (nativeH * scale).roundToInt()
+                val isLandscape = constraints.maxWidth.toFloat() / constraints.maxHeight > 4f / 3f
+                val pagesPerSpread = if (isLandscape) 2 else 1
+                val spreadCount = (totalPagesNotNull + pagesPerSpread - 1) / pagesPerSpread
 
-                                // layout{} измеряет дочерний элемент в нативном размере,
-                                // но сообщает родителю масштабированный размер.
-                                // graphicsLayer визуально уменьшает результат как картинку.
-                                Box(
-                                    modifier = Modifier
-                                        .layout { measurable, _ ->
-                                            val placeable = measurable.measure(
-                                                Constraints.fixed(nativeW, nativeH)
+                var lastBookPage by remember { mutableIntStateOf(initialPage) }
+                val lazyListState = rememberLazyListState(initialPage / pagesPerSpread)
+
+                // When orientation changes scroll to the correct spread.
+                LaunchedEffect(pagesPerSpread) {
+                    lazyListState.scrollToItem(
+                        (lastBookPage / pagesPerSpread).coerceIn(0, spreadCount - 1)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zoomable(zoomS)
+                        .padding(top = 16.dp)
+                ) {
+                    LazyRow(
+                        modifier = Modifier.weight(0.9f),
+                        state = lazyListState,
+                    ) {
+                        items(spreadCount, key = { it }) { spreadIndex ->
+                            val leftPage = spreadIndex * pagesPerSpread
+                            BoxWithConstraints(
+                                modifier = Modifier
+                                    .fillParentMaxWidth()
+                                    .fillParentMaxHeight(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                val itemAvailW = constraints.maxWidth
+                                val itemAvailH = constraints.maxHeight
+
+                                if (isLandscape) {
+                                    val rightPage = (leftPage + 1).takeIf { it < totalPagesNotNull }
+                                    Row(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            CarouselPageSlot(
+                                                page = leftPage,
+                                                availW = itemAvailW / 2,
+                                                availH = itemAvailH,
+                                                bookContent = bookContent,
+                                                applyInversion = applyInversion,
+                                                viewerProvider = viewerProvider,
                                             )
-                                            layout(scaledWPx, scaledHPx) {
-                                                placeable.place(0, 0)
+                                        }
+                                        if (rightPage != null) {
+                                            Box(
+                                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                CarouselPageSlot(
+                                                    page = rightPage,
+                                                    availW = itemAvailW / 2,
+                                                    availH = itemAvailH,
+                                                    bookContent = bookContent,
+                                                    applyInversion = applyInversion,
+                                                    viewerProvider = viewerProvider,
+                                                )
                                             }
                                         }
-                                        .graphicsLayer {
-                                            scaleX          = scale
-                                            scaleY          = scale
-                                            transformOrigin = TransformOrigin(0f, 0f)
-                                        }
-                                        .shadow(8.dp, RoundedCornerShape(8.dp), clip = true)
-                                ) {
-                                    BookPage(
-                                        bookContent    = bookContent(page),
+                                    }
+                                } else {
+                                    CarouselPageSlot(
+                                        page = leftPage,
+                                        availW = itemAvailW,
+                                        availH = itemAvailH,
+                                        bookContent = bookContent,
                                         applyInversion = applyInversion,
                                         viewerProvider = viewerProvider,
                                     )
                                 }
-                            } else {
-                                // Заглушка пока нативные размеры ещё не известны.
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize(0.9f)
-                                        .shadow(8.dp, RoundedCornerShape(8.dp))
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.surface)
-                                )
                             }
                         }
                     }
-                }
 
-                val firstVisibleItemIndex by remember {
-                    derivedStateOf { lazyListState.firstVisibleItemIndex }
-                }
+                    val firstVisibleSpread by remember {
+                        derivedStateOf { lazyListState.firstVisibleItemIndex }
+                    }
+                    val sliderValue = remember { mutableFloatStateOf(initialPage.toFloat()) }
 
-                val sliderValue = remember { mutableFloatStateOf(firstVisibleItemIndex.toFloat()) }
-
-                LaunchedEffect(firstVisibleItemIndex) {
-                    sliderValue.value = firstVisibleItemIndex.toFloat()
-                    onPageChange(firstVisibleItemIndex)
-                }
-
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick = { onChaptersClick() }) {
-                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
+                    LaunchedEffect(firstVisibleSpread) {
+                        val bookPage = firstVisibleSpread * pagesPerSpread
+                        lastBookPage = bookPage
+                        sliderValue.floatValue = bookPage.toFloat()
+                        onPageChange(bookPage)
                     }
 
-                    Column(
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Slider(
-                            modifier = Modifier
-                                .fillMaxWidth(0.8f)
-                                .offset(y = 8.dp),
-                            value = sliderValue.value, // Используем локальное состояние
-                            onValueChange = { newValue ->
-                                sliderValue.value = newValue // Обновляем временное значение
-                            },
-                            onValueChangeFinished = {
-                                // Вызываем событие только после завершения взаимодействия
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    lazyListState.scrollToItem(sliderValue.value.toInt())
-                                    onPageChange(sliderValue.value.toInt())
-                                }
-                            },
-                            valueRange = 0f..(totalPagesNotNull - 1).toFloat(), // Диапазон значений
-                            steps = totalPagesNotNull, // Количество шагов между min и max ,
-                            track = {
-                                Box(
-                                    Modifier
-                                        .height(2.dp) // Тонкий трек
-                                        .fillMaxWidth()
-                                        .background(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            shape = RoundedCornerShape(50),
-                                        ) // Цвет трека
-                                )
-                            },
-                            thumb = {
-                                Box(
-                                    Modifier
-                                        .size(10.dp)
-                                        .offset(y = 3.dp)
-                                        .background(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            shape = RoundedCornerShape(50)
-                                        )
-                                )
-                            }
-                        )
+                        IconButton(onClick = { onChaptersClick() }) {
+                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Chapters")
+                        }
 
-                        Text(
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                            text = "Page ${sliderValue.value.toInt() + 1} of $totalPagesState",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    IconButton(onClick = { onSettingsClick() }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Column {
+                            Slider(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.8f)
+                                    .offset(y = 8.dp),
+                                value = sliderValue.floatValue.coerceIn(0f, (totalPagesNotNull - 1).toFloat()),
+                                onValueChange = { sliderValue.floatValue = it },
+                                onValueChangeFinished = {
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        val targetSpread = (sliderValue.floatValue.toInt() / pagesPerSpread)
+                                            .coerceIn(0, spreadCount - 1)
+                                        lazyListState.scrollToItem(targetSpread)
+                                        onPageChange(sliderValue.floatValue.toInt())
+                                    }
+                                },
+                                valueRange = 0f..(totalPagesNotNull - 1).toFloat(),
+                                steps = totalPagesNotNull,
+                                track = {
+                                    Box(
+                                        Modifier
+                                            .height(2.dp)
+                                            .fillMaxWidth()
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = RoundedCornerShape(50),
+                                            )
+                                    )
+                                },
+                                thumb = {
+                                    Box(
+                                        Modifier
+                                            .padding(4.dp)
+                                            .offset(y = 3.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = RoundedCornerShape(50)
+                                            )
+                                    )
+                                }
+                            )
+
+                            Text(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                text = "Page ${sliderValue.floatValue.toInt() + 1} of $totalPagesNotNull",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        IconButton(onClick = { onSettingsClick() }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * Renders a single page inside the carousel using layout+graphicsLayer to scale
+ * the native-size page content down to [availW]×[availH] without re-measuring text.
+ */
+@Composable
+private fun <TBookContent : IBookContent> CarouselPageSlot(
+    page: Int,
+    availW: Int,
+    availH: Int,
+    bookContent: (Int) -> StateFlow<TBookContent>,
+    applyInversion: Boolean,
+    viewerProvider: IViewerProvider<TBookContent>,
+) {
+    val pageContent by bookContent(page).collectAsState()
+    val nativeW = pageContent.nativeWidth
+    val nativeH = pageContent.nativeHeight
+    val density = LocalDensity.current
+
+    if (nativeW > 0 && nativeH > 0) {
+        val scale = minOf(availW.toFloat() / nativeW, availH.toFloat() / nativeH)
+        val scaledWDp = with(density) { (nativeW * scale).toDp() }
+        val scaledHDp = with(density) { (nativeH * scale).toDp() }
+
+        // Fb2Viewer self-scales when canvas < native, so just give it the correct size.
+        Box(
+            modifier = Modifier
+                .size(scaledWDp, scaledHDp)
+                .shadow(8.dp, RoundedCornerShape(8.dp), clip = true)
+        ) {
+            BookPage(
+                bookContent = bookContent(page),
+                applyInversion = applyInversion,
+                viewerProvider = viewerProvider,
+            )
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(0.9f)
+                .shadow(8.dp, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surface)
+        )
     }
 }

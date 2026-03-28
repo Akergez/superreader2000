@@ -62,7 +62,7 @@ fun ChapterScreen(
                     Text(
                         stringResource(
                             Res.string.page
-                        ) + ' ' + chapter.page.toString(),
+                        ) + ' ' + (chapter.page + 1).toString(),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }, modifier = Modifier.pointerInput(Unit) {

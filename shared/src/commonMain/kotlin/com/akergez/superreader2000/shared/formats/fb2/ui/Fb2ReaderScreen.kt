@@ -56,10 +56,16 @@ fun Fb2ReaderScreen(
         val paddingPx = (density.density * (16 + 32)).toInt()
         val topBarPx  = (density.density * (16 + 40)).toInt()
 
+        // В горизонтальной ориентации страницы выводятся по две рядом — каждая занимает
+        // половину экрана. Пагинируем под эту ширину, чтобы текст был полного размера.
+        val isLandscape = componentWidth.toFloat() / componentHeight > 4f / 3f
+        val pagesPerSpread = if (isLandscape) 2 else 1
+        val pageCanvasWidth = componentWidth / pagesPerSpread
+
         val newConfig = RenderConfig(
-            pageWidth    = (componentWidth - paddingPx).coerceAtLeast(1),
+            pageWidth    = (pageCanvasWidth - paddingPx).coerceAtLeast(1),
             pageHeight   = (componentHeight - topBarPx).coerceAtLeast(1),
-            canvasWidth  = componentWidth,
+            canvasWidth  = pageCanvasWidth,
             canvasHeight = componentHeight,
         )
         println(">>> newConfig=$newConfig")
@@ -96,15 +102,33 @@ fun Fb2ReaderScreen(
     val onPageChange: (Int) -> Unit = { pageIndex: Int ->
         val helper = fb2RenderHelper.value
         if (helper != null) {
-            currentPage = pageIndex
-            if (helper.pageWordSum.size > pageIndex) {
+            val totalPgs = helper.pagesCount.value ?: Int.MAX_VALUE
+            if (pageIndex >= totalPgs) {
+                // Значение пришло из ещё не отпагинированной записи TOC — это word-offset,
+                // а не номер страницы. Конвертируем асинхронно.
                 CoroutineScope(Dispatchers.IO).launch {
-                    book.saveProgress(
-                        Fb2Progress(
-                            characterPosition = helper.pageWordSum[pageIndex],
-                            totalCharacters   = helper.totalWords.value ?: 0,
+                    val page = helper.getPageIndexByWordOffset(pageIndex)
+                    withContext(Dispatchers.Main) { currentPage = page }
+                    if (helper.pageWordSum.size > page) {
+                        book.saveProgress(
+                            Fb2Progress(
+                                characterPosition = helper.pageWordSum[page],
+                                totalCharacters   = helper.totalWords.value ?: 0,
+                            )
                         )
-                    )
+                    }
+                }
+            } else {
+                currentPage = pageIndex
+                if (helper.pageWordSum.size > pageIndex) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        book.saveProgress(
+                            Fb2Progress(
+                                characterPosition = helper.pageWordSum[pageIndex],
+                                totalCharacters   = helper.totalWords.value ?: 0,
+                            )
+                        )
+                    }
                 }
             }
         }

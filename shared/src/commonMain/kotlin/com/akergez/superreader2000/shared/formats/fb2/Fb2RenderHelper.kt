@@ -83,6 +83,11 @@ class Fb2RenderHelper constructor(
     val tableOfContents = MutableStateFlow<List<TOCEntry>>(emptyList())
     val pageWordSum = mutableListOf<Int>()
 
+    // Исходные word-offsets для каждой записи TOC (элементов в списке ≈ слов).
+    // Сохраняются один раз при парсинге и используются для перевычисления
+    // номеров страниц после каждой перепагинации.
+    private val tocWordOffsets = mutableListOf<Int>()
+
     init {
         scope.launch {
             val elementCount: Int
@@ -90,6 +95,8 @@ class Fb2RenderHelper constructor(
                 val result = parseFb2Content(fb2File.file)
                 imageMap.putAll(result.images)
                 tableOfContents.update { result.toc }
+                // Запоминаем исходные word-offsets для переконвертации после пагинации.
+                tocWordOffsets.addAll(result.toc.map { it.pageIndex })
                 fullText = buildFullText(result.elements)
                 elementCount = result.elements.size
                 totalWords.update { elementCount }
@@ -254,6 +261,7 @@ class Fb2RenderHelper constructor(
                 if (!layout.didOverflowHeight) {
                     isAllPageSliced = true
                     pagesCount.update { lastSlicedPageIndex }
+                    updateTocPageIndices()
                     return
                 }
 
@@ -262,13 +270,39 @@ class Fb2RenderHelper constructor(
                     val charsPerPage = (charOffset / lastSlicedPageIndex).coerceAtLeast(1)
                     val estimated = (fullText.length / charsPerPage).coerceAtLeast(lastSlicedPageIndex)
                     pagesCount.update { estimated }
+                    // Обновляем TOC для уже отпагинированных глав.
+                    updateTocPageIndices()
                     return
                 }
             }
 
             isAllPageSliced = true
             pagesCount.update { lastSlicedPageIndex }
+            updateTocPageIndices()
         }
+    }
+
+    /**
+     * Переводит word-offsets записей TOC в реальные номера страниц.
+     * Вызывается каждый раз, когда пагинация завершена (isAllPageSliced = true).
+     */
+    private fun updateTocPageIndices() {
+        if (tocWordOffsets.isEmpty() || pageWordSum.isEmpty()) return
+        val maxPaginatedWords = pageWordSum.last()
+        val toc = tableOfContents.value
+        var anyChanged = false
+        val updated = toc.mapIndexed { i, entry ->
+            val wordOffset = tocWordOffsets.getOrElse(i) { 0 }
+            if (wordOffset > maxPaginatedWords) {
+                // Эта глава ещё не отпагинирована — оставляем как есть.
+                entry
+            } else {
+                val pageIdx = pageWordSum.indexOfFirst { it >= wordOffset }.coerceAtLeast(0)
+                if (pageIdx != entry.pageIndex) anyChanged = true
+                entry.copy(pageIndex = pageIdx)
+            }
+        }
+        if (anyChanged) tableOfContents.update { updated }
     }
 
     /** Строит DrawCommand из уже измеренного layout — без повторного measure().
@@ -343,7 +377,7 @@ class Fb2RenderHelper constructor(
                 val body = bodyElements.item(i)
                 val name = body.attributes?.getNamedItem("name")?.nodeValue
                 if (name == null || name != "notes") {
-                    elements.addAll(extractTextContent(body, tocEntries))
+                    elements.addAll(extractTextContent(body, tocEntries, elements.size))
                 }
             }
 
@@ -370,7 +404,22 @@ class Fb2RenderHelper constructor(
                 }
             }
 
-            ParseResult(elements, images, tocEntries.distinctBy { it.title })
+            // Convert element-index offsets to actual word-count offsets.
+            // Empty/newline elements (FB2Text(""), FB2Text("\n")) count as 1 element but 0 words,
+            // so element index != word count. Build a table and remap.
+            val elemToWordCount = IntArray(elements.size + 1)
+            var wc = 0
+            elements.forEachIndexed { i, elem ->
+                elemToWordCount[i] = wc
+                if (elem.toStyledString().text.isNotBlank()) wc++
+            }
+            elemToWordCount[elements.size] = wc
+
+            val correctedToc = tocEntries.map { entry ->
+                entry.copy(pageIndex = elemToWordCount.getOrElse(entry.pageIndex) { entry.pageIndex })
+            }
+
+            ParseResult(elements, images, correctedToc.distinctBy { it.title })
         } catch (e: Exception) {
             e.printStackTrace()
             ParseResult(
@@ -381,7 +430,14 @@ class Fb2RenderHelper constructor(
         }
     }
 
-    private fun extractTextContent(node: Node, tocEntries: MutableList<TOCEntry>): List<FB2Element> {
+    // outerOffset = number of elements already accumulated in the outer (book-level) list before
+    // this call. Used so TOC pageIndex records the absolute element position in the full book,
+    // not the position relative to the current recursive call.
+    private fun extractTextContent(
+        node: Node,
+        tocEntries: MutableList<TOCEntry>,
+        outerOffset: Int = 0,
+    ): List<FB2Element> {
         val elements = mutableListOf<FB2Element>()
         val children = node.childNodes
         for (i in 0 until children.length) {
@@ -396,7 +452,8 @@ class Fb2RenderHelper constructor(
                     }
                 }
                 Node.ELEMENT_NODE -> {
-                    val extracted = extractTextContent(child, tocEntries)
+                    val childOffset = outerOffset + elements.size
+                    val extracted = extractTextContent(child, tocEntries, childOffset)
                     when (child.nodeName) {
                         "empty-line" -> elements += FB2Text("")
                         "emphasis"   -> elements.addAll(extracted.map { FB2ItalicText(it) })
@@ -409,7 +466,7 @@ class Fb2RenderHelper constructor(
                             if (extracted.isNotEmpty()) {
                                 tocEntries += TOCEntry(
                                     title     = child.textContent.trim(),
-                                    pageIndex = elements.size,
+                                    pageIndex = outerOffset + elements.size,
                                     children  = emptyList(),
                                 )
                             }
@@ -438,7 +495,7 @@ class Fb2RenderHelper constructor(
                                 elements += FB2Image(imageId = href.substring(1), description = href)
                             }
                         }
-                        else -> elements.addAll(extractTextContent(child, tocEntries))
+                        else -> elements.addAll(extractTextContent(child, tocEntries, childOffset))
                     }
                 }
             }
