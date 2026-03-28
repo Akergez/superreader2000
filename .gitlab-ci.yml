@@ -192,6 +192,12 @@ release:
   image: registry.gitlab.com/gitlab-org/release-cli:v0.24.0
   needs:
     - job: package:publish
+  script:
+    - echo "Creating release for tag ${CI_COMMIT_TAG}"
+    - echo "Project ID ${CI_PROJECT_ID}"
+    - echo "API URL ${CI_API_V4_URL}"
+    - echo "Full URL example ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/superreader2000/${CI_COMMIT_TAG}/superreader2000-release.apk"
+    - echo "Creating release"
   release:
     tag_name: ${CI_COMMIT_TAG}
     name: "SuperReader2000 ${VERSION}"
