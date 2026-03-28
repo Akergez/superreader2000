@@ -16,107 +16,155 @@ import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
 import com.akergez.superreader2000.shared.formats.fb2.Fb2BookDomainModel
 import com.akergez.superreader2000.shared.formats.fb2.Fb2Progress
 import com.akergez.superreader2000.shared.formats.fb2.Fb2RenderHelper
+import com.akergez.superreader2000.shared.formats.fb2.RenderConfig
 import com.akergez.superreader2000.shared.formats.fb2.ui.Fb2ViewerProvider
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
-
 @Composable
-fun Fb2ReaderScreen(book: Fb2BookDomainModel, settingsManager: ISettingsManager = koinInject()) {
-    var currentPage by remember { mutableStateOf<Int?>(null) }
-    var mode by remember { mutableStateOf(ReaderMode.Reading) }
+fun Fb2ReaderScreen(
+    book: Fb2BookDomainModel,
+    settingsManager: ISettingsManager = koinInject(),
+) {
     val textMeasurer = rememberTextMeasurer()
-
-    var componentHeight by remember { mutableIntStateOf(0) }
-    var componentWidth by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
+    var currentPage by remember { mutableStateOf<Int?>(null) }
+    var mode by remember { mutableStateOf(ReaderMode.Reading) }
+
+    var componentWidth by remember { mutableIntStateOf(0) }
+    var componentHeight by remember { mutableIntStateOf(0) }
+
+    val renderConfig = remember {
+        MutableStateFlow(RenderConfig(pageWidth = 0, pageHeight = 0))
+    }
+
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
-    val lock = Any()
 
-    LaunchedEffect(componentHeight) {
-        CoroutineScope(Dispatchers.IO).launch {
-            if (componentHeight > 1) {
-                val fb2File = book.getFile()
-                var newPage: Int
-                synchronized(lock) {
-                    if (fb2RenderHelper.value == null) {
-                        fb2RenderHelper.value = Fb2RenderHelper(
-                            componentWidth - (density.density * (16 + 32)).toInt(),
-                            componentHeight - (density.density * (16 + 40)).toInt(),
-                            textMeasurer,
-                            fb2File
-                        )
-                    }
-                    val offset = book.readProgress().characterPosition
-                    newPage = if (offset > 0) {
-                        fb2RenderHelper.value!!.getPageIndexByWordOffset(offset)
-                    } else {
-                        0
-                    }
+    LaunchedEffect(componentWidth, componentHeight) {
+        println(">>> LaunchedEffect w=$componentWidth h=$componentHeight")
+        if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
-                }
-                withContext(Dispatchers.Main) {
-                    currentPage = newPage
-                }
+        val paddingPx = (density.density * (16 + 32)).toInt()
+        val topBarPx  = (density.density * (16 + 40)).toInt()
+
+        // В горизонтальной ориентации страницы выводятся по две рядом — каждая занимает
+        // половину экрана. Пагинируем под эту ширину, чтобы текст был полного размера.
+        val isLandscape = componentWidth.toFloat() / componentHeight > 4f / 3f
+        val pagesPerSpread = if (isLandscape) 2 else 1
+        val pageCanvasWidth = componentWidth / pagesPerSpread
+
+        val newConfig = RenderConfig(
+            pageWidth    = (pageCanvasWidth - paddingPx).coerceAtLeast(1),
+            pageHeight   = (componentHeight - topBarPx).coerceAtLeast(1),
+            canvasWidth  = pageCanvasWidth,
+            canvasHeight = componentHeight,
+        )
+        println(">>> newConfig=$newConfig")
+
+        if (fb2RenderHelper.value == null) {
+            println(">>> creating helper")
+            renderConfig.value = newConfig
+
+            val helper = withContext(Dispatchers.IO) {
+                Fb2RenderHelper(renderConfig, textMeasurer, book.getFile())
             }
-        }
-    }
+            fb2RenderHelper.value = helper
+            println(">>> helper created")
 
-    val onPageChange = { pageIndex: Int ->
-        if (fb2RenderHelper.value != null) {
-            val helper = fb2RenderHelper.value!!
-            if (helper.pageWordSum.size > pageIndex) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    book.saveProgress(
-                        Fb2Progress(
-                            helper.pageWordSum[pageIndex],
-                            helper.totalWords.value ?: 0
-                        )
-                    )
+            val offset = book.readProgress().characterPosition
+            println(">>> readProgress offset=$offset")
+            currentPage = if (offset > 0) {
+                withContext(Dispatchers.IO) {
+                    // Парсинг асинхронный — ждём его завершения перед поиском страницы.
+                    // totalWords становится non-null только после того, как fullText готов.
+                    helper.totalWords.filterNotNull().first()
+                    helper.getPageIndexByWordOffset(offset)
                 }
+            } else {
+                0
             }
-            currentPage = pageIndex
-        }
-    }
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .onGloballyPositioned {
-            componentHeight = it.size.height
-            componentWidth = it.size.width
-        }) {
-        if (fb2RenderHelper.value != null && currentPage != null) {
-            val curlMode = remember { settingsManager.getFlipMode() }
-            //Log.d("Fb2ReaderScreen", "$currentPage")
-            BookContent(
-                currentPage = currentPage!!,
-                totalPages = fb2RenderHelper.value!!.pagesCount,
-                mode = mode,
-                onPageChange = onPageChange,
-                onToggleMode = { newMode -> mode = newMode },
-                flipMode = curlMode,
-                getPage = { page -> fb2RenderHelper.value!!.openPage(page, false) },
-                documentTheme = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
-                updateDocumentThemeMode = { docThemeMode ->
-                    settingsManager.setDocumentsTheme(
-                        docThemeMode
-                    )
-                },
-                updateFlipMode = { flipMode -> settingsManager.setFlipMode(flipMode) },
-                onCarouselBack = { mode = ReaderMode.Reading },
-                title = book.getMetadata().title,
-                tableOfContent = fb2RenderHelper.value!!.tableOfContents,
-                viewerProvider = Fb2ViewerProvider()
-            )
+            println(">>> currentPage=$currentPage")
         } else {
-            //Text(getString(LocalContext.current, R.string.loading))
+            println(">>> updating config only")
+            renderConfig.value = newConfig
         }
     }
 
+    val onPageChange: (Int) -> Unit = { pageIndex: Int ->
+        val helper = fb2RenderHelper.value
+        if (helper != null) {
+            val totalPgs = helper.pagesCount.value ?: Int.MAX_VALUE
+            if (pageIndex >= totalPgs) {
+                // Значение пришло из ещё не отпагинированной записи TOC — это word-offset,
+                // а не номер страницы. Конвертируем асинхронно.
+                CoroutineScope(Dispatchers.IO).launch {
+                    val page = helper.getPageIndexByWordOffset(pageIndex)
+                    withContext(Dispatchers.Main) { currentPage = page }
+                    if (helper.pageWordSum.size > page) {
+                        book.saveProgress(
+                            Fb2Progress(
+                                characterPosition = helper.pageWordSum[page],
+                                totalCharacters   = helper.totalWords.value ?: 0,
+                            )
+                        )
+                    }
+                }
+            } else {
+                currentPage = pageIndex
+                if (helper.pageWordSum.size > pageIndex) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        book.saveProgress(
+                            Fb2Progress(
+                                characterPosition = helper.pageWordSum[pageIndex],
+                                totalCharacters   = helper.totalWords.value ?: 0,
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned {
+                componentWidth  = it.size.width
+                componentHeight = it.size.height
+                println(">>> onGloballyPositioned w=${it.size.width} h=${it.size.height}")
+            }
+    ) {
+        val helper = fb2RenderHelper.value
+        val page   = currentPage
+        println(">>> render: helper=${helper != null} page=$page")
+
+        if (helper != null && page != null) {
+            val curlMode = remember { settingsManager.getFlipMode() }
+            BookContent(
+                currentPage             = page,
+                totalPages              = helper.pagesCount,
+                mode                    = mode,
+                onPageChange            = onPageChange,
+                onToggleMode            = { newMode -> mode = newMode },
+                flipMode                = curlMode,
+                getPage                 = { p -> helper.openPage(p, false) },
+                documentTheme           = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
+                updateDocumentThemeMode = { settingsManager.setDocumentsTheme(it) },
+                updateFlipMode          = { settingsManager.setFlipMode(it) },
+                onCarouselBack          = { mode = ReaderMode.Reading },
+                title                   = book.getMetadata().title,
+                tableOfContent          = helper.tableOfContents,
+                viewerProvider          = Fb2ViewerProvider(),
+            )
+        }
+    }
 }

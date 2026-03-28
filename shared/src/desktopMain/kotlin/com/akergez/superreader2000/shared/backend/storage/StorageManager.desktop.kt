@@ -13,7 +13,7 @@ actual class FileService() {
     }
 
     actual fun copy(source: String, destination: String) {
-        File(source).copyTo(File(destination), overwrite = true)
+        File(source.replace("file:", "")).copyTo(File(destination), overwrite = true)
     }
 
     actual fun writeText(path: String, content: String) {
