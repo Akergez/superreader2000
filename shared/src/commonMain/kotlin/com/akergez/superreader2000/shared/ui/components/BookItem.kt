@@ -55,7 +55,7 @@ fun BookItem(
                 )
 
                 Text(
-                    text = if (book.bookMetaInfo.progress?.getProgressInPercent() != null) book.bookMetaInfo.progress.getProgressInPercent().toString() + "%" else "",
+                    text = if (book.bookMetaInfo.progress?.getProgressInPercent() != null) "${book.bookMetaInfo.progress.getProgressInPercent()!!.toInt()}%" else "",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium

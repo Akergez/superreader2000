@@ -1,6 +1,7 @@
 package com.akergez.superreader2000.shared.backend.storage
 
 import com.akergez.superreader2000.shared.formats.abstractions.BookMetaInfo
+import com.akergez.superreader2000.shared.formats.abstractions.FormatType
 import kotlinx.serialization.json.Json
 
 class BookMetaInfoDeserializer(private val json: Json) : IDeserializer<BookMetaInfo>,
@@ -27,6 +28,11 @@ class BookMetaInfoDeserializer(private val json: Json) : IDeserializer<BookMetaI
     }
 
     override fun fileName(bundleName: String, meta: BookMetaInfo): String {
-        return "$bundleName.pdf"
+        val ext = when (meta.progress?.formatType) {
+            FormatType.FB2 -> "fb2"
+            FormatType.DJVU -> "djvu"
+            else -> "pdf"
+        }
+        return "$bundleName.$ext"
     }
 }

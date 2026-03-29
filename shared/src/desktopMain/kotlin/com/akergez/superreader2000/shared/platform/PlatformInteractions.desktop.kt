@@ -1,6 +1,7 @@
 package com.akergez.superreader2000.shared.platform
 
 import java.io.File
+import java.net.URI
 
 actual class MessageHandler {
     actual fun showMessage(message: String) {
@@ -14,7 +15,7 @@ actual class MessageHandler {
 
 actual class FileUriHandler {
     actual suspend fun getFileName(fileUri: String): String {
-        val file = File(fileUri)
+        val file = if (fileUri.startsWith("file:")) File(URI(fileUri)) else File(fileUri)
         return file.name
     }
 }

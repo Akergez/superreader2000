@@ -145,7 +145,7 @@ fun <TBookContent> PageCarousel(
                                     ) {
                                         Box(
                                             modifier = Modifier.weight(1f).fillMaxHeight(),
-                                            contentAlignment = Alignment.Center,
+                                            contentAlignment = Alignment.CenterEnd,
                                         ) {
                                             CarouselPageSlot(
                                                 page = leftPage,
@@ -159,7 +159,7 @@ fun <TBookContent> PageCarousel(
                                         if (rightPage != null) {
                                             Box(
                                                 modifier = Modifier.weight(1f).fillMaxHeight(),
-                                                contentAlignment = Alignment.Center,
+                                                contentAlignment = Alignment.CenterStart,
                                             ) {
                                                 CarouselPageSlot(
                                                     page = rightPage,

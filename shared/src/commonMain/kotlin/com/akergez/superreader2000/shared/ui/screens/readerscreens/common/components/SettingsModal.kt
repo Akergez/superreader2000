@@ -50,7 +50,9 @@ fun SettingsModal(
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             sheetState.show()
-            onStateChange(true)
+            // onStateChange(true) убран — showSettingsModal уже true, иначе SettingsModal
+            // не попал бы в композицию. Повторный вызов создавал гонку с onStateChange(false):
+            // hide() завершался, snapshotFlow вызывал false, а этот true выполнялся позже.
         }
     }
 
@@ -60,10 +62,12 @@ fun SettingsModal(
     LaunchedEffect(sheetState) {
         snapshotFlow { sheetState.currentValue }
             .collect { value ->
+                println(">>> SettingsModal sheetState=$value hasBeenOpened=$hasBeenOpened")
                 if (value == SheetValue.Expanded || value == SheetValue.PartiallyExpanded) {
                     hasBeenOpened = true
                 }
                 if (value == SheetValue.Hidden && hasBeenOpened) {
+                    println(">>> SettingsModal: calling onStateChange(false)")
                     onStateChange(false)
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
@@ -97,7 +101,19 @@ fun SettingsModal(
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
-            IconScrollSelector(onVerticalScroll, scrollMode)
+            // Скрываем шторку перед вызовом onVerticalScroll, чтобы не было ghost-click:
+            // detectTapGestures поглощает DOWN, но если модал исчезает без анимации,
+            // UP-событие падает на кнопку Settings в карусели и повторно открывает шторку.
+            IconScrollSelector(
+                onSelect = { mode ->
+                    coroutineScope.launch {
+                        println(">>> SettingsModal: hiding sheet before onVerticalScroll($mode)")
+                        sheetState.hide()
+                        onVerticalScroll(mode)
+                    }
+                },
+                selected = scrollMode,
+            )
         }
     }
 }

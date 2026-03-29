@@ -10,8 +10,14 @@ interface IBookContent {
     val nativeHeight: Int get() = 0
 }
 
-data class PdfBookContent(val bitmap: ImageBitmap?): IBookContent
-data class DjvuBookContent(val bitmap: ImageBitmap?): IBookContent
+data class PdfBookContent(val bitmap: ImageBitmap?): IBookContent {
+    override val nativeWidth: Int get() = bitmap?.width ?: 0
+    override val nativeHeight: Int get() = bitmap?.height ?: 0
+}
+data class DjvuBookContent(val bitmap: ImageBitmap?): IBookContent {
+    override val nativeWidth: Int get() = bitmap?.width ?: 0
+    override val nativeHeight: Int get() = bitmap?.height ?: 0
+}
 
 data class Fb2BookContent(
     val drawCommands: List<DrawCommand>,
@@ -25,15 +31,16 @@ data class Fb2BookContent(
 
 sealed class DrawCommand {
     /**
-     * Один отрезок текста с уже применёнными спанами (bold/italic/color/…).
-     * [x], [y] — координаты baseline в системе координат страницы.
-     * Зум применяется снаружи через graphicsLayer — текст всегда чёткий.
+     * Блок текста страницы.
+     * [x], [y] — координаты верхнего левого угла текстовой области.
+     * [textAreaWidth] — ширина области для верстки (без отступов); 0 = fallback на всю ширину canvas.
      */
     data class DrawText(
         val text: AnnotatedString,
         val x: Float,
         val y: Float,
         val style: TextStyle,
+        val textAreaWidth: Float = 0f,
     ) : DrawCommand()
 
     /**

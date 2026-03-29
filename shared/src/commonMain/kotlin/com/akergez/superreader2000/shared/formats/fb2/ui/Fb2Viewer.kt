@@ -79,12 +79,14 @@ fun Fb2Viewer(
                             val style = cmd.style.copy(
                                 color = resolveTextColor(cmd.style.color, textColor)
                             )
+                            val width = if (cmd.textAreaWidth > 0f) cmd.textAreaWidth
+                                        else layoutSize.width - cmd.x
                             drawText(
                                 textMeasurer = textMeasurer,
                                 text         = cmd.text,
-                                topLeft      = Offset(cmd.x, cmd.y - style.fontSize.toPx()),
+                                topLeft      = Offset(cmd.x, cmd.y),
                                 style        = style,
-                                size         = layoutSize,
+                                size         = Size(width, layoutSize.height - cmd.y),
                             )
                         }
                         is DrawCommand.DrawInlineImage -> {

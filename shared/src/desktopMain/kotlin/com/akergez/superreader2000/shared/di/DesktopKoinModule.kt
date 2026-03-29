@@ -11,8 +11,12 @@ import com.akergez.superreader2000.shared.backend.storage.BookRepository
 import com.akergez.superreader2000.shared.backend.storage.FileService
 import com.akergez.superreader2000.shared.backend.storage.IDeserializer
 import com.akergez.superreader2000.shared.backend.storage.INameProvider
+import com.akergez.superreader2000.shared.backend.previewGenerators.IPreviewGenerator
 import com.akergez.superreader2000.shared.formats.abstractions.BookMetaInfo
 import com.akergez.superreader2000.shared.formats.abstractions.FormatType
+import com.akergez.superreader2000.shared.formats.djvu.DjvuPreviewGenerator
+import com.akergez.superreader2000.shared.formats.fb2.Fb2PreviewGenerator
+import com.akergez.superreader2000.shared.formats.pdf.PdfPreviewGenerator
 import com.akergez.superreader2000.shared.platform.FileUriHandler
 import com.akergez.superreader2000.shared.platform.MessageHandler
 import org.koin.core.module.Module
@@ -48,6 +52,10 @@ fun desktopPlatformModule(): Module = module {
 
     single<INameProvider<BookMetaInfo>> { BookMetaInfoDeserializer(get()) }
 
+    single<IPreviewGenerator>(named(FormatType.PDF)) { PdfPreviewGenerator() }
+    single<IPreviewGenerator>(named(FormatType.FB2)) { Fb2PreviewGenerator() }
+    single<IPreviewGenerator>(named(FormatType.DJVU)) { DjvuPreviewGenerator() }
+
     single<BookStorage> {
         BookStorage(
             get(),
@@ -56,7 +64,8 @@ fun desktopPlatformModule(): Module = module {
             get<BookInfoExtractorFactory>(),
             mapOf(
                 FormatType.PDF to get(qualifier = named(FormatType.PDF)),
-                FormatType.FB2 to get(qualifier = named(FormatType.FB2))
+                FormatType.FB2 to get(qualifier = named(FormatType.FB2)),
+                FormatType.DJVU to get(qualifier = named(FormatType.DJVU))
             ),
             get()
         )

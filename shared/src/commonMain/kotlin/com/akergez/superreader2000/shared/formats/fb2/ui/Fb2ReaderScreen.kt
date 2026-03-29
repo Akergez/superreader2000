@@ -1,6 +1,7 @@
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,15 +50,22 @@ fun Fb2ReaderScreen(
 
     val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            fb2RenderHelper.value?.close()
+        }
+    }
+
+    // LaunchedEffect 1: создаём/обновляем конфиг при изменении размера.
+    // Намеренно НЕ устанавливает currentPage — он устанавливается отдельным эффектом ниже,
+    // чтобы изменения размера не отменяли ожидание пагинации.
     LaunchedEffect(componentWidth, componentHeight) {
-        println(">>> LaunchedEffect w=$componentWidth h=$componentHeight")
+        println(">>> LaunchedEffect[size] w=$componentWidth h=$componentHeight helper=${fb2RenderHelper.value != null}")
         if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
         val paddingPx = (density.density * (16 + 32)).toInt()
         val topBarPx  = (density.density * (16 + 40)).toInt()
 
-        // В горизонтальной ориентации страницы выводятся по две рядом — каждая занимает
-        // половину экрана. Пагинируем под эту ширину, чтобы текст был полного размера.
         val isLandscape = componentWidth.toFloat() / componentHeight > 4f / 3f
         val pagesPerSpread = if (isLandscape) 2 else 1
         val pageCanvasWidth = componentWidth / pagesPerSpread
@@ -73,30 +81,33 @@ fun Fb2ReaderScreen(
         if (fb2RenderHelper.value == null) {
             println(">>> creating helper")
             renderConfig.value = newConfig
-
             val helper = withContext(Dispatchers.IO) {
                 Fb2RenderHelper(renderConfig, textMeasurer, book.getFile())
             }
             fb2RenderHelper.value = helper
-            println(">>> helper created")
-
-            val offset = book.readProgress().characterPosition
-            println(">>> readProgress offset=$offset")
-            currentPage = if (offset > 0) {
-                withContext(Dispatchers.IO) {
-                    // Парсинг асинхронный — ждём его завершения перед поиском страницы.
-                    // totalWords становится non-null только после того, как fullText готов.
-                    helper.totalWords.filterNotNull().first()
-                    helper.getPageIndexByWordOffset(offset)
-                }
-            } else {
-                0
-            }
-            println(">>> currentPage=$currentPage")
+            println(">>> helper created, stored")
         } else {
             println(">>> updating config only")
             renderConfig.value = newConfig
         }
+    }
+
+    // LaunchedEffect 2: устанавливаем начальную страницу как только хелпер готов.
+    // Ключ — сам объект хелпера, поэтому повторные изменения размера не отменяют это ожидание.
+    LaunchedEffect(fb2RenderHelper.value) {
+        val helper = fb2RenderHelper.value ?: return@LaunchedEffect
+        println(">>> LaunchedEffect[helper] restoring progress")
+        val offset = book.readProgress().characterPosition
+        println(">>> readProgress offset=$offset")
+        currentPage = if (offset > 0) {
+            withContext(Dispatchers.IO) {
+                helper.totalWords.filterNotNull().first()
+                helper.getPageIndexByWordOffset(offset)
+            }
+        } else {
+            0
+        }
+        println(">>> currentPage=$currentPage")
     }
 
     val onPageChange: (Int) -> Unit = { pageIndex: Int ->
@@ -138,9 +149,13 @@ fun Fb2ReaderScreen(
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned {
-                componentWidth  = it.size.width
-                componentHeight = it.size.height
-                println(">>> onGloballyPositioned w=${it.size.width} h=${it.size.height}")
+                val newW = it.size.width
+                val newH = it.size.height
+                if (newW != componentWidth || newH != componentHeight) {
+                    println(">>> SIZE CHANGED: ${componentWidth}x${componentHeight} -> ${newW}x${newH}")
+                }
+                componentWidth  = newW
+                componentHeight = newH
             }
     ) {
         val helper = fb2RenderHelper.value
@@ -148,7 +163,7 @@ fun Fb2ReaderScreen(
         println(">>> render: helper=${helper != null} page=$page")
 
         if (helper != null && page != null) {
-            val curlMode = remember { settingsManager.getFlipMode() }
+            var curlMode by remember { mutableStateOf(settingsManager.getFlipMode()) }
             BookContent(
                 currentPage             = page,
                 totalPages              = helper.pagesCount,
@@ -159,7 +174,7 @@ fun Fb2ReaderScreen(
                 getPage                 = { p -> helper.openPage(p, false) },
                 documentTheme           = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { settingsManager.setDocumentsTheme(it) },
-                updateFlipMode          = { settingsManager.setFlipMode(it) },
+                updateFlipMode          = { curlMode = it; settingsManager.setFlipMode(it) },
                 onCarouselBack          = { mode = ReaderMode.Reading },
                 title                   = book.getMetadata().title,
                 tableOfContent          = helper.tableOfContents,
