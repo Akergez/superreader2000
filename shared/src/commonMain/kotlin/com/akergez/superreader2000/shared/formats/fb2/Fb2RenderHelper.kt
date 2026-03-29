@@ -11,6 +11,7 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
@@ -52,6 +53,8 @@ data class RenderConfig(
     val fontSize: TextUnit = 18.sp,
     val fontFamily: FontFamily = FontFamily.SansSerif,
     val lineHeightMultiplier: Float = 1.4f,
+    /** Горизонтальный отступ страницы в пикселях (density-aware, задаётся из Fb2ReaderScreen). */
+    val paddingH: Float = 32f,
 ) {
     // Конфиг валиден только если оба размера положительные
     val isValid: Boolean get() = pageWidth > 0 && pageHeight > 0
@@ -202,6 +205,7 @@ class Fb2RenderHelper constructor(
                 fontFamily = config.fontFamily,
                 lineHeight = config.fontSize * config.lineHeightMultiplier,
                 textAlign  = TextAlign.Justify,
+                lineBreak  = LineBreak.Paragraph,
             )
             val w = config.pageWidth.coerceAtLeast(1)
             val h = config.pageHeight.coerceAtLeast(1)
@@ -320,13 +324,14 @@ class Fb2RenderHelper constructor(
         return listOf(
             DrawCommand.DrawText(
                 text          = pageText,
-                x             = PADDING_H,
+                x             = config.paddingH,
                 y             = PADDING_V,
                 style         = TextStyle(
                     fontSize   = config.fontSize,
                     fontFamily = config.fontFamily,
                     lineHeight = config.fontSize * config.lineHeightMultiplier,
                     textAlign  = TextAlign.Justify,
+                    lineBreak  = LineBreak.Paragraph,
                 ),
                 textAreaWidth = config.pageWidth.toFloat(),
             )
@@ -356,9 +361,23 @@ class Fb2RenderHelper constructor(
 
     /** Собирает всю книгу в одну AnnotatedString (один раз после парсинга). */
     private fun buildFullText(elements: List<FB2Element>): AnnotatedString = buildAnnotatedString {
-        elements.forEachIndexed { i, element ->
-            if (i > 0) append(' ')
-            append(element.toStyledString())
+        // Знаки, перед которыми не нужен пробел (знаки примыкают к предыдущему слову).
+        val noPrecedingSpace = setOf('.', ',', '!', '?', ':', ';', ')', ']', '}', '»', '…')
+        val styled = elements.map { it.toStyledString() }
+        styled.forEachIndexed { i, cur ->
+            if (i > 0) {
+                val prevText = styled[i - 1].text
+                val curText  = cur.text
+                // Не добавляем пробел: перед знаком препинания, перед/после переноса строки,
+                // или если предыдущий элемент был пустым.
+                val noSpace = curText.isEmpty()
+                    || curText[0] in noPrecedingSpace
+                    || curText[0] == '\n'
+                    || prevText.lastOrNull() == '\n'
+                    || prevText.isBlank()
+                if (!noSpace) append(' ')
+            }
+            append(cur)
         }
     }
 

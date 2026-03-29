@@ -63,18 +63,20 @@ fun Fb2ReaderScreen(
         println(">>> LaunchedEffect[size] w=$componentWidth h=$componentHeight helper=${fb2RenderHelper.value != null}")
         if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
-        val paddingPx = (density.density * (16 + 32)).toInt()
         val topBarPx  = (density.density * (16 + 40)).toInt()
+        // Горизонтальный отступ: 16dp в пикселях, симметрично с обеих сторон.
+        val paddingH  = density.density * 32f
 
         val isLandscape = componentWidth.toFloat() / componentHeight > 4f / 3f
         val pagesPerSpread = if (isLandscape) 2 else 1
         val pageCanvasWidth = componentWidth / pagesPerSpread
 
         val newConfig = RenderConfig(
-            pageWidth    = (pageCanvasWidth - paddingPx).coerceAtLeast(1),
+            pageWidth    = (pageCanvasWidth - (paddingH * 2).toInt()).coerceAtLeast(1),
             pageHeight   = (componentHeight - topBarPx).coerceAtLeast(1),
             canvasWidth  = pageCanvasWidth,
             canvasHeight = componentHeight,
+            paddingH     = paddingH,
         )
         println(">>> newConfig=$newConfig")
 
@@ -108,6 +110,26 @@ fun Fb2ReaderScreen(
             0
         }
         println(">>> currentPage=$currentPage")
+    }
+
+    val onChapterNavigate: (Int) -> Unit = { wordOffset: Int ->
+        CoroutineScope(Dispatchers.IO).launch {
+            val helper = fb2RenderHelper.value ?: return@launch
+            helper.totalWords.filterNotNull().first()
+            val page = helper.getPageIndexByWordOffset(wordOffset)
+            withContext(Dispatchers.Main) {
+                currentPage = page
+                mode = ReaderMode.Reading
+            }
+            if (helper.pageWordSum.size > page) {
+                book.saveProgress(
+                    Fb2Progress(
+                        characterPosition = helper.pageWordSum[page],
+                        totalCharacters   = helper.totalWords.value ?: 0,
+                    )
+                )
+            }
+        }
     }
 
     val onPageChange: (Int) -> Unit = { pageIndex: Int ->
@@ -179,6 +201,7 @@ fun Fb2ReaderScreen(
                 title                   = book.getMetadata().title,
                 tableOfContent          = helper.tableOfContents,
                 viewerProvider          = Fb2ViewerProvider(),
+                onChapterNavigate       = onChapterNavigate,
             )
         }
     }

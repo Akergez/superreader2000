@@ -49,7 +49,8 @@ fun <TBookContent>BookContent(
     viewerProvider: IViewerProvider<TBookContent>,
     documentTheme: DocThemeMode,
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
-    updateFlipMode: (FlipMode) -> Unit
+    updateFlipMode: (FlipMode) -> Unit,
+    onChapterNavigate: (Int) -> Unit = { page -> onPageChange(page); onToggleMode(ReaderMode.Reading) },
 ) where TBookContent : IBookContent {
     //Log.d("BookContent", "mode = $mode, flipMode = $flipMode, currentPage = $currentPage")
 
@@ -104,6 +105,12 @@ fun <TBookContent>BookContent(
         if (!showSettingsModal.value) {
             focusRequester.requestFocus()
         }
+    }
+
+    // Возвращаем фокус при смене режима, иначе после перехода Chapters→Reading
+    // фокус остаётся на утраченном LazyColumn и пробел перестаёт работать.
+    LaunchedEffect(mode) {
+        focusRequester.requestFocus()
     }
 
     Box(
@@ -206,10 +213,7 @@ fun <TBookContent>BookContent(
             }
 
             ReaderMode.Chapters -> ChapterScreen(
-                onChapterClick = {
-                    onPageChange(it)
-                    onToggleMode(ReaderMode.Reading)
-                },
+                onChapterClick = { onChapterNavigate(it) },
                 tableOfContents = tableOfContent,
                 onBack = { onToggleMode(ReaderMode.Carousel) }
             )
