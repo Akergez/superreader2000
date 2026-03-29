@@ -8,7 +8,7 @@ plugins {
 
 kotlin {
     jvm()
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     sourceSets {
         val jvmMain by getting {
@@ -87,8 +87,4 @@ compose.desktop {
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
 

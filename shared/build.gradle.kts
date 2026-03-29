@@ -71,6 +71,16 @@ kotlin {
             }
         }
 
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+                implementation(compose.uiTest)
+                implementation(compose.desktop.currentOs)
+            }
+        }
+
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
@@ -151,10 +161,6 @@ kotlin {
             minSdk = 26
         }
 
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_21
-            targetCompatibility = JavaVersion.VERSION_21
-        }
     }
 }
 
