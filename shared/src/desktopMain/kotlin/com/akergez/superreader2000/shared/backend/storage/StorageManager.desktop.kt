@@ -3,17 +3,21 @@ package com.akergez.superreader2000.shared.backend.storage
 import com.akergez.superreader2000.shared.backend.previewGenerators.FileWrapper
 import com.akergez.superreader2000.shared.backend.previewGenerators.Image
 import java.io.File
+import java.net.URI
 import javax.imageio.ImageIO
 
 actual class FileService() {
+    private fun uriOrPathToFile(path: String): File =
+        if (path.startsWith("file:")) File(URI(path)) else File(path)
+
     actual fun getFileFromPath(path: String): DocumentFileWrapper? {
-        val file = File(path)
+        val file = uriOrPathToFile(path)
         if (!file.exists()) return null
         return DocumentFileWrapper(file)
     }
 
     actual fun copy(source: String, destination: String) {
-        File(source.replace("file:", "")).copyTo(File(destination), overwrite = true)
+        uriOrPathToFile(source).copyTo(File(destination), overwrite = true)
     }
 
     actual fun writeText(path: String, content: String) {

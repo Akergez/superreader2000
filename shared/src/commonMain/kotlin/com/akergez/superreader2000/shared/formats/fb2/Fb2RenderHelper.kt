@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.w3c.dom.Node
 import java.io.File
@@ -305,7 +306,7 @@ class Fb2RenderHelper constructor(
         if (anyChanged) tableOfContents.update { updated }
     }
 
-    /** Строит DrawCommand из уже измеренного layout — без повторного measure().
+    /** Строит DrawCommand из уже измеренного layout — один блок на всю страницу.
      *  [lastLine] — последняя строка для отрисовки (включительно). */
     private fun buildDrawCommandsFromLayout(
         layout: androidx.compose.ui.text.TextLayoutResult,
@@ -313,18 +314,23 @@ class Fb2RenderHelper constructor(
         config: RenderConfig,
         lastLine: Int = layout.lineCount - 1,
     ): List<DrawCommand> {
-        val commands = mutableListOf<DrawCommand>()
-        for (line in 0..lastLine) {
-            val lineText = text.subSequence(layout.getLineStart(line), layout.getLineEnd(line))
-            if (lineText.text.isBlank() && lineText.text != "\n") continue
-            commands += DrawCommand.DrawText(
-                text  = lineText,
-                x     = PADDING_H + layout.getLineLeft(line),
-                y     = PADDING_V + layout.getLineBaseline(line).toFloat(),
-                style = TextStyle(fontSize = config.fontSize, fontFamily = config.fontFamily),
+        val pageEnd = layout.getLineEnd(lastLine).coerceAtMost(text.length)
+        val pageText = text.subSequence(0, pageEnd)
+        if (pageText.text.isBlank()) return emptyList()
+        return listOf(
+            DrawCommand.DrawText(
+                text          = pageText,
+                x             = PADDING_H,
+                y             = PADDING_V,
+                style         = TextStyle(
+                    fontSize   = config.fontSize,
+                    fontFamily = config.fontFamily,
+                    lineHeight = config.fontSize * config.lineHeightMultiplier,
+                    textAlign  = TextAlign.Justify,
+                ),
+                textAreaWidth = config.pageWidth.toFloat(),
             )
-        }
-        return commands
+        )
     }
 
     private fun commitPageData(index: Int, pageText: AnnotatedString, commands: List<DrawCommand>, config: RenderConfig) {

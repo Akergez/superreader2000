@@ -10,6 +10,6 @@ actual class DjvuBookAuthorExtractor :
     IBookInfoExtractor<BookMetaInfo> {
     actual override fun getAuthor(file: File): String? {
         val djvu = DjvuLibre(FileInputStream(file).fd)
-        return djvu.author
+        return djvu.getMeta(DjvuLibre.META_AUTHOR)
     }
 }

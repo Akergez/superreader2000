@@ -7,6 +7,6 @@ import com.akergez.superreader2000.shared.backend.previewGenerators.Image
 actual class DjvuPreviewGenerator :
     IPreviewGenerator {
     actual override suspend fun generatePreview(filePath: FileWrapper): Image? {
-        TODO("Not yet implemented")
+        return null
     }
 }

@@ -4,6 +4,7 @@ import com.akergez.superreader2000.shared.formats.abstractions.FormatType
 import com.akergez.superreader2000.shared.formats.abstractions.Progress
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 @SerialName("FB2")
@@ -15,5 +16,6 @@ data class Fb2Progress(
         return characterPosition / totalCharacters.toDouble() * 100
     }
 
+    @Transient
     override val formatType: FormatType = FormatType.FB2
 }

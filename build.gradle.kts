@@ -19,10 +19,10 @@ plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.kotlinAndroid) apply false
     alias(libs.plugins.library) apply false    // CHANGE THIS LINE from "2.0.0" to "2.0.21"
-    id("org.jetbrains.kotlin.multiplatform") version "2.2.21" apply false
-    id("org.jetbrains.compose") version "1.9.3" apply false
+    id("org.jetbrains.kotlin.multiplatform") version "2.3.20" apply false
+    id("org.jetbrains.compose") version "1.10.3" apply false
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinCompose) apply false
-    id("app.cash.sqldelight") version "2.2.1" apply false
+    id("app.cash.sqldelight") version "2.3.2" apply false
 }
 

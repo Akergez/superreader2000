@@ -139,13 +139,18 @@ abstract class StorageManager<T>(
         getBookFile(bundleName, meta).onSuccess { bookFile = it.file }
             .onFailure { return@withContext Result.failure(it) }
 
-        val previewBitmap =
-            previewGeneratorProvider(meta).generatePreview(FileWrapper(bookFile!!))
-                ?: return@withContext Result.failure(
-                    Error("Failed to generate preview bitmap")
-                )
-
-        fileService.writeBitmap(previewFile.absolutePath(), previewBitmap)
+        println(">>> createBundle: generating preview for $bundleName, bookFile=${bookFile?.absolutePath}, exists=${bookFile?.exists()}")
+        try {
+            val previewBitmap = previewGeneratorProvider(meta).generatePreview(FileWrapper(bookFile!!))
+            println(">>> createBundle: previewBitmap=$previewBitmap")
+            if (previewBitmap != null) {
+                fileService.writeBitmap(previewFile.absolutePath(), previewBitmap)
+                println(">>> createBundle: preview written to ${previewFile.absolutePath()}")
+            }
+        } catch (e: Exception) {
+            println(">>> createBundle: preview generation failed: ${e.message}")
+            e.printStackTrace()
+        }
 
         return@withContext Result.success(
             BundleCreateResult<T>(
@@ -175,11 +180,14 @@ abstract class StorageManager<T>(
             return@withContext Result.failure(Exception("Failed to rename bundle directory"))
         }
 
-        val oldJsonPath = bundleDir.findFile(nameProvider.jsonMetaFilename(old))
+        val newBundleDir = storageDir?.findFile(new)
+            ?: return@withContext Result.failure(Exception("Renamed bundle directory not found"))
+
+        val oldJsonPath = newBundleDir.findFile(nameProvider.jsonMetaFilename(old))
             ?: return@withContext Result.failure(Exception("Metadata file not found"))
-        val oldImagePath = bundleDir.findFile(nameProvider.previewFilename(old))
+        val oldImagePath = newBundleDir.findFile(nameProvider.previewFilename(old))
             ?: return@withContext Result.failure(Exception("Preview file not found"))
-        val oldFilePath = bundleDir.findFile(nameProvider.fileName(old, meta))
+        val oldFilePath = newBundleDir.findFile(nameProvider.fileName(old, meta))
             ?: return@withContext Result.failure(Exception("Book file not found"))
 
         oldJsonPath.renameTo(nameProvider.jsonMetaFilename(new))

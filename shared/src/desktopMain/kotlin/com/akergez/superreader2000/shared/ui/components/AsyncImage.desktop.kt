@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Image as SkiaImage
-import java.net.URL
+import java.io.File
 
 @Composable
 actual fun AsyncImage(
@@ -25,7 +25,7 @@ actual fun AsyncImage(
             launch {
                 imageBitmap = withContext(Dispatchers.IO) {
                     try {
-                        val bytes = URL(uri).readBytes()
+                        val bytes = File(uri).readBytes()
                         SkiaImage.makeFromEncoded(bytes).toComposeImageBitmap()
                     } catch (e: Exception) {
                         null

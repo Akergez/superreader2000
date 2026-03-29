@@ -56,6 +56,12 @@ fun <TBookContent>BookContent(
     val haptic = LocalHapticFeedback.current
 
     val showSettingsModal = remember { mutableStateOf(false) }
+    // Метка времени последнего закрытия модала — для защиты от ghost-click на macOS:
+    // при закрытии Popup-окна ModalBottomSheet macOS "прокидывает" click в нижнее окно,
+    // и Settings-кнопка срабатывает повторно. Игнорируем клик в течение 400 мс.
+    val lastModalCloseMs = remember { LongArray(1) }
+
+    println(">>> BookContent recompose: mode=$mode flipMode=$flipMode showSettings=${showSettingsModal.value}")
 
     val actualMode = rememberUpdatedState(mode)
     val coroutineScope = rememberCoroutineScope()
@@ -68,7 +74,7 @@ fun <TBookContent>BookContent(
     val handleZoomState =
         { zoomState: ZoomState ->
             val newScale = zoomState.scale
-           // Log.d("BookContent", "New scale: $newScale")
+            println(">>> handleZoomState: scale=$newScale mode=${actualMode.value}")
             if (newScale <= 0.9f) {
                 if (actualMode.value != ReaderMode.Carousel) {
                     //Log.d("BookContent", "Updating mode from ${actualMode.value} to Carousel")
@@ -77,7 +83,7 @@ fun <TBookContent>BookContent(
                 }
             }
 
-            if (newScale > 1f) {
+            if (newScale > 1.05f) {
                 if (actualMode.value != ReaderMode.Reading) {
                //     Log.d("BookContent", "Updating mode from ${actualMode.value} to Reading")
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -90,6 +96,14 @@ fun <TBookContent>BookContent(
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    // Возвращаем фокус на BookContent после закрытия модала,
+    // иначе пробел перестаёт работать (фокус остаётся на Popup-окне ModalBottomSheet).
+    LaunchedEffect(showSettingsModal.value) {
+        if (!showSettingsModal.value) {
+            focusRequester.requestFocus()
+        }
     }
 
     Box(
@@ -124,7 +138,13 @@ fun <TBookContent>BookContent(
                         .background(MaterialTheme.colorScheme.background),
                     bookContent = getPage,
                     title = title,
-                    onSettingsClick = { showSettingsModal.value = !showSettingsModal.value },
+                    onSettingsClick = {
+                        val elapsed = System.currentTimeMillis() - lastModalCloseMs[0]
+                        println(">>> onSettingsClick: elapsed=${elapsed}ms since last close")
+                        if (elapsed > 400) {
+                            showSettingsModal.value = !showSettingsModal.value
+                        }
+                    },
                     onChaptersClick = { onToggleMode(ReaderMode.Chapters) },
                     zoomState = handleZoomState,
                     viewerProvider = viewerProvider
@@ -137,10 +157,14 @@ fun <TBookContent>BookContent(
                             },
                             applyInversion = documentTheme == DocThemeMode.Invert,
                             onVerticalScroll = {
+                                println(">>> onVerticalScroll called: newMode=$it")
                                 updateFlipMode(it)
                             },
                             scrollMode = flipMode,
-                            onStateChange = { showSettingsModal.value = it }
+                            onStateChange = {
+                                if (!it) lastModalCloseMs[0] = System.currentTimeMillis()
+                                showSettingsModal.value = it
+                            }
                         )
                     }
                 }

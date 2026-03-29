@@ -20,7 +20,7 @@ variables:
 # =============================================================================
 build:android:
   stage: build
-  image: eclipse-temurin:17-jdk
+  image: eclipse-temurin:21-jdk
   <<: *gradle_cache
   before_script:
     - apt-get update && apt-get install -y wget unzip
