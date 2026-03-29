@@ -4,6 +4,7 @@ import com.akergez.superreader2000.shared.formats.abstractions.FormatType
 import com.akergez.superreader2000.shared.formats.abstractions.Progress
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 @SerialName("PDF")
@@ -18,5 +19,6 @@ data class PdfProgress(
         return kotlin.math.round(pageIndex / totalPages.toDouble() * 100)
     }
 
+    @Transient
     override val formatType: FormatType = FormatType.PDF
 }
