@@ -18,6 +18,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.akergez.superreader2000.shared.ui.DrawCommand
@@ -87,10 +89,16 @@ fun Fb2Viewer(
                                 topLeft      = Offset(cmd.x, cmd.y),
                                 style        = style,
                                 size         = Size(width, layoutSize.height - cmd.y),
+                                placeholders = cmd.placeholders,
                             )
                         }
                         is DrawCommand.DrawInlineImage -> {
-                            // TODO: drawImage когда ImageBitmap будет доступен из imageMap
+                            val bitmap = content.imageMap[cmd.imageId] ?: return@forEach
+                            drawImage(
+                                image     = bitmap,
+                                dstOffset = IntOffset(cmd.x.toInt(), cmd.y.toInt()),
+                                dstSize   = IntSize(cmd.width.toInt(), cmd.height.toInt()),
+                            )
                         }
                     }
                 }

@@ -9,7 +9,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withStyle
@@ -191,14 +190,15 @@ class FB2Image(var imageId: String, var description: String = "") :
     FB2Element(description) {
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            withStyle(SpanStyle(fontSize = 300.sp)) {
-                withStyle(
-                    ParagraphStyle(
-                        lineBreak = LineBreak.Heading,
-                    )
-                ) {
-                    appendInlineContent(id = imageId, alternateText = description)
+            append('\n')
+            append('\n')
+            appendInlineContent(id = imageId, alternateText = "[image]")
+            append('\n')
+            if (text.isNotBlank()) {
+                withStyle(SpanStyle(fontStyle = FontStyle.Italic, fontSize = 16.sp)) {
+                    append(text)
                 }
+                append('\n')
             }
         }
     }

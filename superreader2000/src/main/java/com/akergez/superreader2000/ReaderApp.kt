@@ -77,7 +77,7 @@ class ReaderApp : Application() {
 
             viewModel { parameters -> EditModalViewModel(parameters.get()) }
             viewModel {
-                SettingsViewModel(get(), get())
+                SettingsViewModel(get(), get(), get())
             }
             viewModel {
                 HoomeScreenViewModel(

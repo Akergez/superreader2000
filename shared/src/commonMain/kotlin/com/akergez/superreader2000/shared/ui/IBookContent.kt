@@ -1,8 +1,8 @@
 package com.akergez.superreader2000.shared.ui
 
-import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.TextStyle
 
 interface IBookContent {
@@ -21,7 +21,7 @@ data class DjvuBookContent(val bitmap: ImageBitmap?): IBookContent {
 
 data class Fb2BookContent(
     val drawCommands: List<DrawCommand>,
-    val imageMap: Map<String, InlineTextContent>,
+    val imageMap: Map<String, ImageBitmap>,
     val pageIndex: Int,
     val totalPages: Int?,
     /** Размер страницы в пикселях, для которого рассчитаны drawCommands. */
@@ -41,6 +41,7 @@ sealed class DrawCommand {
         val y: Float,
         val style: TextStyle,
         val textAreaWidth: Float = 0f,
+        val placeholders: List<AnnotatedString.Range<Placeholder>> = emptyList(),
     ) : DrawCommand()
 
     /**

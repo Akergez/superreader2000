@@ -44,6 +44,8 @@ expect class DocumentFileWrapper {
     fun listFiles(): List<DocumentFileWrapper>
     fun isDirectory(): Boolean
     fun exists(): Boolean
+    fun length(): Long
+    fun lastModified(): Long
 }
 
 expect class FileService {
@@ -53,6 +55,8 @@ expect class FileService {
     fun readText(path: String): String?
     fun writeBitmap(path: String, bitmap: Image)
     fun copyToLocalFile(source: DocumentFileWrapper, destFileName: String): File
+    fun readBytes(path: String, offset: Long, length: Int): ByteArray
+    fun writeBytes(path: String, bytes: ByteArray)
 }
 
 abstract class StorageManager<T>(

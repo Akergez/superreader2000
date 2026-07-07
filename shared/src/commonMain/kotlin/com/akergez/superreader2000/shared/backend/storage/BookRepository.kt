@@ -36,7 +36,6 @@ class BookRepository(private val dao: UserDao, private val json: Json) : IBookRe
     }
 
     override suspend fun saveBooks(books: List<BookStorageEntry>) {
-        //Log.i("BookStorageRepository", "saveBookLinks: $books")
         dao.deleteAll()
         dao.insertAll(*books.map { Book(it.bundleName, json.encodeToString(it)) }.toTypedArray())
     }
@@ -56,6 +55,7 @@ class BookRepository(private val dao: UserDao, private val json: Json) : IBookRe
         return dao.getAll().map { json.decodeFromString<BookStorageEntry>(it.payload ?: "{}") }
             .find { it.bundleName == bundleName }
     }
+
 }
 
 @Entity
@@ -89,4 +89,3 @@ interface UserDao {
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
 }
-

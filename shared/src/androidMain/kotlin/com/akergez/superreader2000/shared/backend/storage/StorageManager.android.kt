@@ -21,6 +21,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.FileInputStream
 
 actual class FileService(val context: Context) {
     actual fun getFileFromPath(path: String): DocumentFileWrapper? {
@@ -60,6 +61,25 @@ actual class FileService(val context: Context) {
             }
         }
         return destFile
+    }
+
+    actual fun readBytes(path: String, offset: Long, length: Int): ByteArray {
+        if (length <= 0) return ByteArray(0)
+        val descriptor = context.contentResolver.openFileDescriptor(path.toUri(), "r") ?: return ByteArray(0)
+        return descriptor.use {
+            FileInputStream(it.fileDescriptor).channel.use { channel ->
+                channel.position(offset.coerceAtLeast(0))
+                val buffer = java.nio.ByteBuffer.allocate(length)
+                while (buffer.hasRemaining() && channel.read(buffer) > 0) Unit
+                buffer.flip()
+                ByteArray(buffer.remaining()).also(buffer::get)
+            }
+        }
+    }
+
+    actual fun writeBytes(path: String, bytes: ByteArray) {
+        context.contentResolver.openOutputStream(path.toUri(), "wt")?.use { it.write(bytes) }
+            ?: error("cannot open $path for writing")
     }
 }
 
@@ -106,4 +126,6 @@ actual class DocumentFileWrapper(val file: DocumentFile) {
     actual fun isDirectory(): Boolean {
         return file.isDirectory
     }
+    actual fun length(): Long = file.length()
+    actual fun lastModified(): Long = file.lastModified()
 }

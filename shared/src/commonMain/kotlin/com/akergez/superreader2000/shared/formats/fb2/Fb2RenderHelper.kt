@@ -1,8 +1,7 @@
 package com.akergez.superreader2000.shared.formats.fb2
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.decodeToImageBitmap
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
@@ -55,6 +54,8 @@ data class RenderConfig(
     val lineHeightMultiplier: Float = 1.4f,
     /** Горизонтальный отступ страницы в пикселях (density-aware, задаётся из Fb2ReaderScreen). */
     val paddingH: Float = 32f,
+    /** Плотность экрана (LocalDensity.current.density), используется для перевода px → sp в Placeholder. */
+    val density: Float = 1f,
 ) {
     // Конфиг валиден только если оба размера положительные
     val isValid: Boolean get() = pageWidth > 0 && pageHeight > 0
@@ -68,8 +69,10 @@ class Fb2RenderHelper constructor(
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val imageMap = mutableMapOf<String, InlineTextContent>()
+    private val imageMap = mutableMapOf<String, ImageBitmap>()
     private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
+    // Смещение в fullText (символы) в начале каждой страницы — для быстрой оценки позиции.
+    private val pageCharOffsets = java.util.concurrent.CopyOnWriteArrayList<Int>()
 
     // Весь текст книги в одной AnnotatedString — строится один раз после парсинга.
     private var fullText = AnnotatedString("")
@@ -187,6 +190,7 @@ class Fb2RenderHelper constructor(
             lastSlicedPageIndex = 0
             isAllPageSliced = false
             pageWordSum.clear()
+            pageCharOffsets.clear()
         }
 
         paginationJob = scope.launch { generatePagesUpTo(3) }
@@ -218,25 +222,28 @@ class Fb2RenderHelper constructor(
             val baseChunkSize = (charsPerLine * linesPerPage * 2).coerceAtLeast(400)
 
             while (charOffset < fullText.length) {
+                val pageStartChar = charOffset  // фиксируем начало страницы до измерения
                 yield() // кооперативная отмена — раз на страницу
 
                 // Берём кусок ~2× одной страницы. Если он целиком поместился
                 // (маловероятно при правильной оценке), удваиваем и повторяем.
                 var chunkSize = baseChunkSize
                 var chunkEnd: Int
+                var chunk: AnnotatedString
                 var layout: androidx.compose.ui.text.TextLayoutResult
                 while (true) {
                     chunkEnd = (charOffset + chunkSize).coerceAtMost(fullText.length)
+                    chunk = fullText.subSequence(charOffset, chunkEnd)
                     layout = textMeasurer.measure(
-                        text        = fullText.subSequence(charOffset, chunkEnd),
+                        text        = chunk,
                         style       = style,
                         constraints = Constraints(minWidth = w, maxWidth = w, minHeight = 0, maxHeight = h),
                         softWrap    = true,
+                        placeholders = buildChunkPlaceholders(chunk, config),
                     )
                     if (layout.didOverflowHeight || chunkEnd == fullText.length) break
                     chunkSize *= 2
                 }
-                val chunk = fullText.subSequence(charOffset, chunkEnd)
 
                 // Ищем последнюю строку, которая целиком влезает в высоту страницы.
                 // layout.lineCount включает ВСЕ строки (и те, что вышли за maxHeight),
@@ -259,7 +266,7 @@ class Fb2RenderHelper constructor(
                 val commands = buildDrawCommandsFromLayout(layout, chunk, config, lastFittingLine)
                 val pageText = chunk.subSequence(0, pageEndInChunk)
 
-                commitPageData(lastSlicedPageIndex, pageText, commands, config)
+                commitPageData(lastSlicedPageIndex, pageText, commands, config, pageStartChar)
                 charOffset += pageEndInChunk
                 lastSlicedPageIndex++
 
@@ -320,8 +327,9 @@ class Fb2RenderHelper constructor(
     ): List<DrawCommand> {
         val pageEnd = layout.getLineEnd(lastLine).coerceAtMost(text.length)
         val pageText = text.subSequence(0, pageEnd)
-        if (pageText.text.isBlank()) return emptyList()
-        return listOf(
+        if (pageText.text.isBlank() && pageText.getStringAnnotations(INLINE_CONTENT_TAG, 0, pageText.length).isEmpty()) return emptyList()
+        val commands = mutableListOf<DrawCommand>()
+        commands.add(
             DrawCommand.DrawText(
                 text          = pageText,
                 x             = config.paddingH,
@@ -334,11 +342,56 @@ class Fb2RenderHelper constructor(
                     lineBreak  = LineBreak.Paragraph,
                 ),
                 textAreaWidth = config.pageWidth.toFloat(),
+                placeholders  = buildChunkPlaceholders(pageText, config),
             )
         )
+        // Emit DrawInlineImage for each image placeholder that falls within this page.
+        // placeholderRects is indexed in the same order as the placeholders passed to measure(),
+        // which matches the order images appear in the chunk. Page images are a prefix of chunk images.
+        val pageImages = pageText.getStringAnnotations(INLINE_CONTENT_TAG, 0, pageText.length)
+        pageImages.forEachIndexed { idx, ann ->
+            val rect = layout.placeholderRects.getOrNull(idx) ?: return@forEachIndexed
+            if (!imageMap.containsKey(ann.item)) return@forEachIndexed
+            commands.add(
+                DrawCommand.DrawInlineImage(
+                    imageId = ann.item,
+                    x       = config.paddingH + rect.left,
+                    y       = PADDING_V + rect.top,
+                    width   = rect.width.coerceAtLeast(1f),
+                    height  = rect.height.coerceAtLeast(1f),
+                )
+            )
+        }
+        return commands
     }
 
-    private fun commitPageData(index: Int, pageText: AnnotatedString, commands: List<DrawCommand>, config: RenderConfig) {
+    /** Builds the placeholders list for [TextMeasurer.measure] from image annotations in [chunk]. */
+    private fun buildChunkPlaceholders(
+        chunk: AnnotatedString,
+        config: RenderConfig,
+    ): List<AnnotatedString.Range<Placeholder>> {
+        val imageAnnotations = chunk.getStringAnnotations(INLINE_CONTENT_TAG, 0, chunk.length)
+        if (imageAnnotations.isEmpty()) return emptyList()
+        val density = config.density.coerceAtLeast(1f)
+        val maxWidthPx = config.pageWidth.toFloat()
+        return imageAnnotations.mapNotNull { ann ->
+            val bitmap = imageMap[ann.item] ?: return@mapNotNull null
+            val aspectRatio = if (bitmap.height > 0) bitmap.width.toFloat() / bitmap.height else 1f
+            val imgWidthPx = maxWidthPx
+            val imgHeightPx = (imgWidthPx / aspectRatio).coerceAtMost(config.pageHeight * 0.85f)
+            AnnotatedString.Range(
+                item  = Placeholder(
+                    width                   = (imgWidthPx / density).sp,
+                    height                  = (imgHeightPx / density).sp,
+                    placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter,
+                ),
+                start = ann.start,
+                end   = ann.end,
+            )
+        }
+    }
+
+    private fun commitPageData(index: Int, pageText: AnnotatedString, commands: List<DrawCommand>, config: RenderConfig, pageStartChar: Int = 0) {
         println(">>> commitPage index=$index commands=${commands.size}")
         val wordsOnPage = pageText.text.split(' ').count { it.isNotBlank() }
         while (pageWordSum.size < index) pageWordSum.add(pageWordSum.lastOrNull() ?: 0)
@@ -357,6 +410,42 @@ class Fb2RenderHelper constructor(
         } else {
             pageCache[index] = MutableStateFlow(content)
         }
+        if (pageCharOffsets.size <= index) {
+            pageCharOffsets.add(pageStartChar)
+        }
+    }
+
+    /**
+     * Мгновенная оценка номера страницы по word-offset через пропорцию в символах.
+     * Не требует пагинации — работает как только парсинг завершён.
+     * Точность: ±несколько страниц (достаточно для немедленного показа).
+     */
+    fun estimatePageFromWordOffset(wordOffset: Int): Int {
+        val totalW = totalWords.value ?: return 0
+        if (totalW <= 0 || fullText.isEmpty()) return 0
+        val estimatedChar = (wordOffset.toLong() * fullText.length / totalW)
+            .toInt().coerceIn(0, fullText.length)
+
+        // Если уже отпагинированы страницы — бинарный поиск по реальным смещениям.
+        val offsets = pageCharOffsets
+        if (offsets.size > 1) {
+            var lo = 0; var hi = offsets.size - 1
+            while (lo < hi) {
+                val mid = (lo + hi + 1) / 2
+                if (offsets[mid] <= estimatedChar) lo = mid else hi = mid - 1
+            }
+            return lo
+        }
+
+        // Грубая оценка по метрике шрифта — до появления реальных данных.
+        val config = renderConfig.value
+        if (!config.isValid) return 0
+        val avgCharWidth = config.fontSize.value * 0.55f
+        val charsPerLine = (config.pageWidth / avgCharWidth).toInt().coerceAtLeast(1)
+        val linesPerPage = (config.pageHeight / (config.fontSize.value * config.lineHeightMultiplier))
+            .toInt().coerceAtLeast(1)
+        val charsPerPage = (charsPerLine * linesPerPage).coerceAtLeast(1)
+        return (estimatedChar / charsPerPage).coerceAtLeast(0)
     }
 
     /** Собирает всю книгу в одну AnnotatedString (один раз после парсинга). */
@@ -383,7 +472,7 @@ class Fb2RenderHelper constructor(
 
     private data class ParseResult(
         val elements: List<FB2Element>,
-        val images: Map<String, InlineTextContent>,
+        val images: Map<String, ImageBitmap>,
         val toc: List<TOCEntry>,
     )
 
@@ -395,7 +484,7 @@ class Fb2RenderHelper constructor(
 
             val tocEntries = mutableListOf<TOCEntry>()
             val elements   = mutableListOf<FB2Element>()
-            val images     = mutableMapOf<String, InlineTextContent>()
+            val images     = mutableMapOf<String, ImageBitmap>()
 
             val bodyElements = doc.getElementsByTagName("body")
             for (i in 0 until bodyElements.length) {
@@ -414,17 +503,10 @@ class Fb2RenderHelper constructor(
                 if (contentType?.startsWith("image/") == true && id != null) {
                     val base64Content = node.textContent?.trim() ?: ""
                     if (base64Content.isNotEmpty()) {
-                        images[id] = InlineTextContent(
-                            Placeholder(300.sp, 300.sp, PlaceholderVerticalAlign.TextCenter)
-                        ) {
+                        try {
                             val bytes = Base64.decode(base64Content)
-                            androidx.compose.foundation.Image(
-                                bitmap             = bytes.decodeToImageBitmap(),
-                                contentDescription = null,
-                                modifier           = androidx.compose.ui.Modifier.fillMaxSize(),
-                                contentScale       = androidx.compose.ui.layout.ContentScale.Fit,
-                            )
-                        }
+                            images[id] = bytes.decodeToImageBitmap()
+                        } catch (_: Exception) { /* skip malformed image */ }
                     }
                 }
             }
@@ -516,8 +598,9 @@ class Fb2RenderHelper constructor(
                         }
                         "image" -> {
                             val href = child.attributes?.getNamedItem("l:href")?.nodeValue
+                            val alt = child.attributes?.getNamedItem("alt")?.nodeValue?.trim() ?: ""
                             if (href != null && href.startsWith("#")) {
-                                elements += FB2Image(imageId = href.substring(1), description = href)
+                                elements += FB2Image(imageId = href.substring(1), description = alt)
                             }
                         }
                         else -> elements.addAll(extractTextContent(child, tocEntries, childOffset))
@@ -532,8 +615,9 @@ class Fb2RenderHelper constructor(
         buildAnnotatedString { list.forEach { append(it) } }
 
     companion object {
-        private const val PADDING_H   = 32f
-        private const val PADDING_V   = 32f
-        private const val DEBOUNCE_MS = 300L
+        private const val PADDING_H          = 32f
+        private const val PADDING_V          = 32f
+        private const val DEBOUNCE_MS        = 300L
+        private const val INLINE_CONTENT_TAG = "androidx.compose.foundation.text.inlineContent"
     }
 }

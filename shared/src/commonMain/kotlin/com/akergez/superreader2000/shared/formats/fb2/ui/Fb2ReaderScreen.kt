@@ -23,6 +23,7 @@ import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookCo
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -57,14 +58,10 @@ fun Fb2ReaderScreen(
     }
 
     // LaunchedEffect 1: создаём/обновляем конфиг при изменении размера.
-    // Намеренно НЕ устанавливает currentPage — он устанавливается отдельным эффектом ниже,
-    // чтобы изменения размера не отменяли ожидание пагинации.
     LaunchedEffect(componentWidth, componentHeight) {
-        println(">>> LaunchedEffect[size] w=$componentWidth h=$componentHeight helper=${fb2RenderHelper.value != null}")
         if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
         val topBarPx  = (density.density * (16 + 40)).toInt()
-        // Горизонтальный отступ: 16dp в пикселях, симметрично с обеих сторон.
         val paddingH  = density.density * 32f
 
         val isLandscape = componentWidth.toFloat() / componentHeight > 4f / 3f
@@ -77,20 +74,30 @@ fun Fb2ReaderScreen(
             canvasWidth  = pageCanvasWidth,
             canvasHeight = componentHeight,
             paddingH     = paddingH,
+            density      = density.density,
         )
-        println(">>> newConfig=$newConfig")
 
         if (fb2RenderHelper.value == null) {
-            println(">>> creating helper")
             renderConfig.value = newConfig
             val helper = withContext(Dispatchers.IO) {
                 Fb2RenderHelper(renderConfig, textMeasurer, book.getFile())
             }
             fb2RenderHelper.value = helper
-            println(">>> helper created, stored")
         } else {
-            println(">>> updating config only")
-            renderConfig.value = newConfig
+            val helper = fb2RenderHelper.value!!
+            // Сохраняем word-offset ДО того, как перепагинация сотрёт pageWordSum.
+            val savedOffset = helper.pageWordSum.getOrElse(currentPage ?: 0) { 0 }
+
+            renderConfig.value = newConfig  // запускает перепагинацию (с debounce 300 мс)
+
+            if (savedOffset > 0) {
+                // Ждём debounce + начала перепагинации, затем сразу показываем оценку.
+                delay(350)
+                currentPage = helper.estimatePageFromWordOffset(savedOffset)
+                // Точная страница — в фоне (не блокируем UI).
+                val exact = withContext(Dispatchers.IO) { helper.getPageIndexByWordOffset(savedOffset) }
+                if (exact != currentPage) currentPage = exact
+            }
         }
     }
 
@@ -98,18 +105,17 @@ fun Fb2ReaderScreen(
     // Ключ — сам объект хелпера, поэтому повторные изменения размера не отменяют это ожидание.
     LaunchedEffect(fb2RenderHelper.value) {
         val helper = fb2RenderHelper.value ?: return@LaunchedEffect
-        println(">>> LaunchedEffect[helper] restoring progress")
         val offset = book.readProgress().characterPosition
-        println(">>> readProgress offset=$offset")
-        currentPage = if (offset > 0) {
-            withContext(Dispatchers.IO) {
-                helper.totalWords.filterNotNull().first()
-                helper.getPageIndexByWordOffset(offset)
-            }
-        } else {
-            0
-        }
-        println(">>> currentPage=$currentPage")
+        if (offset <= 0) { currentPage = 0; return@LaunchedEffect }
+
+        // Ждём конца парсинга (обычно < 1 сек), затем сразу показываем приблизительную страницу —
+        // без ожидания пагинации через TextMeasurer.
+        withContext(Dispatchers.IO) { helper.totalWords.filterNotNull().first() }
+        currentPage = helper.estimatePageFromWordOffset(offset)  // мгновенно
+
+        // Точная страница считается в фоне — исправляем когда готово.
+        val exact = withContext(Dispatchers.IO) { helper.getPageIndexByWordOffset(offset) }
+        if (exact != currentPage) currentPage = exact
     }
 
     val onChapterNavigate: (Int) -> Unit = { wordOffset: Int ->

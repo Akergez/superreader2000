@@ -32,6 +32,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api(project(":tresse-kmp"))
 
                 implementation(libs.kotlinx.serialization)
                 implementation(libs.zoomable)
@@ -83,6 +84,7 @@ kotlin {
 
         val desktopMain by getting {
             dependencies {
+                implementation("net.java.dev.jna:jna:5.14.0")
                 implementation(compose.desktop.currentOs)
                 implementation(libs.sqldelight.sqlite)
                 // Apache PDFBox for PDF processing (Desktop/JVM only)
@@ -93,6 +95,7 @@ kotlin {
 
         val androidMain by getting {
             dependencies {
+                implementation("net.java.dev.jna:jna:5.14.0@aar")
                 // Android Framework - needed for IDE to resolve android.* imports
                 implementation("androidx.appcompat:appcompat:1.6.1")
                 implementation("androidx.activity:activity:1.8.0")
@@ -169,4 +172,3 @@ dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspDesktop", libs.androidx.room.compiler)
 }
-

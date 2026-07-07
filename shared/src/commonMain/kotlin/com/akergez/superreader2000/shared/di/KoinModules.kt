@@ -56,7 +56,6 @@ fun commonModule(): Module = module {
     }
 
     single<Json> { json }
-
     single {
         BookInfoExtractorFactory(
             mapOf(
@@ -76,4 +75,3 @@ fun commonModule(): Module = module {
     single<IBookInfoExtractor<BookMetaInfo>>(named(FormatType.FB2)) { BookExtractorFactory().createFb2Extractor() }
     singleOf(::BookRepository)
 }
-

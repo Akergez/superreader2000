@@ -13,13 +13,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.akergez.tresse.kmp.TresseConfig
+import com.akergez.tresse.kmp.TresseConfigShare
+import kotlinx.serialization.json.Json
 
 class SettingsViewModel(
     private val settingsManager: ISettingsManager,
-    private val bookManager: BookManager
+    private val bookManager: BookManager,
+    private val json: Json
 ) : ViewModel() {
     private val _settingsState = MutableStateFlow(SettingsScreenState())
     val settingsState: StateFlow<SettingsScreenState> = _settingsState.asStateFlow()
+    private val viewModelJob = SupervisorJob()
+    private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
 
     init {
         val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
@@ -27,11 +33,18 @@ class SettingsViewModel(
         val storageAddress = extractBeautifulStoragePath(settingsManager.getStoragePath())
         val appThemeMode = settingsManager.getAppTheme(AppThemeMode.System)
         _settingsState.value =
-            SettingsScreenState(storageAddress, docThemeMode, pdfFlipMode, appThemeMode)
+            SettingsScreenState(
+                storageAddress, docThemeMode, pdfFlipMode, appThemeMode,
+                TresseConfig(storageType = "s3", repoId = "superreader")
+            )
+        if (settingsManager.getStoragePath() != null) {
+            uiScope.launch {
+                runCatching { bookManager.loadS3Config() }.getOrNull()?.let { config ->
+                    _settingsState.value = _settingsState.value.copy(s3Config = config)
+                }
+            }
+        }
     }
-
-    private val viewModelJob = SupervisorJob()
-    private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
 
     fun updateDocThemeMode(docThemeMode: DocThemeMode) {
         settingsManager.setDocumentsTheme(docThemeMode)
@@ -54,6 +67,97 @@ class SettingsViewModel(
     fun updateAppThemeMode(appThemeMode: AppThemeMode) {
         settingsManager.setAppTheme(appThemeMode)
         _settingsState.value = _settingsState.value.copy(appThemeMode = appThemeMode)
+    }
+
+    fun updateS3Config(config: TresseConfig) {
+        _settingsState.value = _settingsState.value.copy(
+            s3Config = config.copy(storageType = "s3"),
+            syncStatus = SyncUiStatus.Idle,
+            syncErrorDetail = "",
+        )
+    }
+
+    fun saveS3Config() {
+        uiScope.launch {
+            runCatching { bookManager.saveS3Config(_settingsState.value.s3Config) }.fold(
+                onSuccess = { _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Saved) },
+                onFailure = { error -> _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()) },
+            )
+        }
+    }
+
+    fun generateEncryptionKey() {
+        uiScope.launch {
+            runCatching { bookManager.generateEncryptionKey() }.fold(
+                onSuccess = { key ->
+                    val config = _settingsState.value.s3Config.copy(encryptionKey = key)
+                    bookManager.saveS3Config(config)
+                    _settingsState.value = _settingsState.value.copy(s3Config = config, syncStatus = SyncUiStatus.Saved)
+                },
+                onFailure = { error ->
+                    _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty())
+                }
+            )
+        }
+    }
+
+    fun synchronize() {
+        val config = _settingsState.value.s3Config
+        if (config.s3Endpoint.isBlank() || config.s3Bucket.isBlank() || config.s3AccessKeyId.isBlank() ||
+            config.s3SecretAccessKey.isBlank() || config.encryptionKey.isBlank()) {
+            _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ValidationError)
+            return
+        }
+        _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Running, syncErrorDetail = "")
+        uiScope.launch {
+            bookManager.synchronize(config).fold(
+                onSuccess = { result ->
+                    _settingsState.value = _settingsState.value.copy(
+                        syncStatus = SyncUiStatus.Success, pulled = result.pulled, pushed = result.pushed
+                    )
+                },
+                onFailure = { error ->
+                    _settingsState.value = _settingsState.value.copy(
+                        syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()
+                    )
+                }
+            )
+        }
+    }
+
+    fun updateConfigShareString(value: String) {
+        _settingsState.value = _settingsState.value.copy(configShareString = value)
+    }
+
+    fun exportS3Config() {
+        _settingsState.value = _settingsState.value.copy(
+            configShareString = TresseConfigShare.encode(_settingsState.value.s3Config.copy(storageType = "s3"), json),
+            syncStatus = SyncUiStatus.ExportWarning
+        )
+    }
+
+    fun importS3Config() {
+        runCatching {
+            TresseConfigShare.decode(_settingsState.value.configShareString, json).also { config ->
+                require(config.storageType == "s3") {
+                    "config uses backend '${config.storageType}'; this app only supports s3"
+                }
+            }
+        }.fold(
+            onSuccess = { config ->
+                uiScope.launch {
+                    runCatching { bookManager.saveS3Config(config) }.fold(
+                        onSuccess = { _settingsState.value = _settingsState.value.copy(s3Config = config, syncStatus = SyncUiStatus.Imported) },
+                        onFailure = { error -> _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ImportError, syncErrorDetail = error.message.orEmpty()) },
+                    )
+                }
+            },
+            onFailure = { error ->
+                _settingsState.value = _settingsState.value.copy(
+                    syncStatus = SyncUiStatus.ImportError, syncErrorDetail = error.message.orEmpty()
+                )
+            }
+        )
     }
 
     private fun extractBeautifulStoragePath(path: String?) : String {

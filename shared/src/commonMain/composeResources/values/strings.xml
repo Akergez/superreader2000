@@ -51,4 +51,26 @@
     <string name="choose_storage">Choose storage</string>
     <string name="choose_storage_description">To use the application, you need to select a location where books and additional information will be stored. Select an empty directory if you have not used the application before.</string>
     <string name="choose">Choose</string>
+    <string name="s3_sync_group">S3 synchronization</string>
+    <string name="s3_endpoint">Endpoint</string>
+    <string name="s3_region">Region</string>
+    <string name="s3_bucket">Bucket</string>
+    <string name="s3_prefix">Prefix</string>
+    <string name="s3_access_key_id">Access key ID</string>
+    <string name="s3_secret_access_key">Secret access key</string>
+    <string name="s3_encryption_key">Encryption key (Base64, optional)</string>
+    <string name="s3_config_string">Export / import string (superreader1:)</string>
+    <string name="s3_export_secret_warning">The export contains the access key, secret key, and encryption key. Share it only through a trusted channel.</string>
+    <string name="s3_save">Save</string>
+    <string name="s3_sync">Synchronize</string>
+    <string name="s3_export">Export</string>
+    <string name="s3_import">Import</string>
+    <string name="s3_saved">Settings saved</string>
+    <string name="s3_imported">Configuration imported and saved</string>
+    <string name="s3_validation_error">Enter the endpoint, bucket, and access keys</string>
+    <string name="s3_sync_running">Synchronizing…</string>
+    <string name="s3_sync_success">Complete: pulled %1$d, pushed %2$d</string>
+    <string name="s3_sync_error">Synchronization failed: %1$s</string>
+    <string name="s3_import_error">Unable to import the configuration string</string>
+    <string name="s3_generate_key">Generate new key</string>
 </resources>

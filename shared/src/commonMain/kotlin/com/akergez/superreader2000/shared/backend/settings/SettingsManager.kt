@@ -93,5 +93,5 @@ class DefaultSettingsManager(
     override  fun clearStoragePath() {
         store.removeKey("storage_path")
     }
-}
 
+}

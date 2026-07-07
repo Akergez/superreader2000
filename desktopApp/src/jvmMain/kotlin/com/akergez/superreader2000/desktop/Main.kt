@@ -67,7 +67,7 @@ private fun desktopAppModule() = module {
 
     // ViewModels
     viewModel {
-        SettingsViewModel(get(), get())
+        SettingsViewModel(get(), get(), get())
     }
 
     viewModel { p -> EditModalViewModel(p.get()) }
@@ -87,5 +87,4 @@ private fun desktopAppModule() = module {
         )
     }
 }
-
 

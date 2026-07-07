@@ -23,6 +23,10 @@ import org.koin.core.module.Module
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
+import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
+import com.akergez.tresse.kmp.TresseVault
+import com.akergez.tresse.kmp.fileTresseVault
+import com.akergez.tresse.kmp.TresseSync
 
 fun desktopPlatformModule(): Module = module {
     single<MessageHandler> {
@@ -36,6 +40,11 @@ fun desktopPlatformModule(): Module = module {
     single<FileService> {
         FileService()
     }
+    single<TresseVault> {
+        val path = get<ISettingsManager>().getStoragePath() ?: error("Storage directory not set")
+        fileTresseVault(File(path))
+    }
+    single { TresseSync(get<TresseVault>()) }
 
     single {
         val dbFile = File(System.getProperty("user.home"), ".local/.superreader2000/cache.db")
@@ -76,7 +85,6 @@ fun desktopPlatformModule(): Module = module {
     }
 
     single<BookManager> {
-        BookManager(get(), get(), get())
+        BookManager(get(), get(), get(), get())
     }
 }
-

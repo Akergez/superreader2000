@@ -16,6 +16,10 @@ val localProperties = Properties().apply {
     }
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 android {
     signingConfigs {
         create("release") {

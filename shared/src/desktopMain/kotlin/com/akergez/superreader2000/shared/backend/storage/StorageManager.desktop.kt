@@ -38,6 +38,20 @@ actual class FileService() {
         // On desktop, the file is already local, so just return it directly
         return source.file
     }
+
+    actual fun readBytes(path: String, offset: Long, length: Int): ByteArray {
+        if (length <= 0) return ByteArray(0)
+        return java.io.RandomAccessFile(uriOrPathToFile(path), "r").use { file ->
+            file.seek(offset.coerceAtLeast(0))
+            val bytes = ByteArray(length)
+            val read = file.read(bytes)
+            if (read <= 0) ByteArray(0) else bytes.copyOf(read)
+        }
+    }
+
+    actual fun writeBytes(path: String, bytes: ByteArray) {
+        uriOrPathToFile(path).apply { parentFile?.mkdirs() }.writeBytes(bytes)
+    }
 }
 
 actual class ContentResolverWrapper
@@ -91,4 +105,6 @@ actual class DocumentFileWrapper(val file: File) {
     actual fun exists(): Boolean {
         return file.exists()
     }
+    actual fun length(): Long = file.length()
+    actual fun lastModified(): Long = file.lastModified()
 }

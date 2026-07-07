@@ -12,12 +12,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.akergez.superreader2000.shared.sync.SyncResult
+import com.akergez.tresse.kmp.TresseConfig
+import com.akergez.tresse.kmp.TresseSync
 
 class BookManager(
     private val storageManager: BookStorage,
     private val bookCache: BookRepository,
-    private val messageHandler: com.akergez.superreader2000.shared.platform.MessageHandler
+    private val messageHandler: com.akergez.superreader2000.shared.platform.MessageHandler,
+    private val tresseSync: TresseSync,
 ) {
+    suspend fun generateEncryptionKey(): String = tresseSync.generateEncryptionKey()
+    suspend fun loadS3Config(): TresseConfig? = tresseSync.loadConfig()?.takeIf { it.storageType == "s3" }
+    suspend fun saveS3Config(config: TresseConfig) = tresseSync.saveConfig(config.asS3Config())
+
+    suspend fun synchronize(config: TresseConfig): Result<SyncResult> = runCatching {
+        val tresseConfig = config.asS3Config()
+        tresseSync.saveConfig(tresseConfig)
+        val report = tresseSync.perform(tresseConfig)
+        val books = getBooksLinksFromStorage()
+        cacheBooksLinks(books)
+        _bookLinks.value = books
+        SyncResult(books, report.pulled, report.pushed)
+    }
+
+    private fun TresseConfig.asS3Config(): TresseConfig = copy(storageType = "s3")
+
     private val _bookLinks = MutableStateFlow<List<BookStorageEntry>>(emptyList())
     val bookFlow = _bookLinks.asStateFlow()
     private val _pendingBooksToSave = HashSet<String>(emptyList())
