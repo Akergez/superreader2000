@@ -5,7 +5,7 @@ import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.FlipMode
 import com.akergez.tresse.kmp.TresseConfig
 
-enum class SyncUiStatus { Idle, Running, Success, Error, Saved, Imported, ValidationError, ExportWarning, ImportError }
+enum class SyncUiStatus { Idle, Running, ForcePullRunning, Success, Error, Saved, Imported, ValidationError, ExportWarning, ImportError }
 
 data class SettingsScreenState(
     val storageAddress: String = "",

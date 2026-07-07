@@ -63,12 +63,14 @@
     <string name="s3_export_secret_warning">The export contains the access key, secret key, and encryption key. Share it only through a trusted channel.</string>
     <string name="s3_save">Save</string>
     <string name="s3_sync">Synchronize</string>
+    <string name="s3_force_pull">Force pull</string>
     <string name="s3_export">Export</string>
     <string name="s3_import">Import</string>
     <string name="s3_saved">Settings saved</string>
     <string name="s3_imported">Configuration imported and saved</string>
     <string name="s3_validation_error">Enter the endpoint, bucket, and access keys</string>
     <string name="s3_sync_running">Synchronizing…</string>
+    <string name="s3_force_pull_running">Force pulling…</string>
     <string name="s3_sync_success">Complete: pulled %1$d, pushed %2$d</string>
     <string name="s3_sync_error">Synchronization failed: %1$s</string>
     <string name="s3_import_error">Unable to import the configuration string</string>

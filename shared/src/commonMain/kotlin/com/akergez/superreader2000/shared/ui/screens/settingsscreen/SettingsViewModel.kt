@@ -103,14 +103,36 @@ class SettingsViewModel(
 
     fun synchronize() {
         val config = _settingsState.value.s3Config
-        if (config.s3Endpoint.isBlank() || config.s3Bucket.isBlank() || config.s3AccessKeyId.isBlank() ||
-            config.s3SecretAccessKey.isBlank() || config.encryptionKey.isBlank()) {
+        if (!isValidS3Config(config)) {
             _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ValidationError)
             return
         }
         _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Running, syncErrorDetail = "")
         uiScope.launch {
             bookManager.synchronize(config).fold(
+                onSuccess = { result ->
+                    _settingsState.value = _settingsState.value.copy(
+                        syncStatus = SyncUiStatus.Success, pulled = result.pulled, pushed = result.pushed
+                    )
+                },
+                onFailure = { error ->
+                    _settingsState.value = _settingsState.value.copy(
+                        syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()
+                    )
+                }
+            )
+        }
+    }
+
+    fun forcePull() {
+        val config = _settingsState.value.s3Config
+        if (!isValidS3Config(config)) {
+            _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ValidationError)
+            return
+        }
+        _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ForcePullRunning, syncErrorDetail = "")
+        uiScope.launch {
+            bookManager.forcePull(config).fold(
                 onSuccess = { result ->
                     _settingsState.value = _settingsState.value.copy(
                         syncStatus = SyncUiStatus.Success, pulled = result.pulled, pushed = result.pushed
@@ -163,4 +185,11 @@ class SettingsViewModel(
     private fun extractBeautifulStoragePath(path: String?) : String {
         return path ?: ""
     }
+
+    private fun isValidS3Config(config: TresseConfig): Boolean =
+        config.s3Endpoint.isNotBlank() &&
+            config.s3Bucket.isNotBlank() &&
+            config.s3AccessKeyId.isNotBlank() &&
+            config.s3SecretAccessKey.isNotBlank() &&
+            config.encryptionKey.isNotBlank()
 }

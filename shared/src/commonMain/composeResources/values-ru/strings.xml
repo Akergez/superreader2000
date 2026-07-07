@@ -62,12 +62,14 @@
     <string name="s3_export_secret_warning">Экспорт содержит access key, secret key и ключ шифрования. Передавайте его только доверенным способом.</string>
     <string name="s3_save">Сохранить</string>
     <string name="s3_sync">Синхронизировать</string>
+    <string name="s3_force_pull">Force pull</string>
     <string name="s3_export">Экспортировать</string>
     <string name="s3_import">Импортировать</string>
     <string name="s3_saved">Настройки сохранены</string>
     <string name="s3_imported">Конфигурация импортирована и сохранена</string>
     <string name="s3_validation_error">Заполните endpoint, bucket и ключи доступа</string>
     <string name="s3_sync_running">Синхронизация…</string>
+    <string name="s3_force_pull_running">Force pull…</string>
     <string name="s3_sync_success">Готово: загружено %1$d, отправлено %2$d</string>
     <string name="s3_sync_error">Ошибка синхронизации: %1$s</string>
     <string name="s3_import_error">Не удалось импортировать строку конфигурации</string>

@@ -72,12 +72,14 @@ import superreader2000.shared.generated.resources.s3_config_string
 import superreader2000.shared.generated.resources.s3_export_secret_warning
 import superreader2000.shared.generated.resources.s3_save
 import superreader2000.shared.generated.resources.s3_sync
+import superreader2000.shared.generated.resources.s3_force_pull
 import superreader2000.shared.generated.resources.s3_export
 import superreader2000.shared.generated.resources.s3_import
 import superreader2000.shared.generated.resources.s3_saved
 import superreader2000.shared.generated.resources.s3_imported
 import superreader2000.shared.generated.resources.s3_validation_error
 import superreader2000.shared.generated.resources.s3_sync_running
+import superreader2000.shared.generated.resources.s3_force_pull_running
 import superreader2000.shared.generated.resources.s3_sync_success
 import superreader2000.shared.generated.resources.s3_sync_error
 import superreader2000.shared.generated.resources.s3_import_error
@@ -201,14 +203,19 @@ fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Un
             ) {
                 OutlinedButton(
                     onClick = settingsViewModel::saveS3Config,
-                    enabled = settings.syncStatus != SyncUiStatus.Running
+                    enabled = settings.syncStatus !in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
                 ) { Text(stringResource(Res.string.s3_save)) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = settingsViewModel::synchronize,
-                    enabled = settings.syncStatus != SyncUiStatus.Running
+                    enabled = settings.syncStatus !in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
                 ) { Text(stringResource(Res.string.s3_sync)) }
-                if (settings.syncStatus == SyncUiStatus.Running) {
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(
+                    onClick = settingsViewModel::forcePull,
+                    enabled = settings.syncStatus !in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
+                ) { Text(stringResource(Res.string.s3_force_pull)) }
+                if (settings.syncStatus in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)) {
                     Spacer(Modifier.width(12.dp))
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
@@ -216,6 +223,7 @@ fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Un
             val syncMessage = when (settings.syncStatus) {
                 SyncUiStatus.Idle -> ""
                 SyncUiStatus.Running -> stringResource(Res.string.s3_sync_running)
+                SyncUiStatus.ForcePullRunning -> stringResource(Res.string.s3_force_pull_running)
                 SyncUiStatus.Success -> stringResource(Res.string.s3_sync_success, settings.pulled, settings.pushed)
                 SyncUiStatus.Error -> stringResource(Res.string.s3_sync_error, settings.syncErrorDetail)
                 SyncUiStatus.Saved -> stringResource(Res.string.s3_saved)

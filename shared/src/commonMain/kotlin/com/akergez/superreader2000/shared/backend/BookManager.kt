@@ -30,10 +30,21 @@ class BookManager(
         val tresseConfig = config.asS3Config()
         tresseSync.saveConfig(tresseConfig)
         val report = tresseSync.perform(tresseConfig)
+        refreshAfterSync(report)
+    }
+
+    suspend fun forcePull(config: TresseConfig): Result<SyncResult> = runCatching {
+        val tresseConfig = config.asS3Config()
+        tresseSync.saveConfig(tresseConfig)
+        val report = tresseSync.forcePull(tresseConfig)
+        refreshAfterSync(report)
+    }
+
+    private suspend fun refreshAfterSync(report: com.akergez.tresse.kmp.TresseSyncResult): SyncResult {
         val books = getBooksLinksFromStorage()
         cacheBooksLinks(books)
         _bookLinks.value = books
-        SyncResult(books, report.pulled, report.pushed)
+        return SyncResult(books, report.pulled, report.pushed)
     }
 
     private fun TresseConfig.asS3Config(): TresseConfig = copy(storageType = "s3")

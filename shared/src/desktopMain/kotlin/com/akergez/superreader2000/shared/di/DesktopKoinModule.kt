@@ -24,6 +24,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
+import com.akergez.tresse.kmp.TresseFile
 import com.akergez.tresse.kmp.TresseVault
 import com.akergez.tresse.kmp.fileTresseVault
 import com.akergez.tresse.kmp.TresseSync
@@ -41,8 +42,7 @@ fun desktopPlatformModule(): Module = module {
         FileService()
     }
     single<TresseVault> {
-        val path = get<ISettingsManager>().getStoragePath() ?: error("Storage directory not set")
-        fileTresseVault(File(path))
+        SettingsBackedFileTresseVault(get())
     }
     single { TresseSync(get<TresseVault>()) }
 
@@ -87,4 +87,32 @@ fun desktopPlatformModule(): Module = module {
     single<BookManager> {
         BookManager(get(), get(), get(), get())
     }
+}
+
+private class SettingsBackedFileTresseVault(
+    private val settings: ISettingsManager,
+) : TresseVault {
+    @Volatile private var cachedPath: String? = null
+    @Volatile private var cachedVault: TresseVault? = null
+
+    private fun delegate(): TresseVault {
+        val path = settings.getStoragePath() ?: error("Storage directory not set")
+        cachedVault?.takeIf { cachedPath == path }?.let { return it }
+        return synchronized(this) {
+            cachedVault?.takeIf { cachedPath == path } ?: fileTresseVault(File(path)).also {
+                cachedPath = path
+                cachedVault = it
+            }
+        }
+    }
+
+    override fun listFiles(): List<TresseFile> = delegate().listFiles()
+    override fun read(path: String, offset: Long, length: Int): ByteArray = delegate().read(path, offset, length)
+    override fun writeText(path: String, content: String) = delegate().writeText(path, content)
+    override fun writeBinary(path: String, bytes: ByteArray) = delegate().writeBinary(path, bytes)
+    override fun delete(path: String) = delegate().delete(path)
+    override fun storeList(directory: String): List<String> = delegate().storeList(directory)
+    override fun storeRead(path: String): ByteArray? = delegate().storeRead(path)
+    override fun storeWrite(path: String, bytes: ByteArray) = delegate().storeWrite(path, bytes)
+    override fun storeDelete(path: String) = delegate().storeDelete(path)
 }
