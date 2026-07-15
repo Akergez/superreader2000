@@ -45,7 +45,7 @@ compose.desktop {
 
         nativeDistributions {
             // Target formats: RPM for Linux (x86_64 and arm64), DMG for macOS (arm64)
-            targetFormats(TargetFormat.Dmg)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Rpm)
 
             packageName = "SuperReader2000"
             packageVersion = "1.0.0"
@@ -64,7 +64,6 @@ compose.desktop {
             }
 
             linux {
-                targetFormats(TargetFormat.Rpm)
                 packageName = "superreader2000"
                 debMaintainer = "ragusseven@gmail.com"
                 menuGroup = "Office"
@@ -87,4 +86,3 @@ compose.desktop {
         }
     }
 }
-
