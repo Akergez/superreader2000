@@ -126,7 +126,12 @@ build:macos-arm64:
     - export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || echo "/opt/homebrew/opt/openjdk@21")
   script:
     - chmod +x ./gradlew
-    - ./gradlew :desktopApp:packageDmg
+    - ./gradlew :desktopApp:createDistributable
+    - |
+      APP_BUNDLE=$(find desktopApp/build/compose/binaries/main/app -maxdepth 1 -name '*.app' -print -quit)
+      test -n "$APP_BUNDLE"
+      mkdir -p desktopApp/build/compose/binaries/main/dmg
+      hdiutil create -volname "SuperReader2000" -srcfolder "$APP_BUNDLE" -ov -format UDZO desktopApp/build/compose/binaries/main/dmg/SuperReader2000-1.0.0.dmg
   artifacts:
     name: "SuperReader2000-${VERSION}-macOS-dmg"
     paths:
