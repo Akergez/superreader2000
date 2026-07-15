@@ -26,43 +26,33 @@ A simple and modern Android application for reading PDF and FB2 files, built wit
 
 ## Dependencies: tresse-kmp & tresse
 
-Progress sync is built on [tresse](https://gitlab.com/ragusseven/tresse) (a Rust CRDT sync engine) via its Kotlin Multiplatform wrapper [tresse-kmp](https://gitlab.com/ragusseven/tresse-kmp). Both live in **separate repositories** and are not published to a Maven repository — `tresse-kmp` is included as a Gradle subproject whose `projectDir` is redirected to an external checkout, and `tresse-kmp` itself does the same for the Rust sources it builds.
+Progress sync is built on [tresse](https://gitlab.com/ragusseven/tresse) (a Rust CRDT sync engine) via its Kotlin Multiplatform wrapper [tresse-kmp](https://gitlab.com/ragusseven/tresse-kmp). The application consumes the published `com.akergez.tresse:tresse-kmp` Maven package; its Android and desktop native libraries are already bundled in the platform variants.
 
 ### Getting the source
 
-Clone all three repositories as siblings:
+Clone the application repository:
 
 ```bash
 git clone git@gitlab.com:readerproject/app.git app
-git clone https://gitlab.com/ragusseven/tresse-kmp.git tresse-kmp
-git clone https://gitlab.com/ragusseven/tresse.git tresse
 cd app
 ```
 
 ### How the wiring works
 
-- `app/settings.gradle.kts` resolves `tresse-kmp`'s location from the `TRESSE_KMP_DIR` env var, falling back to `../tresse-kmp`, and fails fast with a clear message if it isn't found.
-- `tresse-kmp/build.gradle.kts` in turn resolves the Rust sources from `TRESSE_DIR`, falling back to `../tresse`, and shells out to `cargo build --release -p tresse-ffi` to produce the native library used by the desktop target.
-- Android doesn't need `tresse`/Rust at build time — the native `.so` files for the Rust FFI are pre-built and checked into `tresse-kmp/src/androidMain/jniLibs/`.
+- `settings.gradle.kts` reads the public Maven package from the tresse-kmp GitLab Package Registry.
+- The version is pinned in `gradle/libs.versions.toml`.
+- Android and desktop builds do not require a Rust toolchain or sibling repository checkouts.
 
 ### Building
 
-With the default sibling layout, no extra setup is needed:
+No extra dependency setup is needed:
 
 ```bash
-./gradlew :superreader2000:assembleDebug   # Android only — tresse (Rust) not required
-./gradlew :desktopApp:packageDmg           # Desktop — requires a Rust toolchain (cargo) in PATH
-```
-
-If the repositories live elsewhere, point the build at them explicitly:
-
-```bash
-export TRESSE_KMP_DIR=/path/to/tresse-kmp
-export TRESSE_DIR=/path/to/tresse   # only needed for desktop targets
 ./gradlew :superreader2000:assembleDebug
+./gradlew :desktopApp:packageDmg
 ```
 
-CI (`.gitlab-ci.yml`) reproduces this automatically: it `git clone`s `tresse-kmp` (and, for desktop jobs, `tresse` plus a `rustup`-installed toolchain) into `.deps/` and exports `TRESSE_KMP_DIR`/`TRESSE_DIR` before invoking Gradle — see `BUILD_INSTRUCTIONS.md` for the full CI/CD setup.
+CI (`.gitlab-ci.yml`) resolves the same pinned Maven version and builds Android, Linux, and macOS without cloning or compiling tresse sources.
 
 ## Used libs
 - [DjvuLibre bindings](https://gitlab.com/axet/android-djvulibre)

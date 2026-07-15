@@ -43,6 +43,7 @@ material3 = "1.4.0"
 koin-version = "4.2.0"
 sqldelight-version = "2.3.2"
 kotlinx-serialization = "1.10.0"
+tresse-kmp = "0.1.1"
 documentfile = "1.1.0"
 room = "2.8.4"
 sqlite = "2.6.2"
@@ -117,6 +118,7 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight-version" }
 sqldelight-sqlite = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight-version" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+tresse-kmp = { module = "com.akergez.tresse:tresse-kmp", version.ref = "tresse-kmp" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 
 [plugins]
@@ -129,10 +131,6 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 
 [bundles]
-
-
-
-
 
 
 

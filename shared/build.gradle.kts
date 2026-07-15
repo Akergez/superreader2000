@@ -32,7 +32,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(project(":tresse-kmp"))
+                api(libs.tresse.kmp)
 
                 implementation(libs.kotlinx.serialization)
                 implementation(libs.zoomable)

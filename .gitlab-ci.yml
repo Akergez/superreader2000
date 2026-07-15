@@ -6,22 +6,6 @@ stages:
 variables:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-  TRESSE_KMP_REPOSITORY_URL: "https://gitlab.com/ragusseven/tresse-kmp.git"
-  TRESSE_REPOSITORY_URL: "https://gitlab.com/ragusseven/tresse.git"
-  TRESSE_KMP_REF: "main"
-  TRESSE_REF: "master"
-
-.fetch_tresse_kmp: &fetch_tresse_kmp |
-  mkdir -p "$CI_PROJECT_DIR/.deps"
-  git clone --depth 1 --branch "$TRESSE_KMP_REF" "$TRESSE_KMP_REPOSITORY_URL" "$CI_PROJECT_DIR/.deps/tresse-kmp"
-  export TRESSE_KMP_DIR="$CI_PROJECT_DIR/.deps/tresse-kmp"
-
-.fetch_tresse_sources: &fetch_tresse_sources |
-  mkdir -p "$CI_PROJECT_DIR/.deps"
-  git clone --depth 1 --branch "$TRESSE_KMP_REF" "$TRESSE_KMP_REPOSITORY_URL" "$CI_PROJECT_DIR/.deps/tresse-kmp"
-  git clone --depth 1 --branch "$TRESSE_REF" "$TRESSE_REPOSITORY_URL" "$CI_PROJECT_DIR/.deps/tresse"
-  export TRESSE_KMP_DIR="$CI_PROJECT_DIR/.deps/tresse-kmp"
-  export TRESSE_DIR="$CI_PROJECT_DIR/.deps/tresse"
 
 .gradle_cache: &gradle_cache
   cache:
@@ -40,7 +24,6 @@ build:android:
   <<: *gradle_cache
   before_script:
     - apt-get update && apt-get install -y git wget unzip
-    - *fetch_tresse_kmp
     - export ANDROID_HOME=/opt/android-sdk
     - mkdir -p $ANDROID_HOME/cmdline-tools
     - wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
@@ -81,10 +64,7 @@ build:linux-x86_64:
     JAVA_HOME: "$CI_PROJECT_DIR/.jdk"
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
   before_script:
-    - dnf install -y git rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
-    - *fetch_tresse_sources
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-    - export PATH="$HOME/.cargo/bin:$PATH"
+    - dnf install -y rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
     - |
       curl -L -o jdk.tar.gz \
         https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_x64_linux_hotspot_21.0.5_11.tar.gz
@@ -116,10 +96,7 @@ build:linux-arm64:
     JAVA_HOME: "$CI_PROJECT_DIR/.jdk"
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
   before_script:
-    - dnf install -y git rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
-    - *fetch_tresse_sources
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-    - export PATH="$HOME/.cargo/bin:$PATH"
+    - dnf install -y rpm-build curl binutils tar gzip unzip findutils libX11 libXcursor libXrandr libXinerama libXi libXrender mesa-libEGL mesa-libGL
     - |
       curl -L -o jdk.tar.gz \
         https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.5%2B11/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.5_11.tar.gz
@@ -144,11 +121,8 @@ build:macos-arm64:
   stage: build
   <<: *gradle_cache
   tags:
-    - saas-macos-large-m2pro
+    - macos-arm64
   before_script:
-    - *fetch_tresse_sources
-    - command -v cargo >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-    - export PATH="$HOME/.cargo/bin:$PATH"
     - export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || echo "/opt/homebrew/opt/openjdk@21")
   script:
     - chmod +x ./gradlew
@@ -161,7 +135,6 @@ build:macos-arm64:
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  allow_failure: true
 
 # =============================================================================
 # Publish to GitLab Package Registry
