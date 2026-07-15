@@ -130,8 +130,11 @@ build:macos-arm64:
     - |
       APP_BUNDLE=$(find desktopApp/build/compose/binaries/main/app -maxdepth 1 -name '*.app' -print -quit)
       test -n "$APP_BUNDLE"
+      STAGING=$(mktemp -d)
+      ditto "$APP_BUNDLE" "$STAGING/$(basename "$APP_BUNDLE")"
+      ln -s /Applications "$STAGING/Applications"
       mkdir -p desktopApp/build/compose/binaries/main/dmg
-      hdiutil create -volname "SuperReader2000" -srcfolder "$APP_BUNDLE" -ov -format UDZO desktopApp/build/compose/binaries/main/dmg/SuperReader2000-1.0.0.dmg
+      hdiutil create -volname "SuperReader2000" -srcfolder "$STAGING" -ov -format UDZO desktopApp/build/compose/binaries/main/dmg/SuperReader2000-1.0.0.dmg
   artifacts:
     name: "SuperReader2000-${VERSION}-macOS-dmg"
     paths:
