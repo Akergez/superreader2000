@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.akergez.superreader2000.shared.sync.SyncResult
 import com.akergez.tresse.kmp.TresseConfig
 import com.akergez.tresse.kmp.TresseSync
@@ -27,17 +29,23 @@ class BookManager(
     suspend fun saveS3Config(config: TresseConfig) = tresseSync.saveConfig(config.asS3Config())
 
     suspend fun synchronize(config: TresseConfig): Result<SyncResult> = runCatching {
-        val tresseConfig = config.asS3Config()
-        tresseSync.saveConfig(tresseConfig)
-        val report = tresseSync.perform(tresseConfig)
-        refreshAfterSync(report)
+        metadataMutex.withLock {
+            flushPendingMetadataLocked()
+            val tresseConfig = config.asS3Config()
+            tresseSync.saveConfig(tresseConfig)
+            val report = tresseSync.perform(tresseConfig)
+            refreshAfterSync(report)
+        }
     }
 
     suspend fun forcePull(config: TresseConfig): Result<SyncResult> = runCatching {
-        val tresseConfig = config.asS3Config()
-        tresseSync.saveConfig(tresseConfig)
-        val report = tresseSync.forcePull(tresseConfig)
-        refreshAfterSync(report)
+        metadataMutex.withLock {
+            flushPendingMetadataLocked()
+            val tresseConfig = config.asS3Config()
+            tresseSync.saveConfig(tresseConfig)
+            val report = tresseSync.forcePull(tresseConfig)
+            refreshAfterSync(report)
+        }
     }
 
     private suspend fun refreshAfterSync(report: com.akergez.tresse.kmp.TresseSyncResult): SyncResult {
@@ -52,6 +60,9 @@ class BookManager(
     private val _bookLinks = MutableStateFlow<List<BookStorageEntry>>(emptyList())
     val bookFlow = _bookLinks.asStateFlow()
     private val _pendingBooksToSave = HashSet<String>(emptyList())
+    // Метаданные книги (включая progress) являются одним синхронизируемым файлом.
+    // Локальная запись и sync не должны работать с ним одновременно.
+    private val metadataMutex = Mutex()
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
@@ -107,16 +118,23 @@ class BookManager(
     }
 
     suspend fun updateProgress(bundleName: String, bookMetaInfo: BookMetaInfo) {
-        val book = bookCache.findBook(bookMetaInfo.title)
-        bookCache.updateBook(
-            BookStorageEntry(
-                bookMetaInfo.title,
-                book?.previewUri,
-                bundleName,
-                bookMetaInfo
+        metadataMutex.withLock {
+            val book = bookCache.findBook(bundleName)
+            val currentMeta = book?.bookMetaInfo ?: bookMetaInfo
+            val updatedMeta = currentMeta.copy(
+                progress = bookMetaInfo.progress,
             )
-        )
-        _pendingBooksToSave.add(bundleName)
+            bookCache.updateBook(
+                BookStorageEntry(
+                    updatedMeta.title,
+                    book?.previewUri,
+                    bundleName,
+                    updatedMeta
+                )
+            )
+            _pendingBooksToSave.add(bundleName)
+            saveBookLinkLocked(bundleName).getOrThrow()
+        }
     }
 
     suspend fun deleteBook(bundleName: String): Result<Unit> {
@@ -185,12 +203,30 @@ class BookManager(
 
     suspend fun saveBookLinks() {
         println("BookManager - saveBookLinks")
-        bookFlow.value.map {
-            if (_pendingBooksToSave.contains(it.bundleName)) {
-                _pendingBooksToSave.remove(it.bundleName)
-                storageManager.updateBundleMeta(it.bundleName, it.bookMetaInfo)
-            }
+        metadataMutex.withLock {
+            flushPendingMetadataLocked()
         }
+    }
+
+    suspend fun saveBookLink(bundleName: String): Result<Unit> = metadataMutex.withLock {
+        saveBookLinkLocked(bundleName)
+    }
+
+    private suspend fun flushPendingMetadataLocked() {
+        _pendingBooksToSave.toList().forEach { bundleName ->
+            saveBookLinkLocked(bundleName).getOrThrow()
+        }
+    }
+
+    /** Вызывать только под metadataMutex. */
+    private suspend fun saveBookLinkLocked(bundleName: String): Result<Unit> {
+        val book = bookCache.findBook(bundleName)
+            ?: return Result.failure(Exception("Book not found"))
+        val result = storageManager.updateBundleMeta(bundleName, book.bookMetaInfo)
+        if (result.isSuccess) {
+            _pendingBooksToSave.remove(bundleName)
+        }
+        return result
     }
 
     private suspend fun getBooksLinksFromStorage(): List<BookStorageEntry> {

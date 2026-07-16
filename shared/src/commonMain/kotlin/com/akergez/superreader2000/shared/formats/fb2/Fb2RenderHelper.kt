@@ -36,12 +36,15 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.w3c.dom.Node
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.io.encoding.Base64
+import kotlin.time.Duration
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 data class RenderConfig(
     val pageWidth: Int,
@@ -70,20 +73,32 @@ class Fb2RenderHelper constructor(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val imageMap = mutableMapOf<String, ImageBitmap>()
-    private val pageCache = mutableMapOf<Int, MutableStateFlow<Fb2BookContent>>()
-    // Смещение в fullText (символы) в начале каждой страницы — для быстрой оценки позиции.
-    private val pageCharOffsets = java.util.concurrent.CopyOnWriteArrayList<Int>()
+    private val pageCache = ConcurrentHashMap<Int, MutableStateFlow<Fb2BookContent>>()
+    // Границы страниц в fullText. Все записи выполняются под paginateMutex, поэтому
+    // CopyOnWriteArrayList здесь не нужен: он копировал весь массив при каждой странице.
+    private val pageCharOffsets = mutableListOf<Int>()
+    private val pageEndCharOffsets = mutableListOf<Int>()
 
     // Весь текст книги в одной AnnotatedString — строится один раз после парсинга.
     private var fullText = AnnotatedString("")
+    // Число word-токенов в fullText[0 until charOffset]. Строится один раз.
+    private var wordPrefixAtChar = IntArray(1)
     // Смещение в fullText — граница следующей страницы для пагинации.
     private var charOffset = 0
     private var lastSlicedPageIndex = 0
     private var isAllPageSliced = false
 
     private val lockParse = Any()
+    private val pageBoundaryLock = Any()
     private val paginateMutex = Mutex()
     private var paginationJob: Job? = null
+    private var paginatedConfig: RenderConfig? = null
+    private var paginationStartedAt: TimeMark? = null
+    private var paginationMeasureTime: Duration = Duration.ZERO
+    private var paginationMeasureCalls = 0
+    private var nextPaginationLogPage = PAGINATION_LOG_INTERVAL
+    @Volatile
+    private var lastRequestedPageIndex: Int = -1
 
     val totalWords = MutableStateFlow<Int?>(null)
     val pagesCount = MutableStateFlow<Int?>(null)
@@ -98,23 +113,49 @@ class Fb2RenderHelper constructor(
     init {
         scope.launch {
             val elementCount: Int
+            val coldOpenMark = TimeSource.Monotonic.markNow()
+            var buildTextTime = Duration.ZERO
+            var buildWordIndexTime = Duration.ZERO
+            lateinit var parseTimings: ParseTimings
             synchronized(lockParse) {
                 val result = parseFb2Content(fb2File.file)
+                parseTimings = result.timings
                 imageMap.putAll(result.images)
                 tableOfContents.update { result.toc }
                 // Запоминаем исходные word-offsets для переконвертации после пагинации.
                 tocWordOffsets.addAll(result.toc.map { it.pageIndex })
+                val buildTextMark = TimeSource.Monotonic.markNow()
                 fullText = buildFullText(result.elements)
+                buildTextTime = buildTextMark.elapsedNow()
                 elementCount = result.elements.size
-                totalWords.update { elementCount }
+                val wordIndexMark = TimeSource.Monotonic.markNow()
+                wordPrefixAtChar = buildWordPrefix(fullText.text)
+                buildWordIndexTime = wordIndexMark.elapsedNow()
+                totalWords.value = wordPrefixAtChar.last()
             }
-            println(">>> parsed $elementCount elements, fullText=${fullText.length} chars, config=${renderConfig.value}")
+            println(
+                ">>> fb2 cold parse: xml=${parseTimings.xml.inWholeMilliseconds}ms " +
+                    "text=${parseTimings.text.inWholeMilliseconds}ms " +
+                    "images=${parseTimings.images.inWholeMilliseconds}ms " +
+                    "toc=${parseTimings.toc.inWholeMilliseconds}ms " +
+                    "annotated=${buildTextTime.inWholeMilliseconds}ms " +
+                    "wordIndex=${buildWordIndexTime.inWholeMilliseconds}ms " +
+                    "total=${coldOpenMark.elapsedNow().inWholeMilliseconds}ms " +
+                    "elements=$elementCount chars=${fullText.length} " +
+                    "spanStyles=${fullText.spanStyles.size} paragraphStyles=${fullText.paragraphStyles.size} " +
+                    "images=${imageMap.size}"
+            )
 
             // Явно запускаем пагинацию если конфиг уже валиден на момент старта.
             // StateFlow реплицирует текущее значение при подписке — поэтому используем
             // drop(1) ниже, чтобы collectLatest не вызвал triggerRepagination повторно.
             if (renderConfig.value.isValid) {
                 triggerRepagination()
+            }
+
+            // Выполняем запросы страниц, поступившие до завершения парсинга.
+            pageCache.keys.maxOrNull()?.let { requestedPage ->
+                scope.launch { ensurePageAvailable(requestedPage) }
             }
 
             // Следим за ИЗМЕНЕНИЯМИ конфига (шрифт, ориентация).
@@ -125,7 +166,7 @@ class Fb2RenderHelper constructor(
                 .drop(1)
                 .collectLatest {
                     delay(DEBOUNCE_MS)
-                    if (renderConfig.value.isValid) {
+                    if (renderConfig.value.isValid && renderConfig.value != paginatedConfig) {
                         triggerRepagination()
                     }
                 }
@@ -133,10 +174,11 @@ class Fb2RenderHelper constructor(
     }
 
     override fun openPage(pageIndex: Int, applyInversion: Boolean): StateFlow<Fb2BookContent> {
+        lastRequestedPageIndex = pageIndex
         // Всегда возвращаем существующий flow — даже если drawCommands пусты.
         // Замена flow в pageCache оставит UI наблюдать за устаревшим объектом.
         pageCache[pageIndex]?.let { flow ->
-            scope.launch { generatePagesUpTo(pageIndex + 2) }
+            scope.launch { ensurePageAvailable(pageIndex) }
             return flow
         }
 
@@ -148,11 +190,11 @@ class Fb2RenderHelper constructor(
                 totalPages = pagesCount.value,
             )
         )
-        pageCache[pageIndex] = placeholder
+        val flow = pageCache.putIfAbsent(pageIndex, placeholder) ?: placeholder
 
-        scope.launch { generatePagesUpTo(pageIndex + 2) }
+        scope.launch { ensurePageAvailable(pageIndex) }
 
-        return placeholder
+        return flow
     }
 
     override fun close() {
@@ -166,17 +208,57 @@ class Fb2RenderHelper constructor(
     override fun getTableOfContents(): StateFlow<List<TOCEntry>> = tableOfContents
 
     suspend fun getPageIndexByWordOffset(offset: Int): Int {
-        var index = 0
-        while (!isAllPageSliced) {
-            if (pageWordSum.size > index && pageWordSum[index] > offset) return index
-            generatePagesUpTo(++index)
+        while (true) {
+            findPageByWordOffset(offset)?.let { return it }
+            if (isAllPageSliced) {
+                return synchronized(pageBoundaryLock) { pageWordSum.lastIndex.coerceAtLeast(0) }
+            }
+
+            // Пагинируем блоками, а не по одной странице: меньше захватов mutex,
+            // пересчётов pagesCount/TOC и переключений корутин.
+            val nextTarget = (lastSlicedPageIndex + PAGINATION_BATCH_SIZE).coerceAtLeast(1)
+            generatePagesUpTo(nextTarget)
         }
-        return pageWordSum.indexOfFirst { it >= offset }.coerceAtLeast(0)
+    }
+
+    /** Сбрасывает границы страниц сразу, не дожидаясь debounce RenderConfig. */
+    suspend fun repaginate() {
+        triggerRepagination()
+    }
+
+    /** Word-offset начала страницы, пригодный для восстановления после reflow. */
+    fun getPageStartWordOffset(pageIndex: Int): Int? = synchronized(pageBoundaryLock) {
+        when {
+            pageIndex < 0 -> null
+            pageIndex == 0 -> 0
+            pageIndex - 1 in pageWordSum.indices -> pageWordSum[pageIndex - 1]
+            else -> null
+        }
+    }
+
+    suspend fun getPageStartWordOffsetAfterPagination(pageIndex: Int): Int? {
+        if (pageIndex < 0) return null
+        generatePagesUpTo(pageIndex)
+        return getPageStartWordOffset(pageIndex)
+    }
+
+    private fun findPageByWordOffset(offset: Int): Int? {
+        synchronized(pageBoundaryLock) {
+            if (pageWordSum.isEmpty() || pageWordSum.last() < offset) return null
+            var low = 0
+            var high = pageWordSum.lastIndex
+            while (low < high) {
+                val mid = (low + high) ushr 1
+                if (pageWordSum[mid] > offset) high = mid else low = mid + 1
+            }
+            return low
+        }
     }
 
     private suspend fun triggerRepagination() {
-        println(">>> triggerRepagination config=${renderConfig.value}")
-        if (!renderConfig.value.isValid) {
+        val newConfig = renderConfig.value
+        println(">>> triggerRepagination config=$newConfig")
+        if (!newConfig.isValid) {
             println(">>> triggerRepagination SKIPPED - config invalid")
             return
         }
@@ -189,17 +271,45 @@ class Fb2RenderHelper constructor(
             charOffset = 0
             lastSlicedPageIndex = 0
             isAllPageSliced = false
-            pageWordSum.clear()
-            pageCharOffsets.clear()
+            paginatedConfig = newConfig
+            paginationStartedAt = TimeSource.Monotonic.markNow()
+            paginationMeasureTime = Duration.ZERO
+            paginationMeasureCalls = 0
+            nextPaginationLogPage = PAGINATION_LOG_INTERVAL
+            synchronized(pageBoundaryLock) {
+                pageWordSum.clear()
+                pageCharOffsets.clear()
+                pageEndCharOffsets.clear()
+            }
         }
 
-        paginationJob = scope.launch { generatePagesUpTo(3) }
+        // После смены геометрии повторно публикуем последнюю запрошенную страницу
+        // в уже выданный UI поток.
+        val requestedPage = lastRequestedPageIndex
+        paginationJob = scope.launch {
+            generatePagesUpTo(
+                if (requestedPage >= 0) {
+                    maxOf(3, requestedPage + PAGE_PREFETCH_DISTANCE)
+                } else {
+                    3
+                }
+            )
+            if (requestedPage >= 0) materializePage(requestedPage)
+        }
+    }
+
+    private suspend fun ensurePageAvailable(pageIndex: Int) {
+        generatePagesUpTo(pageIndex + PAGE_PREFETCH_DISTANCE)
+        materializePage(pageIndex)
     }
 
     private suspend fun generatePagesUpTo(targetPageIndex: Int) {
         paginateMutex.withLock {
+            // До завершения parse fullText пуст по определению. Это не пустая книга:
+            // нельзя выставлять isAllPageSliced/pagesCount=0 из раннего UI-запроса.
+            if (totalWords.value == null) return
             if (isAllPageSliced) return
-            if (pageCache[targetPageIndex]?.value?.drawCommands?.isNotEmpty() == true) return
+            if (lastSlicedPageIndex > targetPageIndex) return
 
             val config = renderConfig.value
             if (!config.isValid) return
@@ -219,79 +329,163 @@ class Fb2RenderHelper constructor(
             val avgCharWidth = config.fontSize.value * 0.55f
             val charsPerLine = (w / avgCharWidth).toInt().coerceAtLeast(10)
             val linesPerPage = (h / (config.fontSize.value * config.lineHeightMultiplier)).toInt().coerceAtLeast(1)
-            val baseChunkSize = (charsPerLine * linesPerPage * 2).coerceAtLeast(400)
+            val estimatedCharsPerPage = (charsPerLine * linesPerPage).coerceAtLeast(400)
+            val baseChunkSize = (estimatedCharsPerPage * LAYOUT_BATCH_PAGES.toLong() *
+                CHUNK_SIZE_NUMERATOR / CHUNK_SIZE_DENOMINATOR)
+                .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            var nextChunkSize = baseChunkSize
+            val batchLayoutHeight = (h.toLong() * LAYOUT_BATCH_PAGES)
+                .coerceAtMost(Constraints.Infinity.toLong())
+                .toInt()
 
             while (charOffset < fullText.length) {
-                val pageStartChar = charOffset  // фиксируем начало страницы до измерения
-                yield() // кооперативная отмена — раз на страницу
+                val chunkStartChar = charOffset
+                yield()
 
-                // Берём кусок ~2× одной страницы. Если он целиком поместился
-                // (маловероятно при правильной оценке), удваиваем и повторяем.
-                var chunkSize = baseChunkSize
+                var chunkSize = nextChunkSize
                 var chunkEnd: Int
                 var chunk: AnnotatedString
                 var layout: androidx.compose.ui.text.TextLayoutResult
                 while (true) {
-                    chunkEnd = (charOffset + chunkSize).coerceAtMost(fullText.length)
+                    chunkEnd = alignChunkEndToInlineContent(
+                        (charOffset + chunkSize).coerceAtMost(fullText.length)
+                    )
                     chunk = fullText.subSequence(charOffset, chunkEnd)
+                    val measureMark = TimeSource.Monotonic.markNow()
                     layout = textMeasurer.measure(
                         text        = chunk,
                         style       = style,
-                        constraints = Constraints(minWidth = w, maxWidth = w, minHeight = 0, maxHeight = h),
+                        constraints = Constraints(
+                            minWidth = w,
+                            maxWidth = w,
+                            minHeight = 0,
+                            maxHeight = batchLayoutHeight,
+                        ),
                         softWrap    = true,
                         placeholders = buildChunkPlaceholders(chunk, config),
                     )
-                    if (layout.didOverflowHeight || chunkEnd == fullText.length) break
+                    paginationMeasureTime += measureMark.elapsedNow()
+                    paginationMeasureCalls++
+                    if (layout.lineCount > 1 || chunkEnd == fullText.length) break
                     chunkSize *= 2
                 }
 
-                // Ищем последнюю строку, которая целиком влезает в высоту страницы.
-                // layout.lineCount включает ВСЕ строки (и те, что вышли за maxHeight),
-                // поэтому нельзя брать layout.lineCount - 1 напрямую.
-                val lastFittingLine: Int
-                val pageEndInChunk: Int
-                if (layout.didOverflowHeight) {
-                    var last = 0
-                    for (i in 0 until layout.lineCount) {
-                        if (layout.getLineBottom(i) > h) break
-                        last = i
+                var firstLineOnPage = 0
+                var line = 0
+                var committedFromChunk = 0
+                while (line < layout.lineCount) {
+                    val pageTop = layout.getLineTop(firstLineOnPage)
+                    val lineBottom = layout.getLineBottom(line)
+                    val overflowsPage = line > firstLineOnPage && lineBottom - pageTop > h
+                    if (!overflowsPage) {
+                        line++
+                        continue
                     }
-                    lastFittingLine = last
-                    pageEndInChunk = layout.getLineEnd(last)
-                } else {
-                    lastFittingLine = layout.lineCount - 1
-                    pageEndInChunk = chunk.length
+
+                    val proposedEnd = chunkStartChar + layout.getLineEnd(line - 1)
+                    if (proposedEnd <= charOffset) {
+                        // Строка уже покрыта границей, расширенной до конца
+                        // атомарного inline-элемента, либо не содержит символов.
+                        firstLineOnPage = line
+                        line++
+                        continue
+                    }
+                    val inlineAlignedEnd = alignPageEndToInlineContent(
+                        pageStart = charOffset,
+                        proposedEnd = proposedEnd,
+                    )
+                    val pageEndChar = alignPageEndToWordBoundary(
+                        pageStart = charOffset,
+                        proposedEnd = inlineAlignedEnd,
+                    )
+                    if (pageEndChar <= charOffset) {
+                        firstLineOnPage = line
+                        line++
+                        continue
+                    }
+                    commitPageBoundary(lastSlicedPageIndex, charOffset, pageEndChar)
+                    charOffset = pageEndChar
+                    lastSlicedPageIndex++
+                    committedFromChunk++
+                    reportPaginationProgress()
+                    if (committedFromChunk % CANCELLATION_CHECK_PAGE_INTERVAL == 0) yield()
+
+                    // alignPageEndToInlineContent может расширить страницу дальше
+                    // lineEnd. Пропускаем все layout-строки, уже вошедшие в диапазон.
+                    while (line < layout.lineCount &&
+                        chunkStartChar + layout.getLineEnd(line) <= charOffset
+                    ) {
+                        line++
+                    }
+                    firstLineOnPage = line
+
+                    if (lastSlicedPageIndex > targetPageIndex) {
+                        updateEstimatedPageCount()
+                        updateTocPageIndices()
+                        return
+                    }
+
+                    // Граница следующей страницы должна рассчитываться layout'ом,
+                    // который начинается ровно с этой границы. Продолжать текущий
+                    // многостраничный layout нельзя: viewer измеряет страницы отдельно.
+                    break
                 }
 
-                val commands = buildDrawCommandsFromLayout(layout, chunk, config, lastFittingLine)
-                val pageText = chunk.subSequence(0, pageEndInChunk)
+                if (committedFromChunk > 0) {
+                    nextChunkSize = baseChunkSize
+                    continue
+                }
 
-                commitPageData(lastSlicedPageIndex, pageText, commands, config, pageStartChar)
-                charOffset += pageEndInChunk
-                lastSlicedPageIndex++
-
-                if (!layout.didOverflowHeight) {
+                // maxHeight может обрезать layout даже тогда, когда chunk уже дошёл
+                // до конца fullText. Завершать книгу можно только если весь chunk
+                // действительно был разложен, иначе остаток ошибочно станет одной страницей.
+                if (chunkEnd == fullText.length && !layout.didOverflowHeight) {
+                    if (charOffset < fullText.length) {
+                        commitPageBoundary(lastSlicedPageIndex, charOffset, fullText.length)
+                        charOffset = fullText.length
+                        lastSlicedPageIndex++
+                    }
                     isAllPageSliced = true
                     pagesCount.update { lastSlicedPageIndex }
                     updateTocPageIndices()
+                    reportPaginationProgress(force = true)
                     return
                 }
 
-                if (lastSlicedPageIndex > targetPageIndex) {
-                    // Пересчитываем оценку каждый раз по реальному соотношению символов/страниц
-                    val charsPerPage = (charOffset / lastSlicedPageIndex).coerceAtLeast(1)
-                    val estimated = (fullText.length / charsPerPage).coerceAtLeast(lastSlicedPageIndex)
-                    pagesCount.update { estimated }
-                    // Обновляем TOC для уже отпагинированных глав.
-                    updateTocPageIndices()
-                    return
+                // Последняя группа строк в chunk неполная. Она не фиксируется и будет
+                // повторно измерена как начало следующего блока.
+                nextChunkSize = if (committedFromChunk == 0) {
+                    (chunkSize.toLong() * 2).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+                } else {
+                    baseChunkSize
                 }
             }
 
             isAllPageSliced = true
             pagesCount.update { lastSlicedPageIndex }
             updateTocPageIndices()
+            reportPaginationProgress(force = true)
         }
+    }
+
+    private fun reportPaginationProgress(force: Boolean = false) {
+        if (!force && lastSlicedPageIndex < nextPaginationLogPage) return
+        val elapsed = paginationStartedAt?.elapsedNow() ?: Duration.ZERO
+        println(
+            ">>> fb2 paginate: pages=$lastSlicedPageIndex chars=$charOffset " +
+                "measureCalls=$paginationMeasureCalls " +
+                "measure=${paginationMeasureTime.inWholeMilliseconds}ms " +
+                "elapsed=${elapsed.inWholeMilliseconds}ms complete=$isAllPageSliced"
+        )
+        while (nextPaginationLogPage <= lastSlicedPageIndex) {
+            nextPaginationLogPage += PAGINATION_LOG_INTERVAL
+        }
+    }
+
+    private fun updateEstimatedPageCount() {
+        val charsPerPage = (charOffset / lastSlicedPageIndex).coerceAtLeast(1)
+        val estimated = (fullText.length / charsPerPage).coerceAtLeast(lastSlicedPageIndex)
+        pagesCount.update { estimated }
     }
 
     /**
@@ -309,7 +503,7 @@ class Fb2RenderHelper constructor(
                 // Эта глава ещё не отпагинирована — оставляем как есть.
                 entry
             } else {
-                val pageIdx = pageWordSum.indexOfFirst { it >= wordOffset }.coerceAtLeast(0)
+                val pageIdx = findPageByWordOffset(wordOffset) ?: return@mapIndexed entry
                 if (pageIdx != entry.pageIndex) anyChanged = true
                 entry.copy(pageIndex = pageIdx)
             }
@@ -321,12 +515,10 @@ class Fb2RenderHelper constructor(
      *  [lastLine] — последняя строка для отрисовки (включительно). */
     private fun buildDrawCommandsFromLayout(
         layout: androidx.compose.ui.text.TextLayoutResult,
-        text: AnnotatedString,
+        pageText: AnnotatedString,
         config: RenderConfig,
-        lastLine: Int = layout.lineCount - 1,
+        placeholders: List<AnnotatedString.Range<Placeholder>>,
     ): List<DrawCommand> {
-        val pageEnd = layout.getLineEnd(lastLine).coerceAtMost(text.length)
-        val pageText = text.subSequence(0, pageEnd)
         if (pageText.text.isBlank() && pageText.getStringAnnotations(INLINE_CONTENT_TAG, 0, pageText.length).isEmpty()) return emptyList()
         val commands = mutableListOf<DrawCommand>()
         commands.add(
@@ -342,13 +534,15 @@ class Fb2RenderHelper constructor(
                     lineBreak  = LineBreak.Paragraph,
                 ),
                 textAreaWidth = config.pageWidth.toFloat(),
-                placeholders  = buildChunkPlaceholders(pageText, config),
+                placeholders  = placeholders,
             )
         )
         // Emit DrawInlineImage for each image placeholder that falls within this page.
         // placeholderRects is indexed in the same order as the placeholders passed to measure(),
         // which matches the order images appear in the chunk. Page images are a prefix of chunk images.
-        val pageImages = pageText.getStringAnnotations(INLINE_CONTENT_TAG, 0, pageText.length)
+        val pageImages = pageText
+            .getStringAnnotations(INLINE_CONTENT_TAG, 0, pageText.length)
+            .distinctBy { Triple(it.start, it.end, it.item) }
         pageImages.forEachIndexed { idx, ann ->
             val rect = layout.placeholderRects.getOrNull(idx) ?: return@forEachIndexed
             if (!imageMap.containsKey(ann.item)) return@forEachIndexed
@@ -370,15 +564,22 @@ class Fb2RenderHelper constructor(
         chunk: AnnotatedString,
         config: RenderConfig,
     ): List<AnnotatedString.Range<Placeholder>> {
-        val imageAnnotations = chunk.getStringAnnotations(INLINE_CONTENT_TAG, 0, chunk.length)
+        val imageAnnotations = chunk
+            .getStringAnnotations(INLINE_CONTENT_TAG, 0, chunk.length)
+            .distinctBy { Triple(it.start, it.end, it.item) }
         if (imageAnnotations.isEmpty()) return emptyList()
         val density = config.density.coerceAtLeast(1f)
         val maxWidthPx = config.pageWidth.toFloat()
         return imageAnnotations.mapNotNull { ann ->
             val bitmap = imageMap[ann.item] ?: return@mapNotNull null
-            val aspectRatio = if (bitmap.height > 0) bitmap.width.toFloat() / bitmap.height else 1f
-            val imgWidthPx = maxWidthPx
-            val imgHeightPx = (imgWidthPx / aspectRatio).coerceAtMost(config.pageHeight * 0.85f)
+            val sourceWidth = bitmap.width.coerceAtLeast(1).toFloat()
+            val sourceHeight = bitmap.height.coerceAtLeast(1).toFloat()
+            val maxHeightPx = config.pageHeight * 0.85f
+            // Один коэффициент для обеих осей: изображение целиком помещается
+            // в страницу и никогда не меняет исходное соотношение сторон.
+            val scale = minOf(maxWidthPx / sourceWidth, maxHeightPx / sourceHeight)
+            val imgWidthPx = sourceWidth * scale
+            val imgHeightPx = sourceHeight * scale
             AnnotatedString.Range(
                 item  = Placeholder(
                     width                   = (imgWidthPx / density).sp,
@@ -391,11 +592,106 @@ class Fb2RenderHelper constructor(
         }
     }
 
-    private fun commitPageData(index: Int, pageText: AnnotatedString, commands: List<DrawCommand>, config: RenderConfig, pageStartChar: Int = 0) {
-        println(">>> commitPage index=$index commands=${commands.size}")
-        val wordsOnPage = pageText.text.split(' ').count { it.isNotBlank() }
-        while (pageWordSum.size < index) pageWordSum.add(pageWordSum.lastOrNull() ?: 0)
-        pageWordSum.add(wordsOnPage + (pageWordSum.lastOrNull() ?: 0))
+    /** Не позволяет рабочему chunk закончиться внутри alternateText inline-image. */
+    private fun alignChunkEndToInlineContent(proposedEnd: Int): Int {
+        if (proposedEnd <= 0 || proposedEnd >= fullText.length) return proposedEnd
+        val crossing = fullText
+            .getStringAnnotations(INLINE_CONTENT_TAG, proposedEnd - 1, proposedEnd + 1)
+            .firstOrNull { it.start < proposedEnd && proposedEnd < it.end }
+        return crossing?.end ?: proposedEnd
+    }
+
+    /**
+     * Inline-image является атомарным элементом. Если line boundary всё же попал
+     * внутрь его alternateText, переносим всё изображение на следующую страницу.
+     */
+    private fun alignPageEndToInlineContent(pageStart: Int, proposedEnd: Int): Int {
+        if (proposedEnd <= pageStart || proposedEnd >= fullText.length) return proposedEnd
+        val crossing = fullText
+            .getStringAnnotations(INLINE_CONTENT_TAG, proposedEnd - 1, proposedEnd + 1)
+            .firstOrNull { it.start < proposedEnd && proposedEnd < it.end }
+            ?: return proposedEnd
+        // Страница не должна состоять только из разделителей перед inline-элементом.
+        val contentBeforeImage = fullText.text.substring(pageStart, crossing.start)
+        return if (crossing.start > pageStart && contentBeforeImage.isNotBlank()) {
+            crossing.start
+        } else {
+            crossing.end
+        }
+    }
+
+    /** Не оставляет начало/окончание одного слова на разных страницах. */
+    private fun alignPageEndToWordBoundary(pageStart: Int, proposedEnd: Int): Int {
+        if (proposedEnd <= pageStart || proposedEnd >= fullText.length) return proposedEnd
+        val text = fullText.text
+        if (!text[proposedEnd - 1].isWordPart() || !text[proposedEnd].isWordPart()) {
+            return proposedEnd
+        }
+
+        var wordStart = proposedEnd
+        while (wordStart > pageStart && text[wordStart - 1].isWordPart()) {
+            wordStart--
+        }
+        // Очень длинное слово не должно образовать пустую страницу.
+        return if (wordStart > pageStart) wordStart else proposedEnd
+    }
+
+    private fun Char.isWordPart(): Boolean =
+        isLetterOrDigit() || this == '\'' || this == '’' || this == '-' ||
+            this == '‐' || this == '‑' || this == '\u00ad'
+
+    private fun commitPageBoundary(index: Int, pageStartChar: Int, pageEndChar: Int) {
+        val expectedStart = synchronized(pageBoundaryLock) {
+            pageEndCharOffsets.lastOrNull() ?: 0
+        }
+        check(index == synchronized(pageBoundaryLock) { pageEndCharOffsets.size }) {
+            "Non-sequential FB2 page index: expected ${pageEndCharOffsets.size}, got $index"
+        }
+        check(pageStartChar == expectedStart) {
+            "Gap or overlap between FB2 pages: expected start $expectedStart, got $pageStartChar"
+        }
+        check(pageEndChar > pageStartChar) {
+            "Empty FB2 page range: $pageStartChar..$pageEndChar"
+        }
+        if (pageEndChar < fullText.length) {
+            val splitsInlineContent = fullText
+                .getStringAnnotations(INLINE_CONTENT_TAG, pageEndChar - 1, pageEndChar + 1)
+                .any { it.start < pageEndChar && pageEndChar < it.end }
+            check(!splitsInlineContent) {
+                "FB2 page boundary splits inline content at $pageEndChar"
+            }
+        }
+        synchronized(pageBoundaryLock) {
+            pageWordSum.add(wordPrefixAtChar[pageEndChar])
+            pageCharOffsets.add(pageStartChar)
+            pageEndCharOffsets.add(pageEndChar)
+        }
+    }
+
+    private fun buildWordPrefix(text: String): IntArray {
+        val result = IntArray(text.length + 1)
+        var completedWords = 0
+        var tokenHasContent = false
+        for (i in text.indices) {
+            if (text[i] == ' ') {
+                if (tokenHasContent) completedWords++
+                tokenHasContent = false
+            } else if (!text[i].isWhitespace()) {
+                tokenHasContent = true
+            }
+            result[i + 1] = completedWords + if (tokenHasContent) 1 else 0
+        }
+        return result
+    }
+
+    private fun publishPage(
+        index: Int,
+        pageText: AnnotatedString,
+        layout: androidx.compose.ui.text.TextLayoutResult,
+        config: RenderConfig,
+        placeholders: List<AnnotatedString.Range<Placeholder>>,
+    ) {
+        val commands = buildDrawCommandsFromLayout(layout, pageText, config, placeholders)
 
         val content = Fb2BookContent(
             drawCommands = commands,
@@ -405,13 +701,45 @@ class Fb2RenderHelper constructor(
             nativeWidth  = config.canvasWidth,
             nativeHeight = config.canvasHeight,
         )
-        if (pageCache.containsKey(index)) {
-            pageCache[index]!!.update { content }
-        } else {
-            pageCache[index] = MutableStateFlow(content)
-        }
-        if (pageCharOffsets.size <= index) {
-            pageCharOffsets.add(pageStartChar)
+        pageCache[index]?.update { content }
+    }
+
+    private suspend fun materializePage(index: Int) {
+        paginateMutex.withLock {
+            val flow = pageCache[index] ?: return
+            if (flow.value.drawCommands.isNotEmpty()) return
+            if (index !in pageCharOffsets.indices || index !in pageEndCharOffsets.indices) return
+
+            val config = renderConfig.value
+            if (!config.isValid) return
+            val pageText = fullText.subSequence(pageCharOffsets[index], pageEndCharOffsets[index])
+            val style = TextStyle(
+                fontSize = config.fontSize,
+                fontFamily = config.fontFamily,
+                lineHeight = config.fontSize * config.lineHeightMultiplier,
+                textAlign = TextAlign.Justify,
+                lineBreak = LineBreak.Paragraph,
+            )
+            val placeholders = buildChunkPlaceholders(pageText, config)
+            val materializeMark = TimeSource.Monotonic.markNow()
+            val layout = textMeasurer.measure(
+                text = pageText,
+                style = style,
+                constraints = Constraints(
+                    minWidth = config.pageWidth,
+                    maxWidth = config.pageWidth,
+                    minHeight = 0,
+                    maxHeight = config.pageHeight,
+                ),
+                softWrap = true,
+                placeholders = placeholders,
+            )
+            val materializeTime = materializeMark.elapsedNow()
+            publishPage(index, pageText, layout, config, placeholders)
+            println(
+                ">>> fb2 materialize: page=$index chars=${pageText.length} " +
+                    "measure=${materializeTime.inWholeMilliseconds}ms"
+            )
         }
     }
 
@@ -427,7 +755,7 @@ class Fb2RenderHelper constructor(
             .toInt().coerceIn(0, fullText.length)
 
         // Если уже отпагинированы страницы — бинарный поиск по реальным смещениям.
-        val offsets = pageCharOffsets
+        val offsets = synchronized(pageBoundaryLock) { pageCharOffsets.toList() }
         if (offsets.size > 1) {
             var lo = 0; var hi = offsets.size - 1
             while (lo < hi) {
@@ -452,40 +780,57 @@ class Fb2RenderHelper constructor(
     private fun buildFullText(elements: List<FB2Element>): AnnotatedString = buildAnnotatedString {
         // Знаки, перед которыми не нужен пробел (знаки примыкают к предыдущему слову).
         val noPrecedingSpace = setOf('.', ',', '!', '?', ':', ';', ')', ']', '}', '»', '…')
-        val styled = elements.map { it.toStyledString() }
-        styled.forEachIndexed { i, cur ->
-            if (i > 0) {
-                val prevText = styled[i - 1].text
+        // Дефис может оказаться отдельным DOM text-node между тегами форматирования.
+        // Внутри слова пробел не нужен ни перед ним, ни после него.
+        val wordJoiners = setOf('-', '‐', '‑', '\u00ad')
+        var previousText: String? = null
+        elements.forEach { element ->
+            val cur = element.toStyledString()
+            previousText?.let { prevText ->
                 val curText  = cur.text
                 // Не добавляем пробел: перед знаком препинания, перед/после переноса строки,
                 // или если предыдущий элемент был пустым.
                 val noSpace = curText.isEmpty()
                     || curText[0] in noPrecedingSpace
+                    || curText[0] in wordJoiners
+                    || prevText.lastOrNull() in wordJoiners
                     || curText[0] == '\n'
                     || prevText.lastOrNull() == '\n'
                     || prevText.isBlank()
                 if (!noSpace) append(' ')
             }
             append(cur)
+            previousText = cur.text
         }
     }
+
+    private data class ParseTimings(
+        val xml: Duration,
+        val text: Duration,
+        val images: Duration,
+        val toc: Duration,
+    )
 
     private data class ParseResult(
         val elements: List<FB2Element>,
         val images: Map<String, ImageBitmap>,
         val toc: List<TOCEntry>,
+        val timings: ParseTimings,
     )
 
     private fun parseFb2Content(fb2File: File): ParseResult {
         return try {
+            val xmlMark = TimeSource.Monotonic.markNow()
             val factory = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
             val doc = factory.newDocumentBuilder().parse(fb2File)
             doc.documentElement.normalize()
+            val xmlTime = xmlMark.elapsedNow()
 
             val tocEntries = mutableListOf<TOCEntry>()
             val elements   = mutableListOf<FB2Element>()
             val images     = mutableMapOf<String, ImageBitmap>()
 
+            val textMark = TimeSource.Monotonic.markNow()
             val bodyElements = doc.getElementsByTagName("body")
             for (i in 0 until bodyElements.length) {
                 val body = bodyElements.item(i)
@@ -494,7 +839,9 @@ class Fb2RenderHelper constructor(
                     elements.addAll(extractTextContent(body, tocEntries, elements.size))
                 }
             }
+            val textTime = textMark.elapsedNow()
 
+            val imagesMark = TimeSource.Monotonic.markNow()
             val binaryElements = doc.getElementsByTagName("binary")
             for (i in 0 until binaryElements.length) {
                 val node        = binaryElements.item(i)
@@ -510,29 +857,38 @@ class Fb2RenderHelper constructor(
                     }
                 }
             }
+            val imagesTime = imagesMark.elapsedNow()
 
             // Convert element-index offsets to actual word-count offsets.
             // Empty/newline elements (FB2Text(""), FB2Text("\n")) count as 1 element but 0 words,
             // so element index != word count. Build a table and remap.
+            val tocMark = TimeSource.Monotonic.markNow()
             val elemToWordCount = IntArray(elements.size + 1)
             var wc = 0
             elements.forEachIndexed { i, elem ->
                 elemToWordCount[i] = wc
-                if (elem.toStyledString().text.isNotBlank()) wc++
+                if (elem.contributesWordOffset()) wc++
             }
             elemToWordCount[elements.size] = wc
 
             val correctedToc = tocEntries.map { entry ->
                 entry.copy(pageIndex = elemToWordCount.getOrElse(entry.pageIndex) { entry.pageIndex })
             }
+            val tocTime = tocMark.elapsedNow()
 
-            ParseResult(elements, images, correctedToc.distinctBy { it.title })
+            ParseResult(
+                elements = elements,
+                images = images,
+                toc = correctedToc.distinctBy { it.title },
+                timings = ParseTimings(xmlTime, textTime, imagesTime, tocTime),
+            )
         } catch (e: Exception) {
             e.printStackTrace()
             ParseResult(
                 elements = listOf(FB2ColoredText("Can't parse book", Color.Red)),
                 images   = emptyMap(),
                 toc      = emptyList(),
+                timings  = ParseTimings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO),
             )
         }
     }
@@ -553,9 +909,7 @@ class Fb2RenderHelper constructor(
                 Node.TEXT_NODE -> {
                     val text = child.nodeValue?.trim() ?: ""
                     if (text.isNotEmpty()) {
-                        text.split(' ', '\n', '\r')
-                            .filter { it.isNotBlank() }
-                            .forEach { elements += FB2Text(it.trim()) }
+                        appendTextTokens(text, elements)
                     }
                 }
                 Node.ELEMENT_NODE -> {
@@ -563,12 +917,12 @@ class Fb2RenderHelper constructor(
                     val extracted = extractTextContent(child, tocEntries, childOffset)
                     when (child.nodeName) {
                         "empty-line" -> elements += FB2Text("")
-                        "emphasis"   -> elements.addAll(extracted.map { FB2ItalicText(it) })
-                        "strong"     -> elements.addAll(extracted.map { FB2BoldText(it) })
-                        "code"       -> elements.addAll(extracted.map { FB2CodeText(it) })
+                        "emphasis"   -> extracted.forEach { elements += FB2ItalicText(it) }
+                        "strong"     -> extracted.forEach { elements += FB2BoldText(it) }
+                        "code"       -> extracted.forEach { elements += FB2CodeText(it) }
                         "title" -> {
                             elements += FB2Text("\n")
-                            elements.addAll(extracted.map { FB2BoldText(it) })
+                            extracted.forEach { elements += FB2BoldText(it) }
                             elements += FB2Text("\n")
                             if (extracted.isNotEmpty()) {
                                 tocEntries += TOCEntry(
@@ -588,13 +942,18 @@ class Fb2RenderHelper constructor(
                         "p" -> {
                             if (extracted.isNotEmpty()) {
                                 elements += FB2Paragraph(extracted[0])
-                                elements.addAll(extracted.drop(1).map { FB2Text(it) })
+                                for (index in 1 until extracted.size) {
+                                    elements += FB2Text(extracted[index])
+                                }
                             }
                         }
                         "a" -> {
                             val href = child.attributes?.getNamedItem("href")?.nodeValue
-                            if (href != null) elements.addAll(extracted.map { FB2ColoredText(it, Color.Blue) })
-                            else elements.addAll(extracted)
+                            if (href != null) {
+                                extracted.forEach { elements += FB2ColoredText(it, Color.Blue) }
+                            } else {
+                                elements.addAll(extracted)
+                            }
                         }
                         "image" -> {
                             val href = child.attributes?.getNamedItem("l:href")?.nodeValue
@@ -603,7 +962,7 @@ class Fb2RenderHelper constructor(
                                 elements += FB2Image(imageId = href.substring(1), description = alt)
                             }
                         }
-                        else -> elements.addAll(extractTextContent(child, tocEntries, childOffset))
+                        else -> elements.addAll(extracted)
                     }
                 }
             }
@@ -611,13 +970,37 @@ class Fb2RenderHelper constructor(
         return elements
     }
 
+    /** Эквивалент split(' ', '\n', '\r') + trim, но без промежуточных списков. */
+    private fun appendTextTokens(text: String, target: MutableList<FB2Element>) {
+        var tokenStart = 0
+        for (index in 0..text.length) {
+            val atEnd = index == text.length
+            val isSeparator = !atEnd && (text[index] == ' ' || text[index] == '\n' || text[index] == '\r')
+            if (!atEnd && !isSeparator) continue
+
+            if (index > tokenStart) {
+                val token = text.substring(tokenStart, index).trim()
+                if (token.isNotBlank()) target += FB2Text(token)
+            }
+            tokenStart = index + 1
+        }
+    }
+
     private fun combineAnnotatedStrings(list: List<AnnotatedString>): AnnotatedString =
         buildAnnotatedString { list.forEach { append(it) } }
 
     companion object {
-        private const val PADDING_H          = 32f
         private const val PADDING_V          = 32f
         private const val DEBOUNCE_MS        = 300L
         private const val INLINE_CONTENT_TAG = "androidx.compose.foundation.text.inlineContent"
+        private const val PAGINATION_BATCH_SIZE = 32
+        private const val PAGE_PREFETCH_DISTANCE = 2
+        private const val CANCELLATION_CHECK_PAGE_INTERVAL = 8
+        private const val PAGINATION_LOG_INTERVAL = 250
+        // Страница должна измеряться из собственного начального offset: именно так
+        // тот же текст затем измеряет Fb2Viewer. Это исключает расхождение границ.
+        private const val LAYOUT_BATCH_PAGES = 1
+        private const val CHUNK_SIZE_NUMERATOR = 5
+        private const val CHUNK_SIZE_DENOMINATOR = 4
     }
 }

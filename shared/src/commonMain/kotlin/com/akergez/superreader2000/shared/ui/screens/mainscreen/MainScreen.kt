@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
@@ -32,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import com.akergez.superreader2000.shared.backend.BookManager
 import com.akergez.superreader2000.shared.backend.settings.AppThemeMode
+import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
 import com.akergez.superreader2000.shared.constants.Route
 import com.akergez.superreader2000.shared.ui.components.AppNavigationRail
@@ -65,6 +67,9 @@ expect class StorageDirectoryPicker {
 expect fun urlEncode(value: String): String
 expect fun urlDecode(value: String): String
 
+@Composable
+expect fun ReaderImmersiveMode(enabled: Boolean)
+
 @Serializable
 data class BookReader(val fileName: String)
 
@@ -76,18 +81,26 @@ fun MainScreen(
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+    val isReaderScreen = currentRoute != null &&
+        currentRoute != Route.Main &&
+        currentRoute != Route.Settings
+    ReaderImmersiveMode(isReaderScreen)
     val currentScreen = when (currentRoute) {
         Route.Main -> Screen.HOME_SCREEN
         Route.Settings -> Screen.SETTINGS_SCREEN
         else -> Screen.HOME_SCREEN
     }
     val currentTheme by settingsManager.appThemeModeFlow.collectAsState()
+    val readerBackground = when (settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) {
+        DocThemeMode.Invert -> Color.Black
+        DocThemeMode.AsIs -> Color.White
+    }
 
     AppTheme(
         darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme == AppThemeMode.Dark)
     ) {
         Surface(
-            color = MaterialTheme.colorScheme.background
+            color = if (isReaderScreen) readerBackground else MaterialTheme.colorScheme.background
         ) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val density = LocalDensity.current
@@ -154,7 +167,12 @@ fun MainScreen(
                                     val provider: IReaderScreenProvider = koinInject(
                                         qualifier = named(progress.formatType),
                                     )
-                                    provider.getReaderScreen(bookLink)()
+                                    // Экран владеет состоянием сессии чтения и должен быть
+                                    // стабилен между рекомпозициями одной записи навигации.
+                                    val readerScreen = remember(provider, bookLink.bundleName) {
+                                        provider.getReaderScreen(bookLink)
+                                    }
+                                    readerScreen()
                                 }
                             }
                         }

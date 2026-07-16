@@ -8,6 +8,7 @@ import com.akergez.superreader2000.shared.backend.storage.BookStorageEntry
 import com.akergez.superreader2000.shared.formats.abstractions.FileType
 import com.akergez.superreader2000.shared.platform.FileUriHandler
 import com.akergez.superreader2000.shared.platform.MessageHandler
+import com.akergez.tresse.kmp.TresseConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,11 +27,13 @@ class HoomeScreenViewModel(
     private val _books = MutableStateFlow(emptyList<BookStorageEntry>())
     val selectedBooks = MutableStateFlow(emptyList<BookStorageEntry>())
     val books = _books
+    private var syncConfig: TresseConfig? = null
 
     init {
         viewModelScope.launch {
             _hoomeScreenState.value = HoomeScreenState()
             bookManager.saveBookLinks()
+            refreshSyncAvailability()
             bookManager.bookFlow.collect {
                 _books.value = it
             }
@@ -40,8 +43,41 @@ class HoomeScreenViewModel(
     fun dumpBooks() {
         viewModelScope.launch {
             bookManager.saveBookLinks()
+            refreshSyncAvailability()
         }
     }
+
+    fun synchronize() {
+        if (_hoomeScreenState.value.isSyncRunning) return
+
+        viewModelScope.launch {
+            val config = syncConfig ?: loadConfiguredSync()
+            if (config == null) return@launch
+
+            _hoomeScreenState.update { it.copy(isSyncRunning = true) }
+            bookManager.synchronize(config).onFailure { error ->
+                messageHandler.showLongMessage(error.message ?: "Synchronization failed")
+            }
+            _hoomeScreenState.update { it.copy(isSyncRunning = false) }
+        }
+    }
+
+    private suspend fun refreshSyncAvailability() {
+        syncConfig = loadConfiguredSync()
+        _hoomeScreenState.update {
+            it.copy(isSyncConfigured = syncConfig != null)
+        }
+    }
+
+    private suspend fun loadConfiguredSync(): TresseConfig? =
+        runCatching { bookManager.loadS3Config() }.getOrNull()?.takeIf(::isValidS3Config)
+
+    private fun isValidS3Config(config: TresseConfig): Boolean =
+        config.s3Endpoint.isNotBlank() &&
+            config.s3Bucket.isNotBlank() &&
+            config.s3AccessKeyId.isNotBlank() &&
+            config.s3SecretAccessKey.isNotBlank() &&
+            config.encryptionKey.isNotBlank()
 
     fun addBook(fileUri: String, fileType: FileType) {
         viewModelScope.launch {
@@ -169,4 +205,3 @@ class HoomeScreenViewModel(
         clearSelectedBooks()
     }
 }
-

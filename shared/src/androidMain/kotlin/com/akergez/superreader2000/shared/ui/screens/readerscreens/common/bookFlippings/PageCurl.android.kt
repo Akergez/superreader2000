@@ -1,10 +1,7 @@
 package com.akergez.superreader2000.shared.ui.screens.readerscreens.common.bookFlippings
 
-import android.util.Log
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,8 +45,11 @@ actual fun <TBookContent : IBookContent> PageCurl(
     val zoomS = rememberZoomState()
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
-    Scaffold { innerPadding ->
-        totalPagesState?.let {
+    Scaffold(
+        containerColor = if (documentTheme == DocThemeMode.Invert) Color.Black else Color.White,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) {
+        totalPagesState?.takeIf { it > 0 }?.let {
             eu.wewox.pagecurl.page.PageCurl(
                 count = it,
                 state = pagerState,
@@ -58,9 +58,6 @@ actual fun <TBookContent : IBookContent> PageCurl(
                 ),
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .consumeWindowInsets(innerPadding)
-                    .systemBarsPadding()
                     .zoomable(zoomS)
             ) { index ->
                 BookPage(

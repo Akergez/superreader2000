@@ -2,6 +2,7 @@ package com.akergez.superreader2000.shared.ui.screens.readerscreens.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -115,6 +116,7 @@ fun <TBookContent>BookContent(
 
     Box(
         modifier = Modifier
+            .displayCutoutPadding()
             .focusRequester(focusRequester)
             .focusTarget()
             .onKeyEvent { keyEvent ->

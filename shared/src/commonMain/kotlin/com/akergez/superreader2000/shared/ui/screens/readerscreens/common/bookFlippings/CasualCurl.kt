@@ -2,6 +2,7 @@ package com.akergez.superreader2000.shared.ui.screens.readerscreens.common.bookF
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.akergez.superreader2000.shared.ui.IBookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookPage
@@ -43,23 +45,28 @@ fun <TBookContent> CasualCurl(
     val zoomS = rememberZoomState()
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
-    Scaffold { innerPadding ->
-        totalPagesState?.let { totalPagesValue ->
+    Scaffold(
+        containerColor = if (applyInversion) Color.Black else Color.White,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { innerPadding ->
+        totalPagesState?.takeIf { it > 0 }?.let { totalPagesValue ->
             BoxWithConstraints(
                 modifier = modifier.padding(innerPadding).fillMaxSize()
             ) {
                 val isLandscape = constraints.maxWidth.toFloat() / constraints.maxHeight > 4f / 3f
                 val pagesPerSpread = if (isLandscape) 2 else 1
                 val spreadCount = (totalPagesValue + pagesPerSpread - 1) / pagesPerSpread
+                val initialSpread = (initialPage / pagesPerSpread).coerceIn(0, spreadCount - 1)
 
                 var lastBookPage by remember { mutableIntStateOf(initialPage) }
-                val pagerState = rememberPagerState(initialPage / pagesPerSpread) { spreadCount }
+                val pagerState = rememberPagerState(initialSpread) { spreadCount }
 
-                // When orientation changes, scroll to the spread that contains the last visible page.
-                LaunchedEffect(pagesPerSpread) {
+                // Синхронизируем внутреннее состояние pager с внешней позицией чтения.
+                LaunchedEffect(initialPage, pagesPerSpread, spreadCount) {
                     pagerState.scrollToPage(
-                        (lastBookPage / pagesPerSpread).coerceIn(0, spreadCount - 1)
+                        (initialPage / pagesPerSpread).coerceIn(0, spreadCount - 1)
                     )
+                    lastBookPage = initialPage
                 }
 
                 HorizontalPager(
@@ -74,14 +81,14 @@ fun <TBookContent> CasualCurl(
                         if (rightPage != null) {
                             // Two pages side by side on one card — each column gets half width.
                             Row(modifier = Modifier.fillMaxSize()) {
-                                val leftState = remember(leftPage) { getPage(leftPage) }
+                                val leftState = remember(leftPage, getPage) { getPage(leftPage) }
                                 BookPage(
                                     bookContent = leftState,
                                     applyInversion = applyInversion,
                                     viewerProvider = viewerProvider,
                                     modifier = Modifier.weight(1f).fillMaxHeight()
                                 )
-                                val rightState = remember(rightPage) { getPage(rightPage) }
+                                val rightState = remember(rightPage, getPage) { getPage(rightPage) }
                                 BookPage(
                                     bookContent = rightState,
                                     applyInversion = applyInversion,
@@ -90,7 +97,7 @@ fun <TBookContent> CasualCurl(
                                 )
                             }
                         } else {
-                            val pageState = remember(leftPage) { getPage(leftPage) }
+                            val pageState = remember(leftPage, getPage) { getPage(leftPage) }
                             BookPage(
                                 bookContent = pageState,
                                 applyInversion = applyInversion,

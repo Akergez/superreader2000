@@ -1,5 +1,8 @@
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -7,10 +10,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.rememberTextMeasurer
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
@@ -20,11 +26,16 @@ import com.akergez.superreader2000.shared.formats.fb2.Fb2RenderHelper
 import com.akergez.superreader2000.shared.formats.fb2.RenderConfig
 import com.akergez.superreader2000.shared.formats.fb2.ui.Fb2ViewerProvider
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookContent
+import com.akergez.superreader2000.shared.ui.Fb2BookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.ReaderMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -38,65 +49,128 @@ fun Fb2ReaderScreen(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val displayCutout = WindowInsets.displayCutout
+    val cutoutLeft = displayCutout.getLeft(density, layoutDirection)
+    val cutoutTop = displayCutout.getTop(density)
+    val cutoutRight = displayCutout.getRight(density, layoutDirection)
+    val cutoutBottom = displayCutout.getBottom(density)
+    val progressScope = remember(book) {
+        CoroutineScope(Dispatchers.IO + SupervisorJob())
+    }
+    var progressSaveJob by remember(book) { mutableStateOf<Job?>(null) }
 
-    var currentPage by remember { mutableStateOf<Int?>(null) }
-    var mode by remember { mutableStateOf(ReaderMode.Reading) }
+    var currentPage by remember(book) { mutableStateOf<Int?>(null) }
+    // Устойчивая позиция в книге. Номер страницы меняется вместе с геометрией окна.
+    var currentWordOffset by remember(book) {
+        mutableIntStateOf(book.readProgress().characterPosition.coerceAtLeast(0))
+    }
+    var isRestoringLayout by remember(book) { mutableStateOf(true) }
+    var isPageControlSynchronized by remember(book) { mutableStateOf(false) }
+    var mode by remember(book) { mutableStateOf(ReaderMode.Reading) }
 
     var componentWidth by remember { mutableIntStateOf(0) }
     var componentHeight by remember { mutableIntStateOf(0) }
 
-    val renderConfig = remember {
+    val renderConfig = remember(book) {
         MutableStateFlow(RenderConfig(pageWidth = 0, pageHeight = 0))
     }
 
-    val fb2RenderHelper = remember { mutableStateOf<Fb2RenderHelper?>(null) }
+    val fb2RenderHelper = remember(book) { mutableStateOf<Fb2RenderHelper?>(null) }
 
-    DisposableEffect(Unit) {
+    // Helper создаётся независимо от измерений окна. Иначе перезапуск size-effect
+    // может оставить уже запущенный парсер без владельца и создать второй helper.
+    LaunchedEffect(book) {
+        val file = withContext(Dispatchers.IO) { book.getFile() }
+        fb2RenderHelper.value = Fb2RenderHelper(renderConfig, textMeasurer, file)
+    }
+
+    val latestPage = rememberUpdatedState(currentPage)
+    val latestWordOffset = rememberUpdatedState(currentWordOffset)
+    val latestIsRestoring = rememberUpdatedState(isRestoringLayout)
+    val latestHelper = rememberUpdatedState(fb2RenderHelper.value)
+
+    DisposableEffect(book) {
         onDispose {
-            fb2RenderHelper.value?.close()
+            progressSaveJob?.cancel()
+            val helper = latestHelper.value
+            val page = latestPage.value
+            val fallbackOffset = latestWordOffset.value
+            val restoring = latestIsRestoring.value
+            progressScope.launch {
+                try {
+                    val finalOffset = if (!restoring && helper != null && page != null) {
+                        helper.getPageStartWordOffsetAfterPagination(page) ?: fallbackOffset
+                    } else {
+                        fallbackOffset
+                    }
+                    book.saveProgress(
+                        Fb2Progress(
+                            characterPosition = finalOffset.coerceAtLeast(0),
+                            totalCharacters = helper?.totalWords?.value
+                                ?: book.readProgress().totalCharacters,
+                        )
+                    )
+                    book.flushProgress()
+                } finally {
+                    helper?.close()
+                    progressScope.cancel()
+                }
+            }
         }
     }
 
     // LaunchedEffect 1: создаём/обновляем конфиг при изменении размера.
-    LaunchedEffect(componentWidth, componentHeight) {
+    LaunchedEffect(
+        componentWidth,
+        componentHeight,
+        cutoutLeft,
+        cutoutTop,
+        cutoutRight,
+        cutoutBottom,
+    ) {
         if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
-        val topBarPx  = (density.density * (16 + 40)).toInt()
         val paddingH  = density.density * 32f
+        val paddingBottom = (density.density * 24f).toInt()
 
-        val isLandscape = componentWidth.toFloat() / componentHeight > 4f / 3f
+        val availableWidth = (componentWidth - cutoutLeft - cutoutRight).coerceAtLeast(1)
+        val availableHeight = (componentHeight - cutoutTop - cutoutBottom).coerceAtLeast(1)
+        val isLandscape = availableWidth.toFloat() / availableHeight > 4f / 3f
         val pagesPerSpread = if (isLandscape) 2 else 1
-        val pageCanvasWidth = componentWidth / pagesPerSpread
+        val pageCanvasWidth = availableWidth / pagesPerSpread
 
         val newConfig = RenderConfig(
             pageWidth    = (pageCanvasWidth - (paddingH * 2).toInt()).coerceAtLeast(1),
-            pageHeight   = (componentHeight - topBarPx).coerceAtLeast(1),
+            pageHeight   = (availableHeight - paddingBottom).coerceAtLeast(1),
             canvasWidth  = pageCanvasWidth,
-            canvasHeight = componentHeight,
+            canvasHeight = availableHeight,
             paddingH     = paddingH,
             density      = density.density,
         )
 
-        if (fb2RenderHelper.value == null) {
+        val helper = fb2RenderHelper.value
+        if (helper == null) {
             renderConfig.value = newConfig
-            val helper = withContext(Dispatchers.IO) {
-                Fb2RenderHelper(renderConfig, textMeasurer, book.getFile())
-            }
-            fb2RenderHelper.value = helper
-        } else {
-            val helper = fb2RenderHelper.value!!
-            // Сохраняем word-offset ДО того, как перепагинация сотрёт pageWordSum.
-            val savedOffset = helper.pageWordSum.getOrElse(currentPage ?: 0) { 0 }
+        } else if (renderConfig.value != newConfig) {
+            val savedOffset = currentWordOffset
 
-            renderConfig.value = newConfig  // запускает перепагинацию (с debounce 300 мс)
+            isRestoringLayout = true
+            isPageControlSynchronized = false
+            try {
+                renderConfig.value = newConfig
+                // Немедленно очищаем границы старой геометрии. Иначе точный поиск может
+                // успеть вернуть старый номер страницы до debounce перепагинации.
+                withContext(Dispatchers.IO) { helper.repaginate() }
 
-            if (savedOffset > 0) {
-                // Ждём debounce + начала перепагинации, затем сразу показываем оценку.
-                delay(350)
-                currentPage = helper.estimatePageFromWordOffset(savedOffset)
-                // Точная страница — в фоне (не блокируем UI).
-                val exact = withContext(Dispatchers.IO) { helper.getPageIndexByWordOffset(savedOffset) }
-                if (exact != currentPage) currentPage = exact
+                currentPage = null
+                val exact = withContext(Dispatchers.IO) {
+                    helper.getPageIndexByWordOffset(savedOffset)
+                }
+                currentWordOffset = savedOffset
+                currentPage = exact
+            } finally {
+                isRestoringLayout = false
             }
         }
     }
@@ -106,16 +180,24 @@ fun Fb2ReaderScreen(
     LaunchedEffect(fb2RenderHelper.value) {
         val helper = fb2RenderHelper.value ?: return@LaunchedEffect
         val offset = book.readProgress().characterPosition
-        if (offset <= 0) { currentPage = 0; return@LaunchedEffect }
-
-        // Ждём конца парсинга (обычно < 1 сек), затем сразу показываем приблизительную страницу —
-        // без ожидания пагинации через TextMeasurer.
-        withContext(Dispatchers.IO) { helper.totalWords.filterNotNull().first() }
-        currentPage = helper.estimatePageFromWordOffset(offset)  // мгновенно
-
-        // Точная страница считается в фоне — исправляем когда готово.
-        val exact = withContext(Dispatchers.IO) { helper.getPageIndexByWordOffset(offset) }
-        if (exact != currentPage) currentPage = exact
+        currentWordOffset = offset.coerceAtLeast(0)
+        isRestoringLayout = true
+        isPageControlSynchronized = false
+        try {
+            if (offset <= 0) {
+                currentPage = 0
+            } else {
+                withContext(Dispatchers.IO) { helper.totalWords.filterNotNull().first() }
+                currentPage = null
+                val exact = withContext(Dispatchers.IO) {
+                    helper.getPageIndexByWordOffset(offset)
+                }
+                currentWordOffset = offset
+                currentPage = exact
+            }
+        } finally {
+            isRestoringLayout = false
+        }
     }
 
     val onChapterNavigate: (Int) -> Unit = { wordOffset: Int ->
@@ -124,50 +206,76 @@ fun Fb2ReaderScreen(
             helper.totalWords.filterNotNull().first()
             val page = helper.getPageIndexByWordOffset(wordOffset)
             withContext(Dispatchers.Main) {
+                isPageControlSynchronized = false
+                currentWordOffset = wordOffset
                 currentPage = page
                 mode = ReaderMode.Reading
             }
-            if (helper.pageWordSum.size > page) {
-                book.saveProgress(
-                    Fb2Progress(
-                        characterPosition = helper.pageWordSum[page],
-                        totalCharacters   = helper.totalWords.value ?: 0,
-                    )
+            book.saveProgress(
+                Fb2Progress(
+                    characterPosition = wordOffset,
+                    totalCharacters   = helper.totalWords.value ?: 0,
                 )
-            }
+            )
         }
     }
 
-    val onPageChange: (Int) -> Unit = { pageIndex: Int ->
+    val onPageChange: (Int) -> Unit = onPageChange@ { requestedPage: Int ->
+        // Pager может прислать временный номер, когда pagesCount меняется во время reflow.
+        // Он не должен затирать устойчивый word-offset пользователя.
+        if (isRestoringLayout) return@onPageChange
+
         val helper = fb2RenderHelper.value
         if (helper != null) {
-            val totalPgs = helper.pagesCount.value ?: Int.MAX_VALUE
-            if (pageIndex >= totalPgs) {
-                // Значение пришло из ещё не отпагинированной записи TOC — это word-offset,
-                // а не номер страницы. Конвертируем асинхронно.
-                CoroutineScope(Dispatchers.IO).launch {
-                    val page = helper.getPageIndexByWordOffset(pageIndex)
-                    withContext(Dispatchers.Main) { currentPage = page }
-                    if (helper.pageWordSum.size > page) {
-                        book.saveProgress(
-                            Fb2Progress(
-                                characterPosition = helper.pageWordSum[page],
-                                totalCharacters   = helper.totalWords.value ?: 0,
-                            )
+            val pageIndex = requestedPage.coerceAtLeast(0)
+
+            // Листалки публикуют текущую страницу сразу после создания и во время
+            // программного восстановления. Это не действие читателя и не новый progress.
+            if (!isPageControlSynchronized) {
+                if (pageIndex == currentPage) {
+                    isPageControlSynchronized = true
+                }
+                return@onPageChange
+            }
+
+            currentPage = pageIndex
+
+            // Для уже показанной страницы граница обычно известна — сохраняем её
+            // немедленно, не ожидая очередной фоновой пагинации.
+            val knownOffset = helper.getPageStartWordOffset(pageIndex)
+            if (knownOffset != null) {
+                currentWordOffset = knownOffset
+                progressSaveJob?.cancel()
+                progressSaveJob = progressScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    book.saveProgress(
+                        Fb2Progress(
+                            characterPosition = knownOffset,
+                            totalCharacters = helper.totalWords.value
+                                ?: book.readProgress().totalCharacters,
                         )
-                    }
+                    )
                 }
             } else {
-                currentPage = pageIndex
-                if (helper.pageWordSum.size > pageIndex) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        book.saveProgress(
-                            Fb2Progress(
-                                characterPosition = helper.pageWordSum[pageIndex],
-                                totalCharacters   = helper.totalWords.value ?: 0,
-                            )
-                        )
+                progressSaveJob?.cancel()
+                progressSaveJob = progressScope.launch {
+                    val wordOffset = helper.getPageStartWordOffsetAfterPagination(pageIndex)
+                        ?: return@launch
+                    val stillCurrent = withContext(Dispatchers.Main) {
+                        if (currentPage == pageIndex) {
+                            currentWordOffset = wordOffset
+                            true
+                        } else {
+                            false
+                        }
                     }
+                    if (!stillCurrent) return@launch
+                    book.saveProgress(
+                        Fb2Progress(
+                            characterPosition = wordOffset,
+                            totalCharacters = helper.totalWords.value
+                                ?: book.readProgress().totalCharacters,
+                        )
+                    )
                 }
             }
         }
@@ -192,6 +300,8 @@ fun Fb2ReaderScreen(
 
         if (helper != null && page != null) {
             var curlMode by remember { mutableStateOf(settingsManager.getFlipMode()) }
+            val pageProvider: (Int) -> StateFlow<Fb2BookContent> =
+                remember(helper) { { pageIndex -> helper.openPage(pageIndex, false) } }
             BookContent(
                 currentPage             = page,
                 totalPages              = helper.pagesCount,
@@ -199,7 +309,7 @@ fun Fb2ReaderScreen(
                 onPageChange            = onPageChange,
                 onToggleMode            = { newMode -> mode = newMode },
                 flipMode                = curlMode,
-                getPage                 = { p -> helper.openPage(p, false) },
+                getPage                 = pageProvider,
                 documentTheme           = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
                 updateDocumentThemeMode = { settingsManager.setDocumentsTheme(it) },
                 updateFlipMode          = { curlMode = it; settingsManager.setFlipMode(it) },
@@ -209,6 +319,8 @@ fun Fb2ReaderScreen(
                 viewerProvider          = Fb2ViewerProvider(),
                 onChapterNavigate       = onChapterNavigate,
             )
+        } else {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
 }

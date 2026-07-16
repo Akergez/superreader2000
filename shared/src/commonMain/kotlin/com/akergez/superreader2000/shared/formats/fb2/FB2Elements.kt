@@ -27,6 +27,9 @@ abstract class FB2Element {
         this.text = annotatedString.toStyledString()
     }
 
+    /** Используется при построении TOC без создания временного AnnotatedString. */
+    open fun contributesWordOffset(): Boolean = text.text.isNotBlank()
+
     abstract fun toStyledString(): AnnotatedString
 }
 
@@ -35,13 +38,9 @@ class FB2Text : FB2Element {
     constructor(annotatedString: AnnotatedString) : super(annotatedString)
     constructor(element: FB2Element) : super(element)
 
-    override fun toStyledString(): AnnotatedString {
-        return buildAnnotatedString {
-            withStyle(SpanStyle(fontSize = 18.sp)) {
-                append(text)
-            }
-        }
-    }
+    // Размер обычного текста задаёт RenderConfig/TextStyle. Отдельный SpanStyle
+    // на каждом слове дублировал 18.sp и делал layout книги на порядок тяжелее.
+    override fun toStyledString(): AnnotatedString = text
 }
 
 class FB2BoldText : FB2Element {
@@ -51,7 +50,7 @@ class FB2BoldText : FB2Element {
 
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)) {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
                 append(text)
             }
         }
@@ -68,9 +67,7 @@ class FB2SubtitleText : FB2Element {
             withStyle(
                 ParagraphStyle(textIndent = TextIndent(firstLine = 30.sp))
             ) {
-                withStyle(SpanStyle(fontSize = 18.sp)) {
-                    append(FB2BoldText(text).toStyledString())
-                }
+                append(FB2BoldText(text).toStyledString())
             }
         }
     }
@@ -177,17 +174,17 @@ class FB2Paragraph : FB2Element {
 
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            withStyle(SpanStyle(fontSize = 18.sp)) {
-                append('\n')
-                append("\t\t\t\t") // 4 таба для отступа
-                append(text)
-            }
+            append('\n')
+            append("\t\t\t\t") // 4 таба для отступа
+            append(text)
         }
     }
 }
 
 class FB2Image(var imageId: String, var description: String = "") :
     FB2Element(description) {
+    override fun contributesWordOffset(): Boolean = true
+
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
             append('\n')

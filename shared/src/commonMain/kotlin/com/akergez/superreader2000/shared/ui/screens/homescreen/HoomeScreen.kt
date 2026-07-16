@@ -2,6 +2,9 @@ package com.akergez.superreader2000.shared.ui.screens.homescreen
 
 import EditBookModal
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,11 +12,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -23,6 +29,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -46,6 +54,7 @@ import superreader2000.shared.generated.resources.error_book_title_empty
 import superreader2000.shared.generated.resources.error_book_with_title_already_exists
 import superreader2000.shared.generated.resources.error_not_supported_format
 import superreader2000.shared.generated.resources.my_books
+import superreader2000.shared.generated.resources.s3_sync
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -63,6 +72,7 @@ fun HomeScreen(
     val sErrorBookExists = stringResource(Res.string.error_book_with_title_already_exists)
     val sAddBook = stringResource(Res.string.add_book)
     val sEditBook = stringResource(Res.string.edit_book)
+    val sSync = stringResource(Res.string.s3_sync)
     val sMyBooks = stringResource(Res.string.my_books)
     val state by hoomeScreenViewModel.hoomeScreenState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -117,11 +127,32 @@ fun HomeScreen(
                     )
                 }
             } else if (selectedBooks.isEmpty()) {
-                FloatingActionButton(onClick = { launcher.launch() }) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = sAddBook
-                    )
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (state.isSyncConfigured) {
+                        SmallFloatingActionButton(
+                            onClick = {
+                                if (!state.isSyncRunning) hoomeScreenViewModel.synchronize()
+                            },
+                        ) {
+                            if (state.isSyncRunning) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                Icon(Icons.Filled.Sync, contentDescription = sSync)
+                            }
+                        }
+                    }
+                    FloatingActionButton(onClick = { launcher.launch() }) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = sAddBook
+                        )
+                    }
                 }
             }
         }, bottomBar = bottomBar, topBar = {

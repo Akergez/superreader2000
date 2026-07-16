@@ -93,7 +93,7 @@ fun <TBookContent> PageCarousel(
             )
         },
     ) { padding ->
-        totalPagesState?.let { totalPagesNotNull ->
+        totalPagesState?.takeIf { it > 0 }?.let { totalPagesNotNull ->
             BoxWithConstraints(
                 modifier = modifier
                     .padding(padding)
@@ -135,9 +135,10 @@ private fun <TBookContent : IBookContent> CarouselContent(
     val isLandscape = availWidth.toFloat() / availHeight > 4f / 3f
     val pagesPerSpread = if (isLandscape) 2 else 1
     val spreadCount = (totalPagesNotNull + pagesPerSpread - 1) / pagesPerSpread
+    val initialSpread = (initialPage / pagesPerSpread).coerceIn(0, spreadCount - 1)
 
     var lastBookPage by remember { mutableIntStateOf(initialPage) }
-    val lazyListState = rememberLazyListState(initialPage / pagesPerSpread)
+    val lazyListState = rememberLazyListState(initialSpread)
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(pagesPerSpread) {

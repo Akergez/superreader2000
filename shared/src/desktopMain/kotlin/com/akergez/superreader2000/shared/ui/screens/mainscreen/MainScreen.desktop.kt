@@ -53,3 +53,5 @@ actual fun urlDecode(value: String): String {
     return URLDecoder.decode(value, StandardCharsets.UTF_8.toString())
 }
 
+@Composable
+actual fun ReaderImmersiveMode(enabled: Boolean) = Unit

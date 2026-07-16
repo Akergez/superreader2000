@@ -7,6 +7,7 @@ import com.akergez.superreader2000.shared.formats.abstractions.BookMetaInfo
 class Fb2BookDomainModel(
     private val bookMetaInfo: BookMetaInfo,
     private val updateProgress: suspend (BookMetaInfo) -> Unit,
+    private val flushProgress: suspend () -> Unit = {},
     private val getFileFromStorage: suspend () -> FileWrapper,
 ) : BookDomainModel<Fb2Progress> {
     private var progress: Fb2Progress = bookMetaInfo.progress as Fb2Progress
@@ -24,6 +25,7 @@ class Fb2BookDomainModel(
 
     override suspend fun getFile(): FileWrapper = getFileFromStorage()
 
+    suspend fun flushProgress() = flushProgress.invoke()
+
     override fun getMetadata(): BookMetaInfo = bookMetaInfo
 }
-
