@@ -22,7 +22,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.graphics.Color
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
+import com.akergez.superreader2000.shared.backend.settings.BINARY_DOC_THEME_MODES
+import com.akergez.superreader2000.shared.backend.settings.DEFAULT_READER_FONT_SIZE
+import com.akergez.superreader2000.shared.backend.settings.ReaderFont
 import com.akergez.superreader2000.shared.formats.pdf.TOCEntry
 import com.akergez.superreader2000.shared.ui.IBookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.bookFlippings.CasualCurl
@@ -49,13 +53,26 @@ fun <TBookContent>BookContent(
     getPage: (Int) -> StateFlow<TBookContent>,
     viewerProvider: IViewerProvider<TBookContent>,
     documentTheme: DocThemeMode,
+    availableDocumentThemes: List<DocThemeMode> = BINARY_DOC_THEME_MODES,
     updateDocumentThemeMode: (DocThemeMode) -> Unit,
     updateFlipMode: (FlipMode) -> Unit,
+    readerFont: ReaderFont = ReaderFont.Literata,
+    readerFontSize: Float = DEFAULT_READER_FONT_SIZE,
+    readerTypographyEnabled: Boolean = false,
+    updateReaderFont: (ReaderFont) -> Unit = {},
+    updateReaderFontSize: (Float) -> Unit = {},
     onChapterNavigate: (Int) -> Unit = { page -> onPageChange(page); onToggleMode(ReaderMode.Reading) },
 ) where TBookContent : IBookContent {
     //Log.d("BookContent", "mode = $mode, flipMode = $flipMode, currentPage = $currentPage")
 
     val haptic = LocalHapticFeedback.current
+    val readerBackground = when (documentTheme) {
+        DocThemeMode.AsIs -> Color.White
+        DocThemeMode.Invert -> Color.Black
+        DocThemeMode.SoftLight -> Color(0xFFD6D3CC)
+        DocThemeMode.SoftDark -> Color(0xFF242424)
+        DocThemeMode.MaterialYou -> MaterialTheme.colorScheme.surface
+    }
 
     val showSettingsModal = remember { mutableStateOf(false) }
     // Метка времени последнего закрытия модала — для защиты от ghost-click на macOS:
@@ -116,6 +133,8 @@ fun <TBookContent>BookContent(
 
     Box(
         modifier = Modifier
+            .fillMaxSize()
+            .background(readerBackground)
             .displayCutoutPadding()
             .focusRequester(focusRequester)
             .focusTarget()
@@ -161,15 +180,19 @@ fun <TBookContent>BookContent(
                 if (showSettingsModal.value) {
                     if (showSettingsModal.value) {
                         SettingsModal(
-                            onApplyInversionToggle = {
-                                updateDocumentThemeMode(if (it) DocThemeMode.Invert else DocThemeMode.AsIs)
-                            },
-                            applyInversion = documentTheme == DocThemeMode.Invert,
+                            documentTheme = documentTheme,
+                            availableDocumentThemes = availableDocumentThemes,
+                            onDocumentThemeChange = updateDocumentThemeMode,
                             onVerticalScroll = {
                                 println(">>> onVerticalScroll called: newMode=$it")
                                 updateFlipMode(it)
                             },
                             scrollMode = flipMode,
+                            readerFont = readerFont,
+                            readerFontSize = readerFontSize,
+                            readerTypographyEnabled = readerTypographyEnabled,
+                            onReaderFontChange = updateReaderFont,
+                            onReaderFontSizeChange = updateReaderFontSize,
                             onStateChange = {
                                 if (!it) lastModalCloseMs[0] = System.currentTimeMillis()
                                 showSettingsModal.value = it

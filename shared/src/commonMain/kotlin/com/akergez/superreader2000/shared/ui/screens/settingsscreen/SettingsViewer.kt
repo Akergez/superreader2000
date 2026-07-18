@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalFoundationApi::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 package com.akergez.superreader2000.shared.ui.screens.settingsscreen
 
@@ -18,9 +18,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -29,6 +32,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.akergez.superreader2000.shared.backend.settings.AppThemeMode
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
+import com.akergez.superreader2000.shared.backend.settings.MAX_READER_FONT_SIZE
+import com.akergez.superreader2000.shared.backend.settings.MIN_READER_FONT_SIZE
+import com.akergez.superreader2000.shared.backend.settings.ReaderFont
+import com.akergez.superreader2000.shared.constants.Route
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.components.IconScrollSelector
 import com.akergez.superreader2000.shared.ui.screens.mainscreen.rememberStorageDirectoryPicker
 import org.jetbrains.compose.resources.stringResource
@@ -55,12 +65,20 @@ import superreader2000.shared.generated.resources.app_theme_system
 import superreader2000.shared.generated.resources.documents_theme
 import superreader2000.shared.generated.resources.documents_theme_as_is
 import superreader2000.shared.generated.resources.documents_theme_invert
+import superreader2000.shared.generated.resources.documents_theme_material_you
+import superreader2000.shared.generated.resources.documents_theme_soft_dark
+import superreader2000.shared.generated.resources.documents_theme_soft_light
+import superreader2000.shared.generated.resources.documents_theme_black_on_white
+import superreader2000.shared.generated.resources.documents_theme_white_on_black
+import superreader2000.shared.generated.resources.text_documents_theme
+import superreader2000.shared.generated.resources.fixed_documents_theme
 import superreader2000.shared.generated.resources.error_book_already_exists
 import superreader2000.shared.generated.resources.scrolling_mode
 import superreader2000.shared.generated.resources.settings_group_general
 import superreader2000.shared.generated.resources.settings_group_reading
 import superreader2000.shared.generated.resources.title_storage_address
 import superreader2000.shared.generated.resources.s3_sync_group
+import superreader2000.shared.generated.resources.sync_settings_description
 import superreader2000.shared.generated.resources.s3_endpoint
 import superreader2000.shared.generated.resources.s3_region
 import superreader2000.shared.generated.resources.s3_bucket
@@ -84,6 +102,10 @@ import superreader2000.shared.generated.resources.s3_sync_success
 import superreader2000.shared.generated.resources.s3_sync_error
 import superreader2000.shared.generated.resources.s3_import_error
 import superreader2000.shared.generated.resources.s3_generate_key
+import superreader2000.shared.generated.resources.reader_font
+import superreader2000.shared.generated.resources.reader_font_sans_serif
+import superreader2000.shared.generated.resources.reader_font_serif
+import superreader2000.shared.generated.resources.reader_font_size
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -152,75 +174,82 @@ fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Un
 
             Spacer(Modifier.height(16.dp))
 
-            SettingsGroup(stringResource(Res.string.s3_sync_group))
-            S3Field(stringResource(Res.string.s3_endpoint), settings.s3Config.s3Endpoint) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(s3Endpoint = it))
+            SettingsGroup(stringResource(Res.string.settings_group_reading))
+            ThemeSelector(
+                stringResource(Res.string.text_documents_theme),
+                mapOf(
+                    DocThemeMode.AsIs to stringResource(Res.string.documents_theme_black_on_white),
+                    DocThemeMode.Invert to stringResource(Res.string.documents_theme_white_on_black),
+                    DocThemeMode.SoftLight to stringResource(Res.string.documents_theme_soft_light),
+                    DocThemeMode.SoftDark to stringResource(Res.string.documents_theme_soft_dark),
+                    DocThemeMode.MaterialYou to stringResource(Res.string.documents_theme_material_you),
+                ),
+                settings.textDocThemeMode
+            ) { mode ->
+                settingsViewModel.updateTextDocThemeMode(mode)
             }
-            S3Field(stringResource(Res.string.s3_region), settings.s3Config.s3Region) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(s3Region = it))
-            }
-            S3Field(stringResource(Res.string.s3_bucket), settings.s3Config.s3Bucket) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(s3Bucket = it))
-            }
-            S3Field(stringResource(Res.string.s3_prefix), settings.s3Config.repoId) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(repoId = it))
-            }
-            S3Field(stringResource(Res.string.s3_access_key_id), settings.s3Config.s3AccessKeyId) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(s3AccessKeyId = it))
-            }
-            S3Field(stringResource(Res.string.s3_secret_access_key), settings.s3Config.s3SecretAccessKey, secret = true) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(s3SecretAccessKey = it))
-            }
-            S3Field(stringResource(Res.string.s3_encryption_key), settings.s3Config.encryptionKey, secret = true) {
-                settingsViewModel.updateS3Config(settings.s3Config.copy(encryptionKey = it))
-            }
-            OutlinedButton(
-                onClick = settingsViewModel::generateEncryptionKey,
-                modifier = Modifier.padding(top = 6.dp)
-            ) { Text(stringResource(Res.string.s3_generate_key)) }
-            OutlinedTextField(
-                value = settings.configShareString,
-                onValueChange = settingsViewModel::updateConfigShareString,
-                label = { Text(stringResource(Res.string.s3_config_string)) },
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                minLines = 2,
-                maxLines = 4
+
+            ThemeSelector(
+                stringResource(Res.string.fixed_documents_theme),
+                mapOf(
+                    DocThemeMode.AsIs to stringResource(Res.string.documents_theme_black_on_white),
+                    DocThemeMode.Invert to stringResource(Res.string.documents_theme_white_on_black),
+                ),
+                settings.fixedDocThemeMode,
+                settingsViewModel::updateFixedDocThemeMode,
             )
-            Text(
-                stringResource(Res.string.s3_export_secret_warning),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 4.dp)
+
+            ThemeSelector(
+                stringResource(Res.string.reader_font),
+                mapOf(
+                    ReaderFont.Literata to stringResource(Res.string.reader_font_serif),
+                    ReaderFont.Roboto to stringResource(Res.string.reader_font_sans_serif),
+                ),
+                settings.readerFont,
+                settingsViewModel::updateReaderFont,
             )
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                OutlinedButton(onClick = settingsViewModel::exportS3Config) { Text(stringResource(Res.string.s3_export)) }
+            Text(stringResource(Res.string.reader_font_size, settings.readerFontSize.toInt()))
+            Slider(
+                value = settings.readerFontSize,
+                onValueChange = settingsViewModel::updateReaderFontSize,
+                valueRange = MIN_READER_FONT_SIZE..MAX_READER_FONT_SIZE,
+                steps = (MAX_READER_FONT_SIZE - MIN_READER_FONT_SIZE).toInt() - 1,
+            )
+
+            SettingsOption(stringResource(Res.string.scrolling_mode))
+            IconScrollSelector(
+                onSelect = { settingsViewModel.updateFlipMode(it) },
+                selected = settings.flipMode
+            )
+        }
+    }
+}
+
+@Composable
+fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
+    val viewModel: SettingsViewModel = koinViewModel()
+    val settings by viewModel.settingsState.collectAsState()
+    val busy = settings.syncStatus in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
+
+    Scaffold(bottomBar = bottomBar) { padding ->
+        Column(
+            Modifier.fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(viewModel::saveS3Config, enabled = !busy) { Text(stringResource(Res.string.s3_save)) }
                 Spacer(Modifier.width(8.dp))
-                OutlinedButton(onClick = settingsViewModel::importS3Config) { Text(stringResource(Res.string.s3_import)) }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = settingsViewModel::saveS3Config,
-                    enabled = settings.syncStatus !in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
-                ) { Text(stringResource(Res.string.s3_save)) }
+                Button(viewModel::synchronize, enabled = !busy) { Text(stringResource(Res.string.s3_sync)) }
                 Spacer(Modifier.width(8.dp))
-                Button(
-                    onClick = settingsViewModel::synchronize,
-                    enabled = settings.syncStatus !in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
-                ) { Text(stringResource(Res.string.s3_sync)) }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(
-                    onClick = settingsViewModel::forcePull,
-                    enabled = settings.syncStatus !in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
-                ) { Text(stringResource(Res.string.s3_force_pull)) }
-                if (settings.syncStatus in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)) {
+                OutlinedButton(viewModel::forcePull, enabled = !busy) { Text(stringResource(Res.string.s3_force_pull)) }
+                if (busy) {
                     Spacer(Modifier.width(12.dp))
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
             }
-            val syncMessage = when (settings.syncStatus) {
+            val message = when (settings.syncStatus) {
                 SyncUiStatus.Idle -> ""
                 SyncUiStatus.Running -> stringResource(Res.string.s3_sync_running)
                 SyncUiStatus.ForcePullRunning -> stringResource(Res.string.s3_force_pull_running)
@@ -232,34 +261,58 @@ fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Un
                 SyncUiStatus.ExportWarning -> stringResource(Res.string.s3_export_secret_warning)
                 SyncUiStatus.ImportError -> stringResource(Res.string.s3_import_error)
             }
-            if (syncMessage.isNotBlank()) {
+            if (message.isNotBlank()) {
                 Text(
-                    syncMessage,
+                    message,
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = if (settings.syncStatus in setOf(SyncUiStatus.Error, SyncUiStatus.ValidationError, SyncUiStatus.ImportError, SyncUiStatus.ExportWarning)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            SettingsGroup(stringResource(Res.string.settings_group_reading))
-            ThemeSelector(
-                stringResource(Res.string.documents_theme),
-                mapOf(
-                    DocThemeMode.AsIs to stringResource(Res.string.documents_theme_as_is),
-                    DocThemeMode.Invert to stringResource(Res.string.documents_theme_invert),
-                ),
-                settings.docThemeMode
-            ) { mode ->
-                settingsViewModel.updateDocThemeMode(mode)
+            S3Field(stringResource(Res.string.s3_endpoint), settings.s3Config.s3Endpoint) {
+                viewModel.updateS3Config(settings.s3Config.copy(s3Endpoint = it))
             }
-
-            SettingsOption(stringResource(Res.string.scrolling_mode))
-            IconScrollSelector(
-                onSelect = { settingsViewModel.updateFlipMode(it) },
-                selected = settings.flipMode
+            S3Field(stringResource(Res.string.s3_region), settings.s3Config.s3Region) {
+                viewModel.updateS3Config(settings.s3Config.copy(s3Region = it))
+            }
+            S3Field(stringResource(Res.string.s3_bucket), settings.s3Config.s3Bucket) {
+                viewModel.updateS3Config(settings.s3Config.copy(s3Bucket = it))
+            }
+            S3Field(stringResource(Res.string.s3_prefix), settings.s3Config.repoId) {
+                viewModel.updateS3Config(settings.s3Config.copy(repoId = it))
+            }
+            S3Field(stringResource(Res.string.s3_access_key_id), settings.s3Config.s3AccessKeyId) {
+                viewModel.updateS3Config(settings.s3Config.copy(s3AccessKeyId = it))
+            }
+            S3Field(stringResource(Res.string.s3_secret_access_key), settings.s3Config.s3SecretAccessKey, true) {
+                viewModel.updateS3Config(settings.s3Config.copy(s3SecretAccessKey = it))
+            }
+            S3Field(stringResource(Res.string.s3_encryption_key), settings.s3Config.encryptionKey, true) {
+                viewModel.updateS3Config(settings.s3Config.copy(encryptionKey = it))
+            }
+            OutlinedButton(viewModel::generateEncryptionKey, Modifier.padding(top = 6.dp)) {
+                Text(stringResource(Res.string.s3_generate_key))
+            }
+            OutlinedTextField(
+                value = settings.configShareString,
+                onValueChange = viewModel::updateConfigShareString,
+                label = { Text(stringResource(Res.string.s3_config_string)) },
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                minLines = 2,
+                maxLines = 4,
             )
+            Text(
+                stringResource(Res.string.s3_export_secret_warning),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                OutlinedButton(viewModel::exportS3Config) { Text(stringResource(Res.string.s3_export)) }
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(viewModel::importS3Config) { Text(stringResource(Res.string.s3_import)) }
+            }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }

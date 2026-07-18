@@ -28,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.akergez.superreader2000.shared.ui.IBookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookPage
@@ -77,6 +79,10 @@ fun <TBookContent> PageCarousel(
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                ),
                 title = {
                     Text(
                         title,
@@ -271,8 +277,23 @@ private fun <TBookContent : IBookContent> SpreadItem(
 ) {
     if (isLandscape) {
         val rightPage = (leftPage + 1).takeIf { it < totalPagesNotNull }
+        val leftPageState = remember(leftPage, bookContent) { bookContent(leftPage) }
+        val leftPageContent by leftPageState.collectAsState()
+        val density = LocalDensity.current
+        val nativeW = leftPageContent.nativeWidth
+        val nativeH = leftPageContent.nativeHeight
+        val spreadModifier = if (nativeW > 0 && nativeH > 0) {
+            val scale = minOf(availW.toFloat() / 2f / nativeW, availH.toFloat() / nativeH)
+            val pageWidth = with(density) { (nativeW * scale).toDp() }
+            val pageHeight = with(density) { (nativeH * scale).toDp() }
+            Modifier
+                .size(pageWidth * 2, pageHeight)
+                .shadow(8.dp, RoundedCornerShape(8.dp), clip = true)
+        } else {
+            Modifier.fillMaxSize()
+        }
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = spreadModifier,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -286,6 +307,8 @@ private fun <TBookContent : IBookContent> SpreadItem(
                     bookContent = bookContent,
                     applyInversion = applyInversion,
                     viewerProvider = viewerProvider,
+                    shape = RoundedCornerShape(0.dp),
+                    elevation = 0.dp,
                 )
             }
             if (rightPage != null) {
@@ -300,8 +323,12 @@ private fun <TBookContent : IBookContent> SpreadItem(
                         bookContent = bookContent,
                         applyInversion = applyInversion,
                         viewerProvider = viewerProvider,
+                        shape = RoundedCornerShape(0.dp),
+                        elevation = 0.dp,
                     )
                 }
+            } else {
+                Box(modifier = Modifier.weight(1f).fillMaxHeight())
             }
         }
     } else {
@@ -328,6 +355,8 @@ private fun <TBookContent : IBookContent> CarouselPageSlot(
     bookContent: (Int) -> StateFlow<TBookContent>,
     applyInversion: Boolean,
     viewerProvider: IViewerProvider<TBookContent>,
+    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
+    elevation: Dp = 8.dp,
 ) {
     val pageContent by bookContent(page).collectAsState()
     val nativeW = pageContent.nativeWidth
@@ -343,7 +372,7 @@ private fun <TBookContent : IBookContent> CarouselPageSlot(
         Box(
             modifier = Modifier
                 .size(scaledWDp, scaledHDp)
-                .shadow(8.dp, RoundedCornerShape(8.dp), clip = true)
+                .shadow(elevation, shape, clip = true)
         ) {
             BookPage(
                 bookContent = bookContent(page),
@@ -355,8 +384,8 @@ private fun <TBookContent : IBookContent> CarouselPageSlot(
         Box(
             modifier = Modifier
                 .fillMaxSize(0.9f)
-                .shadow(8.dp, RoundedCornerShape(8.dp))
-                .clip(RoundedCornerShape(8.dp))
+                .shadow(elevation, shape)
+                .clip(shape)
                 .background(MaterialTheme.colorScheme.surface)
         )
     }

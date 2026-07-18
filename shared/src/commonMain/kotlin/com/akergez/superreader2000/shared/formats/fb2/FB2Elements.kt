@@ -10,9 +10,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+
+const val TITLE_CONTENT_TAG = "FB2_TITLE"
 
 abstract class FB2Element {
     protected val text: AnnotatedString
@@ -57,6 +60,22 @@ class FB2BoldText : FB2Element {
     }
 }
 
+class FB2TitleText : FB2Element {
+    constructor(text: String) : super(text)
+    constructor(annotatedString: AnnotatedString) : super(annotatedString)
+    constructor(element: FB2Element) : super(element)
+
+    override fun toStyledString(): AnnotatedString = buildAnnotatedString {
+        pushStringAnnotation(TITLE_CONTENT_TAG, "title")
+        withStyle(ParagraphStyle(textAlign = TextAlign.Center)) {
+            withStyle(SpanStyle(fontSize = 1.4.em, fontWeight = FontWeight.SemiBold)) {
+                append(text)
+            }
+        }
+        pop()
+    }
+}
+
 class FB2SubtitleText : FB2Element {
     constructor(text: String) : super(text)
     constructor(annotatedString: AnnotatedString) : super(annotatedString)
@@ -65,9 +84,11 @@ class FB2SubtitleText : FB2Element {
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
             withStyle(
-                ParagraphStyle(textIndent = TextIndent(firstLine = 30.sp))
+                ParagraphStyle(textAlign = TextAlign.Center)
             ) {
-                append(FB2BoldText(text).toStyledString())
+                withStyle(SpanStyle(fontSize = 1.15.em, fontWeight = FontWeight.Medium)) {
+                    append(text)
+                }
             }
         }
     }
@@ -174,9 +195,9 @@ class FB2Paragraph : FB2Element {
 
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            append('\n')
-            append("\t\t\t\t") // 4 таба для отступа
+            append("\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0")
             append(text)
+            append('\n')
         }
     }
 }

@@ -5,6 +5,7 @@ import com.akergez.superreader2000.shared.backend.BookManager
 import com.akergez.superreader2000.shared.backend.settings.AppThemeMode
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
+import com.akergez.superreader2000.shared.backend.settings.ReaderFont
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.FlipMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,14 +29,21 @@ class SettingsViewModel(
     private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
 
     init {
-        val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
+        val textDocThemeMode = settingsManager.getTextDocumentsTheme(DocThemeMode.AsIs)
+        val fixedDocThemeMode = settingsManager.getFixedDocumentsTheme(DocThemeMode.AsIs)
         val pdfFlipMode = settingsManager.getFlipMode()
         val storageAddress = extractBeautifulStoragePath(settingsManager.getStoragePath())
         val appThemeMode = settingsManager.getAppTheme(AppThemeMode.System)
         _settingsState.value =
             SettingsScreenState(
-                storageAddress, docThemeMode, pdfFlipMode, appThemeMode,
-                TresseConfig(storageType = "s3", repoId = "superreader")
+                storageAddress = storageAddress,
+                textDocThemeMode = textDocThemeMode,
+                fixedDocThemeMode = fixedDocThemeMode,
+                flipMode = pdfFlipMode,
+                appThemeMode = appThemeMode,
+                readerFont = settingsManager.getReaderFont(),
+                readerFontSize = settingsManager.getReaderFontSize(),
+                s3Config = TresseConfig(storageType = "s3", repoId = "superreader")
             )
         if (settingsManager.getStoragePath() != null) {
             uiScope.launch {
@@ -46,14 +54,31 @@ class SettingsViewModel(
         }
     }
 
-    fun updateDocThemeMode(docThemeMode: DocThemeMode) {
-        settingsManager.setDocumentsTheme(docThemeMode)
-        _settingsState.value = _settingsState.value.copy(docThemeMode = docThemeMode)
+    fun updateTextDocThemeMode(docThemeMode: DocThemeMode) {
+        settingsManager.setTextDocumentsTheme(docThemeMode)
+        _settingsState.value = _settingsState.value.copy(textDocThemeMode = docThemeMode)
     }
+
+    fun updateFixedDocThemeMode(docThemeMode: DocThemeMode) {
+        settingsManager.setFixedDocumentsTheme(docThemeMode)
+        _settingsState.value = _settingsState.value.copy(fixedDocThemeMode = docThemeMode)
+    }
+
+    fun updateDocThemeMode(docThemeMode: DocThemeMode) = updateFixedDocThemeMode(docThemeMode)
 
     fun updateFlipMode(pdfFlipMode: FlipMode) {
         settingsManager.setFlipMode(pdfFlipMode)
         _settingsState.value = _settingsState.value.copy(flipMode = pdfFlipMode)
+    }
+
+    fun updateReaderFont(font: ReaderFont) {
+        settingsManager.setReaderFont(font)
+        _settingsState.value = _settingsState.value.copy(readerFont = font)
+    }
+
+    fun updateReaderFontSize(size: Float) {
+        settingsManager.setReaderFontSize(size)
+        _settingsState.value = _settingsState.value.copy(readerFontSize = size)
     }
 
     fun updateStorageAddress(storageAddress: String) {

@@ -26,7 +26,7 @@ class PdfScreenViewModel(
     var currentPage: Int = 0
 
     init {
-        val docThemeMode = settingsManager.getDocumentsTheme(DocThemeMode.AsIs)
+        val docThemeMode = settingsManager.getFixedDocumentsTheme(DocThemeMode.AsIs)
         val pdfFlipMode = settingsManager.getFlipMode()
         _pdfScreenState.value = PdfScreenState(
             pdfBookDomainModel.readProgress().pageIndex,
@@ -61,7 +61,7 @@ class PdfScreenViewModel(
     }
 
     fun updateDocumentThemeMode(docThemeMode: DocThemeMode) {
-        settingsManager.setDocumentsTheme(docThemeMode)
+        settingsManager.setFixedDocumentsTheme(docThemeMode)
         _pdfScreenState.update { it.copy(docThemeMode = docThemeMode) }
     }
 

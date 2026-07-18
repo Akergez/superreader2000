@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.akergez.superreader2000.shared.ui.DrawCommand
 import com.akergez.superreader2000.shared.ui.Fb2BookContent
+import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 import org.jetbrains.compose.resources.stringResource
 import superreader2000.shared.generated.resources.Res
 import superreader2000.shared.generated.resources.loading
@@ -32,10 +34,15 @@ import superreader2000.shared.generated.resources.loading
 fun Fb2Viewer(
     content: Fb2BookContent?,
     modifier: Modifier = Modifier,
-    applyInversion: Boolean,
+    documentTheme: DocThemeMode,
 ) {
-    val backgroundColor = if (applyInversion) Color.Black else Color.White
-    val textColor = if (applyInversion) Color.White else Color.Black
+    val (backgroundColor, textColor) = when (documentTheme) {
+        DocThemeMode.AsIs -> Color.White to Color.Black
+        DocThemeMode.Invert -> Color.Black to Color.White
+        DocThemeMode.SoftLight -> Color(0xFFD6D3CC) to Color(0xFF353535)
+        DocThemeMode.SoftDark -> Color(0xFF242424) to Color(0xFFD0D0D0)
+        DocThemeMode.MaterialYou -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
+    }
 
     val baseModifier = modifier
         .background(backgroundColor)

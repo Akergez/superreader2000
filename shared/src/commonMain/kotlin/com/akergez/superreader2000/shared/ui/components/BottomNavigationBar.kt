@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -22,6 +23,7 @@ import org.jetbrains.compose.resources.stringResource
 import superreader2000.shared.generated.resources.Res
 import superreader2000.shared.generated.resources.title_home
 import superreader2000.shared.generated.resources.title_settings
+import superreader2000.shared.generated.resources.title_sync
 
 @Composable
 fun BottomNavigationBar(
@@ -29,6 +31,16 @@ fun BottomNavigationBar(
     screen: Screen
 ) {
     NavigationBar {
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.Sync, contentDescription = null) },
+            label = { Text(stringResource(Res.string.title_sync)) },
+            selected = screen == Screen.SYNC_SCREEN,
+            onClick = {
+                if (navController.currentDestination?.route != Route.SyncSettings) {
+                    navController.navigate(Route.SyncSettings) { launchSingleTop = true }
+                }
+            }
+        )
         NavigationBarItem(
             icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text(stringResource(Res.string.title_home)) },
@@ -91,6 +103,17 @@ fun AppNavigationRail(
             },
             icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text(stringResource(Res.string.title_home)) }
+        )
+        Spacer(Modifier.height(8.dp))
+        NavigationRailItem(
+            selected = screen == Screen.SYNC_SCREEN,
+            onClick = {
+                if (navController.currentDestination?.route != Route.SyncSettings) {
+                    navController.navigate(Route.SyncSettings) { launchSingleTop = true }
+                }
+            },
+            icon = { Icon(Icons.Filled.Sync, contentDescription = null) },
+            label = { Text(stringResource(Res.string.title_sync)) }
         )
         Spacer(Modifier.height(8.dp))
         NavigationRailItem(

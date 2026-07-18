@@ -16,6 +16,15 @@ val localProperties = Properties().apply {
     }
 }
 
+val applicationVersionName = providers.environmentVariable("APP_VERSION")
+    .orElse(providers.environmentVariable("CI_COMMIT_TAG"))
+    .orElse(providers.environmentVariable("CI_COMMIT_SHORT_SHA"))
+    .orElse("1.0")
+
+val applicationVersionCode = providers.environmentVariable("CI_PIPELINE_IID")
+    .map { it.toIntOrNull()?.coerceIn(1, 2_100_000_000) ?: 1 }
+    .orElse(1)
+
 kotlin {
     jvmToolchain(21)
 }
@@ -44,8 +53,8 @@ android {
         applicationId = "com.akergez.superreader2000"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = applicationVersionCode.get()
+        versionName = applicationVersionName.get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

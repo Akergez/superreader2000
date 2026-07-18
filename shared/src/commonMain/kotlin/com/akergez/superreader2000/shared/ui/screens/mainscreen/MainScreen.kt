@@ -42,6 +42,7 @@ import com.akergez.superreader2000.shared.ui.screens.Screen
 import com.akergez.superreader2000.shared.ui.screens.homescreen.HomeScreen
 import com.akergez.superreader2000.shared.formats.abstractions.IReaderScreenProvider
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SettingsScreen
+import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SyncSettingsScreen
 import com.akergez.superreader2000.shared.ui.theme.AppTheme
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
@@ -83,24 +84,33 @@ fun MainScreen(
     val currentRoute = currentBackStackEntry?.destination?.route
     val isReaderScreen = currentRoute != null &&
         currentRoute != Route.Main &&
-        currentRoute != Route.Settings
+        currentRoute != Route.Settings &&
+        currentRoute != Route.SyncSettings
     ReaderImmersiveMode(isReaderScreen)
     val currentScreen = when (currentRoute) {
         Route.Main -> Screen.HOME_SCREEN
         Route.Settings -> Screen.SETTINGS_SCREEN
+        Route.SyncSettings -> Screen.SYNC_SCREEN
         else -> Screen.HOME_SCREEN
     }
     val currentTheme by settingsManager.appThemeModeFlow.collectAsState()
-    val readerBackground = when (settingsManager.getDocumentsTheme(DocThemeMode.AsIs)) {
+    val readerBackground = when (settingsManager.getFixedDocumentsTheme(DocThemeMode.AsIs)) {
         DocThemeMode.Invert -> Color.Black
         DocThemeMode.AsIs -> Color.White
+        DocThemeMode.SoftLight -> Color(0xFFD8D6D1)
+        DocThemeMode.SoftDark -> Color(0xFF242424)
+        DocThemeMode.MaterialYou -> Color.Transparent
     }
 
     AppTheme(
         darkTheme = ((currentTheme == AppThemeMode.System && isSystemInDarkTheme()) || currentTheme == AppThemeMode.Dark)
     ) {
         Surface(
-            color = if (isReaderScreen) readerBackground else MaterialTheme.colorScheme.background
+            color = if (isReaderScreen && readerBackground != Color.Transparent) {
+                readerBackground
+            } else {
+                MaterialTheme.colorScheme.background
+            }
         ) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val density = LocalDensity.current
@@ -108,7 +118,7 @@ fun MainScreen(
                 val heightDp = with(density) { constraints.maxHeight.toDp() }
                 val isLandscape = widthDp > heightDp
                 val useRail = isLandscape && widthDp >= 600.dp
-                val showRail = useRail && (currentRoute == Route.Main || currentRoute == Route.Settings)
+                val showRail = useRail && (currentRoute == Route.Main || currentRoute == Route.Settings || currentRoute == Route.SyncSettings)
 
                 Row(Modifier.fillMaxSize()) {
                     if (showRail) {
@@ -148,6 +158,13 @@ fun MainScreen(
                                             Screen.SETTINGS_SCREEN
                                         )
                                     }
+                                }
+                            )
+                        }
+                        composable(Route.SyncSettings) {
+                            SyncSettingsScreen(
+                                bottomBar = {
+                                    if (!useRail) BottomNavigationBar(navController, Screen.SYNC_SCREEN)
                                 }
                             )
                         }

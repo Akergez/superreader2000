@@ -10,6 +10,7 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
@@ -54,9 +55,10 @@ data class RenderConfig(
     val canvasHeight: Int = pageHeight,
     val fontSize: TextUnit = 18.sp,
     val fontFamily: FontFamily = FontFamily.SansSerif,
-    val lineHeightMultiplier: Float = 1.4f,
+    val lineHeightMultiplier: Float = 1.55f,
     /** Горизонтальный отступ страницы в пикселях (density-aware, задаётся из Fb2ReaderScreen). */
     val paddingH: Float = 32f,
+    val paddingV: Float = 32f,
     /** Плотность экрана (LocalDensity.current.density), используется для перевода px → sp в Placeholder. */
     val density: Float = 1f,
 ) {
@@ -320,6 +322,7 @@ class Fb2RenderHelper constructor(
                 lineHeight = config.fontSize * config.lineHeightMultiplier,
                 textAlign  = TextAlign.Justify,
                 lineBreak  = LineBreak.Paragraph,
+                hyphens    = Hyphens.Auto,
             )
             val w = config.pageWidth.coerceAtLeast(1)
             val h = config.pageHeight.coerceAtLeast(1)
@@ -394,9 +397,13 @@ class Fb2RenderHelper constructor(
                         pageStart = charOffset,
                         proposedEnd = proposedEnd,
                     )
-                    val pageEndChar = alignPageEndToWordBoundary(
+                    val wordAlignedEnd = alignPageEndToWordBoundary(
                         pageStart = charOffset,
                         proposedEnd = inlineAlignedEnd,
+                    )
+                    val pageEndChar = alignPageEndToTitle(
+                        pageStart = charOffset,
+                        proposedEnd = wordAlignedEnd,
                     )
                     if (pageEndChar <= charOffset) {
                         firstLineOnPage = line
@@ -525,13 +532,14 @@ class Fb2RenderHelper constructor(
             DrawCommand.DrawText(
                 text          = pageText,
                 x             = config.paddingH,
-                y             = PADDING_V,
+                y             = config.paddingV,
                 style         = TextStyle(
                     fontSize   = config.fontSize,
                     fontFamily = config.fontFamily,
                     lineHeight = config.fontSize * config.lineHeightMultiplier,
                     textAlign  = TextAlign.Justify,
                     lineBreak  = LineBreak.Paragraph,
+                    hyphens    = Hyphens.Auto,
                 ),
                 textAreaWidth = config.pageWidth.toFloat(),
                 placeholders  = placeholders,
@@ -550,7 +558,7 @@ class Fb2RenderHelper constructor(
                 DrawCommand.DrawInlineImage(
                     imageId = ann.item,
                     x       = config.paddingH + rect.left,
-                    y       = PADDING_V + rect.top,
+                    y       = config.paddingV + rect.top,
                     width   = rect.width.coerceAtLeast(1f),
                     height  = rect.height.coerceAtLeast(1f),
                 )
@@ -636,6 +644,24 @@ class Fb2RenderHelper constructor(
         return if (wordStart > pageStart) wordStart else proposedEnd
     }
 
+    /**
+     * Заголовок не должен оставаться последним содержимым страницы. Если после
+     * него не поместилась ни одна строка текста, переносим заголовок целиком.
+     */
+    private fun alignPageEndToTitle(pageStart: Int, proposedEnd: Int): Int {
+        if (proposedEnd <= pageStart || proposedEnd > fullText.length) return proposedEnd
+        val title = fullText
+            .getStringAnnotations(TITLE_CONTENT_TAG, pageStart, proposedEnd)
+            .lastOrNull { it.start >= pageStart && it.end <= proposedEnd }
+            ?: return proposedEnd
+        if (title.start <= pageStart) return proposedEnd
+
+        val contentBeforeTitle = fullText.text.substring(pageStart, title.start)
+        if (contentBeforeTitle.isBlank()) return proposedEnd
+        val contentAfterTitle = fullText.text.substring(title.end, proposedEnd)
+        return if (contentAfterTitle.isBlank()) title.start else proposedEnd
+    }
+
     private fun Char.isWordPart(): Boolean =
         isLetterOrDigit() || this == '\'' || this == '’' || this == '-' ||
             this == '‐' || this == '‑' || this == '\u00ad'
@@ -719,6 +745,7 @@ class Fb2RenderHelper constructor(
                 lineHeight = config.fontSize * config.lineHeightMultiplier,
                 textAlign = TextAlign.Justify,
                 lineBreak = LineBreak.Paragraph,
+                hyphens = Hyphens.Auto,
             )
             val placeholders = buildChunkPlaceholders(pageText, config)
             val materializeMark = TimeSource.Monotonic.markNow()
@@ -922,7 +949,7 @@ class Fb2RenderHelper constructor(
                         "code"       -> extracted.forEach { elements += FB2CodeText(it) }
                         "title" -> {
                             elements += FB2Text("\n")
-                            extracted.forEach { elements += FB2BoldText(it) }
+                            elements += FB2TitleText(child.textContent.trim())
                             elements += FB2Text("\n")
                             if (extracted.isNotEmpty()) {
                                 tocEntries += TOCEntry(
@@ -934,17 +961,14 @@ class Fb2RenderHelper constructor(
                         }
                         "subtitle" -> {
                             elements += FB2Text("\n")
-                            elements += FB2SubtitleText(
-                                combineAnnotatedStrings(extracted.map { it.toStyledString() })
-                            )
+                            elements += FB2SubtitleText(child.textContent.trim())
                             elements += FB2Text("\n")
                         }
                         "p" -> {
                             if (extracted.isNotEmpty()) {
-                                elements += FB2Paragraph(extracted[0])
-                                for (index in 1 until extracted.size) {
-                                    elements += FB2Text(extracted[index])
-                                }
+                                elements += FB2Paragraph(
+                                    combineAnnotatedStrings(extracted.map { it.toStyledString() })
+                                )
                             }
                         }
                         "a" -> {
@@ -987,10 +1011,14 @@ class Fb2RenderHelper constructor(
     }
 
     private fun combineAnnotatedStrings(list: List<AnnotatedString>): AnnotatedString =
-        buildAnnotatedString { list.forEach { append(it) } }
+        buildAnnotatedString {
+            list.filter { it.text.isNotBlank() }.forEachIndexed { index, item ->
+                if (index > 0) append(' ')
+                append(item)
+            }
+        }
 
     companion object {
-        private const val PADDING_V          = 32f
         private const val DEBOUNCE_MS        = 300L
         private const val INLINE_CONTENT_TAG = "androidx.compose.foundation.text.inlineContent"
         private const val PAGINATION_BATCH_SIZE = 32

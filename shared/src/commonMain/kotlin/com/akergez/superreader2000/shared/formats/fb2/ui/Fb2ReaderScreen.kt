@@ -16,9 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
+import com.akergez.superreader2000.shared.backend.settings.ALL_DOC_THEME_MODES
+import com.akergez.superreader2000.shared.backend.settings.ReaderFont
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
 import com.akergez.superreader2000.shared.formats.fb2.Fb2BookDomainModel
 import com.akergez.superreader2000.shared.formats.fb2.Fb2Progress
@@ -41,6 +45,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import org.jetbrains.compose.resources.Font
+import superreader2000.shared.generated.resources.Res
+import superreader2000.shared.generated.resources.literata_light
+import superreader2000.shared.generated.resources.roboto_variable
 
 @Composable
 fun Fb2ReaderScreen(
@@ -48,6 +56,8 @@ fun Fb2ReaderScreen(
     settingsManager: ISettingsManager = koinInject(),
 ) {
     val textMeasurer = rememberTextMeasurer()
+    val literataFamily = FontFamily(Font(Res.font.literata_light))
+    val robotoFamily = FontFamily(Font(Res.font.roboto_variable))
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val displayCutout = WindowInsets.displayCutout
@@ -68,6 +78,11 @@ fun Fb2ReaderScreen(
     var isRestoringLayout by remember(book) { mutableStateOf(true) }
     var isPageControlSynchronized by remember(book) { mutableStateOf(false) }
     var mode by remember(book) { mutableStateOf(ReaderMode.Reading) }
+    var readerFont by remember(book) { mutableStateOf(settingsManager.getReaderFont()) }
+    var readerFontSize by remember(book) { mutableStateOf(settingsManager.getReaderFontSize()) }
+    var documentTheme by remember(book) {
+        mutableStateOf(settingsManager.getTextDocumentsTheme(DocThemeMode.AsIs))
+    }
 
     var componentWidth by remember { mutableIntStateOf(0) }
     var componentHeight by remember { mutableIntStateOf(0) }
@@ -128,25 +143,34 @@ fun Fb2ReaderScreen(
         cutoutTop,
         cutoutRight,
         cutoutBottom,
+        readerFont,
+        readerFontSize,
     ) {
         if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
-        val paddingH  = density.density * 32f
-        val paddingBottom = (density.density * 24f).toInt()
-
         val availableWidth = (componentWidth - cutoutLeft - cutoutRight).coerceAtLeast(1)
         val availableHeight = (componentHeight - cutoutTop - cutoutBottom).coerceAtLeast(1)
+        val shortestSideDp = minOf(availableWidth, availableHeight) / density.density
+        val isTablet = shortestSideDp >= 600f
+        val paddingH = density.density * if (isTablet) 44f else 24f
+        val paddingV = density.density * if (isTablet) 36f else 20f
         val isLandscape = availableWidth.toFloat() / availableHeight > 4f / 3f
         val pagesPerSpread = if (isLandscape) 2 else 1
         val pageCanvasWidth = availableWidth / pagesPerSpread
 
         val newConfig = RenderConfig(
             pageWidth    = (pageCanvasWidth - (paddingH * 2).toInt()).coerceAtLeast(1),
-            pageHeight   = (availableHeight - paddingBottom).coerceAtLeast(1),
+            pageHeight   = (availableHeight - (paddingV * 2).toInt()).coerceAtLeast(1),
             canvasWidth  = pageCanvasWidth,
             canvasHeight = availableHeight,
             paddingH     = paddingH,
+            paddingV     = paddingV,
             density      = density.density,
+            fontSize     = readerFontSize.sp,
+            fontFamily   = when (readerFont) {
+                ReaderFont.Literata -> literataFamily
+                ReaderFont.Roboto -> robotoFamily
+            },
         )
 
         val helper = fb2RenderHelper.value
@@ -310,13 +334,28 @@ fun Fb2ReaderScreen(
                 onToggleMode            = { newMode -> mode = newMode },
                 flipMode                = curlMode,
                 getPage                 = pageProvider,
-                documentTheme           = settingsManager.getDocumentsTheme(DocThemeMode.AsIs),
-                updateDocumentThemeMode = { settingsManager.setDocumentsTheme(it) },
+                documentTheme           = documentTheme,
+                availableDocumentThemes = ALL_DOC_THEME_MODES,
+                updateDocumentThemeMode = {
+                    documentTheme = it
+                    settingsManager.setTextDocumentsTheme(it)
+                },
                 updateFlipMode          = { curlMode = it; settingsManager.setFlipMode(it) },
+                readerFont              = readerFont,
+                readerFontSize          = readerFontSize,
+                readerTypographyEnabled = true,
+                updateReaderFont        = {
+                    readerFont = it
+                    settingsManager.setReaderFont(it)
+                },
+                updateReaderFontSize    = {
+                    readerFontSize = it
+                    settingsManager.setReaderFontSize(it)
+                },
                 onCarouselBack          = { mode = ReaderMode.Reading },
                 title                   = book.getMetadata().title,
                 tableOfContent          = helper.tableOfContents,
-                viewerProvider          = Fb2ViewerProvider(),
+                viewerProvider          = Fb2ViewerProvider(documentTheme),
                 onChapterNavigate       = onChapterNavigate,
             )
         } else {

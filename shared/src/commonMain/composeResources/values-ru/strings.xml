@@ -1,4 +1,8 @@
 <resources>
+    <string name="reader_font">Шрифт книги</string>
+    <string name="reader_font_serif">Literata Light</string>
+    <string name="reader_font_sans_serif">Roboto</string>
+    <string name="reader_font_size">Размер шрифта: %1$d</string>
     <string name="app_name">Супер Читалка 2000</string>
     <string name="title_home">Дом</string>
     <string name="title_dashboard">Хз что</string>

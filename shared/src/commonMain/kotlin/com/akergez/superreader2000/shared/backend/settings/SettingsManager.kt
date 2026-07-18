@@ -19,8 +19,20 @@ enum class AppThemeMode {
  */
 enum class DocThemeMode {
     AsIs,
-    Invert
+    Invert,
+    SoftLight,
+    SoftDark,
+    MaterialYou,
 }
+
+val ALL_DOC_THEME_MODES = DocThemeMode.entries.toList()
+val BINARY_DOC_THEME_MODES = listOf(DocThemeMode.AsIs, DocThemeMode.Invert)
+
+enum class ReaderFont { Literata, Roboto }
+
+const val DEFAULT_READER_FONT_SIZE = 18f
+const val MIN_READER_FONT_SIZE = 12f
+const val MAX_READER_FONT_SIZE = 32f
 
 interface ISettingsManager {
     val appThemeModeFlow: StateFlow<AppThemeMode>
@@ -28,8 +40,16 @@ interface ISettingsManager {
      fun setAppTheme(theme: AppThemeMode)
      fun getDocumentsTheme(defaultTheme: DocThemeMode = DocThemeMode.AsIs): DocThemeMode
      fun setDocumentsTheme(theme: DocThemeMode)
+     fun getTextDocumentsTheme(defaultTheme: DocThemeMode = DocThemeMode.AsIs): DocThemeMode
+     fun setTextDocumentsTheme(theme: DocThemeMode)
+     fun getFixedDocumentsTheme(defaultTheme: DocThemeMode = DocThemeMode.AsIs): DocThemeMode
+     fun setFixedDocumentsTheme(theme: DocThemeMode)
      fun getFlipMode(): FlipMode
      fun setFlipMode(mode: FlipMode)
+     fun getReaderFont(): ReaderFont
+     fun setReaderFont(font: ReaderFont)
+     fun getReaderFontSize(): Float
+     fun setReaderFontSize(size: Float)
      fun getStoragePath(): String?
      fun setStoragePath(path: String)
      fun clearStoragePath()
@@ -68,6 +88,27 @@ class DefaultSettingsManager(
         store.putString("doc_theme", theme.name)
     }
 
+    private fun getStoredTheme(key: String, defaultTheme: DocThemeMode): DocThemeMode {
+        val legacyTheme = store.getString("doc_theme", defaultTheme.name)
+        return runCatching {
+            DocThemeMode.valueOf(store.getString(key, legacyTheme))
+        }.getOrDefault(defaultTheme)
+    }
+
+    override fun getTextDocumentsTheme(defaultTheme: DocThemeMode) =
+        getStoredTheme("text_doc_theme", defaultTheme)
+
+    override fun setTextDocumentsTheme(theme: DocThemeMode) =
+        store.putString("text_doc_theme", theme.name)
+
+    override fun getFixedDocumentsTheme(defaultTheme: DocThemeMode): DocThemeMode {
+        val theme = getStoredTheme("fixed_doc_theme", defaultTheme)
+        return if (theme in BINARY_DOC_THEME_MODES) theme else defaultTheme
+    }
+
+    override fun setFixedDocumentsTheme(theme: DocThemeMode) =
+        store.putString("fixed_doc_theme", theme.takeIf { it in BINARY_DOC_THEME_MODES }?.name ?: DocThemeMode.AsIs.name)
+
     override  fun getFlipMode(): FlipMode {
         val modeName = store.getString("pdf_flip_mode", FlipMode.PagingCurl.name)
         return try {
@@ -79,6 +120,28 @@ class DefaultSettingsManager(
 
     override  fun setFlipMode(mode: FlipMode) {
         store.putString("pdf_flip_mode", mode.name)
+    }
+
+    override fun getReaderFont(): ReaderFont {
+        val storedValue = store.getString("reader_font", ReaderFont.Literata.name)
+        return when (storedValue) {
+            "Serif" -> ReaderFont.Literata
+            "SansSerif" -> ReaderFont.Roboto
+            else -> runCatching { ReaderFont.valueOf(storedValue) }
+                .getOrDefault(ReaderFont.Literata)
+        }
+    }
+
+    override fun setReaderFont(font: ReaderFont) = store.putString("reader_font", font.name)
+
+    override fun getReaderFontSize(): Float = store
+        .getString("reader_font_size", DEFAULT_READER_FONT_SIZE.toString())
+        .toFloatOrNull()
+        ?.coerceIn(MIN_READER_FONT_SIZE, MAX_READER_FONT_SIZE)
+        ?: DEFAULT_READER_FONT_SIZE
+
+    override fun setReaderFontSize(size: Float) {
+        store.putString("reader_font_size", size.coerceIn(MIN_READER_FONT_SIZE, MAX_READER_FONT_SIZE).toString())
     }
 
     override  fun getStoragePath(): String? {

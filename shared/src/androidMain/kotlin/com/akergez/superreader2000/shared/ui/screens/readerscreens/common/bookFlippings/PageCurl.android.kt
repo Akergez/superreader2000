@@ -1,7 +1,11 @@
 package com.akergez.superreader2000.shared.ui.screens.readerscreens.common.bookFlippings
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,14 +38,7 @@ actual fun <TBookContent : IBookContent> PageCurl(
     modifier: Modifier,
     zoomState: (ZoomState) -> Unit
 ) {
-
-    //Log.d("BookContent", "currentPage = $currentPage")
-    val pagerState = remember { PageCurlState(initialCurrent = currentPage, initialMax = 0) }
     val totalPagesState by totalPages.collectAsState()
-    LaunchedEffect(pagerState.current) {
-        onPageChange(pagerState.current)
-    }
-
     val zoomS = rememberZoomState()
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
@@ -49,23 +46,64 @@ actual fun <TBookContent : IBookContent> PageCurl(
         containerColor = if (documentTheme == DocThemeMode.Invert) Color.Black else Color.White,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) {
-        totalPagesState?.takeIf { it > 0 }?.let {
-            eu.wewox.pagecurl.page.PageCurl(
-                count = it,
-                state = pagerState,
-                config = rememberPageCurlConfig(
-                    backPageContentAlpha = 0.5f, backPageColor = Color.Black
-                ),
-                modifier = modifier
-                    .fillMaxSize()
-                    .zoomable(zoomS)
-            ) { index ->
-                BookPage(
-                    bookContent = getPage(index),
-                    applyInversion = documentTheme == DocThemeMode.Invert,
-                    modifier = modifier,
-                    viewerProvider = viewerProvider
-                )
+        totalPagesState?.takeIf { it > 0 }?.let { pageCount ->
+            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+                val isLandscape = constraints.maxWidth.toFloat() / constraints.maxHeight > 4f / 3f
+                val pagesPerSpread = if (isLandscape) 2 else 1
+                val spreadCount = (pageCount + pagesPerSpread - 1) / pagesPerSpread
+                val initialSpread = (currentPage / pagesPerSpread).coerceIn(0, spreadCount - 1)
+                val pagerState = remember(pagesPerSpread) {
+                    PageCurlState(initialCurrent = initialSpread, initialMax = 0)
+                }
+
+                LaunchedEffect(pagerState.current, pagesPerSpread) {
+                    onPageChange(pagerState.current * pagesPerSpread)
+                }
+
+                eu.wewox.pagecurl.page.PageCurl(
+                    count = spreadCount,
+                    state = pagerState,
+                    config = rememberPageCurlConfig(
+                        backPageContentAlpha = 0.5f, backPageColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zoomable(zoomS)
+                ) { spreadIndex ->
+                    val leftPage = spreadIndex * pagesPerSpread
+                    if (isLandscape) {
+                        Row(modifier = Modifier.fillMaxSize()) {
+                            val leftState = remember(leftPage, getPage) { getPage(leftPage) }
+                            BookPage(
+                                bookContent = leftState,
+                                applyInversion = documentTheme == DocThemeMode.Invert,
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
+                                viewerProvider = viewerProvider,
+                            )
+
+                            val rightPage = leftPage + 1
+                            if (rightPage < pageCount) {
+                                val rightState = remember(rightPage, getPage) { getPage(rightPage) }
+                                BookPage(
+                                    bookContent = rightState,
+                                    applyInversion = documentTheme == DocThemeMode.Invert,
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                                    viewerProvider = viewerProvider,
+                                )
+                            } else {
+                                Box(modifier = Modifier.weight(1f).fillMaxHeight())
+                            }
+                        }
+                    } else {
+                        val pageState = remember(leftPage, getPage) { getPage(leftPage) }
+                        BookPage(
+                            bookContent = pageState,
+                            applyInversion = documentTheme == DocThemeMode.Invert,
+                            modifier = Modifier.fillMaxSize(),
+                            viewerProvider = viewerProvider,
+                        )
+                    }
+                }
             }
         }
     }

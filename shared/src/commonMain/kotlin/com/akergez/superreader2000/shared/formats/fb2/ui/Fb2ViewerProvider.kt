@@ -4,8 +4,11 @@ import androidx.compose.runtime.Composable
 import com.akergez.superreader2000.shared.ui.Fb2BookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.IViewerProvider
 import com.akergez.superreader2000.shared.formats.fb2.ui.components.Fb2Viewer
+import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 
-class Fb2ViewerProvider : IViewerProvider<Fb2BookContent> {
+class Fb2ViewerProvider(
+    private val documentTheme: DocThemeMode,
+) : IViewerProvider<Fb2BookContent> {
     override fun getViewer(
         bookContent: Fb2BookContent,
         applyInversion: Boolean
@@ -14,7 +17,7 @@ class Fb2ViewerProvider : IViewerProvider<Fb2BookContent> {
         return {
             Fb2Viewer(
                 content = bookContent,
-                applyInversion = applyInversion,
+                documentTheme = documentTheme,
             )
         }
 

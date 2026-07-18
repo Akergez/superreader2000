@@ -1,7 +1,6 @@
 package com.akergez.superreader2000.shared.ui.screens.readerscreens.common.components
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,8 +9,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -28,20 +26,40 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.components.IconScrollSelector
+import com.akergez.superreader2000.shared.ui.screens.settingsscreen.ThemeSelector
+import com.akergez.superreader2000.shared.backend.settings.MAX_READER_FONT_SIZE
+import com.akergez.superreader2000.shared.backend.settings.MIN_READER_FONT_SIZE
+import com.akergez.superreader2000.shared.backend.settings.ReaderFont
+import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.FlipMode
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import superreader2000.shared.generated.resources.Res
-import superreader2000.shared.generated.resources.apply_inversion
+import superreader2000.shared.generated.resources.documents_theme
+import superreader2000.shared.generated.resources.documents_theme_black_on_white
+import superreader2000.shared.generated.resources.documents_theme_material_you
+import superreader2000.shared.generated.resources.documents_theme_soft_dark
+import superreader2000.shared.generated.resources.documents_theme_soft_light
+import superreader2000.shared.generated.resources.documents_theme_white_on_black
+import superreader2000.shared.generated.resources.reader_font
+import superreader2000.shared.generated.resources.reader_font_sans_serif
+import superreader2000.shared.generated.resources.reader_font_serif
+import superreader2000.shared.generated.resources.reader_font_size
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsModal(
-    onApplyInversionToggle: (Boolean) -> Unit,
-    applyInversion: Boolean,
+    documentTheme: DocThemeMode,
+    availableDocumentThemes: List<DocThemeMode>,
+    onDocumentThemeChange: (DocThemeMode) -> Unit,
     onVerticalScroll: (FlipMode) -> Unit,
     scrollMode: FlipMode,
+    readerFont: ReaderFont,
+    readerFontSize: Float,
+    readerTypographyEnabled: Boolean,
+    onReaderFontChange: (ReaderFont) -> Unit,
+    onReaderFontSizeChange: (Float) -> Unit,
     onStateChange: (Boolean) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -85,22 +103,41 @@ fun SettingsModal(
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                   stringResource( Res.string.apply_inversion),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = applyInversion,
-                    onCheckedChange = { onApplyInversionToggle(!applyInversion) },
-                    colors = SwitchDefaults.colors()
-                )
-            }
+            val themeLabels = mapOf(
+                DocThemeMode.AsIs to stringResource(Res.string.documents_theme_black_on_white),
+                DocThemeMode.Invert to stringResource(Res.string.documents_theme_white_on_black),
+                DocThemeMode.SoftLight to stringResource(Res.string.documents_theme_soft_light),
+                DocThemeMode.SoftDark to stringResource(Res.string.documents_theme_soft_dark),
+                DocThemeMode.MaterialYou to stringResource(Res.string.documents_theme_material_you),
+            )
+            val effectiveTheme = documentTheme.takeIf { it in availableDocumentThemes }
+                ?: availableDocumentThemes.first()
+            ThemeSelector(
+                stringResource(Res.string.documents_theme),
+                availableDocumentThemes.associateWith { themeLabels.getValue(it) },
+                effectiveTheme,
+                onDocumentThemeChange,
+            )
             Spacer(modifier = Modifier.height(16.dp))
+            if (readerTypographyEnabled) {
+                ThemeSelector(
+                    stringResource(Res.string.reader_font),
+                    mapOf(
+                    ReaderFont.Literata to stringResource(Res.string.reader_font_serif),
+                    ReaderFont.Roboto to stringResource(Res.string.reader_font_sans_serif),
+                    ),
+                    readerFont,
+                    onReaderFontChange,
+                )
+                Text(stringResource(Res.string.reader_font_size, readerFontSize.toInt()))
+                Slider(
+                    value = readerFontSize,
+                    onValueChange = onReaderFontSizeChange,
+                    valueRange = MIN_READER_FONT_SIZE..MAX_READER_FONT_SIZE,
+                    steps = (MAX_READER_FONT_SIZE - MIN_READER_FONT_SIZE).toInt() - 1,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             // Скрываем шторку перед вызовом onVerticalScroll, чтобы не было ghost-click:
             // detectTapGestures поглощает DOWN, но если модал исчезает без анимации,
             // UP-событие падает на кнопку Settings в карусели и повторно открывает шторку.
@@ -117,4 +154,3 @@ fun SettingsModal(
         }
     }
 }
-
