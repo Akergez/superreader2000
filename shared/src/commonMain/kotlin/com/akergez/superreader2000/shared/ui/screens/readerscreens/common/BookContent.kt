@@ -73,6 +73,13 @@ fun <TBookContent>BookContent(
         DocThemeMode.SoftDark -> Color(0xFF242424)
         DocThemeMode.MaterialYou -> MaterialTheme.colorScheme.surface
     }
+    val readerForeground = when (documentTheme) {
+        DocThemeMode.AsIs -> Color.Black
+        DocThemeMode.Invert -> Color.White
+        DocThemeMode.SoftLight -> Color(0xFF353535)
+        DocThemeMode.SoftDark -> Color(0xFFD0D0D0)
+        DocThemeMode.MaterialYou -> MaterialTheme.colorScheme.onSurface
+    }
 
     val showSettingsModal = remember { mutableStateOf(false) }
     // Метка времени последнего закрытия модала — для защиты от ghost-click на macOS:
@@ -161,9 +168,11 @@ fun <TBookContent>BookContent(
                     onPageChange = onPageChange,
                     onBack = { onCarouselBack() },
                     applyInversion = documentTheme == com.akergez.superreader2000.shared.backend.settings.DocThemeMode.Invert,
+                    backgroundColor = readerBackground,
+                    contentColor = readerForeground,
                     modifier = modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
+                        .background(readerBackground),
                     bookContent = getPage,
                     title = title,
                     onSettingsClick = {
@@ -229,6 +238,7 @@ fun <TBookContent>BookContent(
                         totalPages = totalPages,
                         onPageChange = onPageChange,
                         applyInversion = documentTheme == DocThemeMode.Invert,
+                        backgroundColor = readerBackground,
                         initialPage = currentPage,
                         getPage = getPage,
                         zoomState = handleZoomState,

@@ -72,7 +72,9 @@
     <string name="s3_access_key_id">Access key ID</string>
     <string name="s3_secret_access_key">Secret access key</string>
     <string name="s3_encryption_key">Encryption key (Base64, optional)</string>
-    <string name="s3_config_string">Export / import string (superreader1:)</string>
+    <string name="s3_config_string">Export / import string (tresse1:)</string>
+    <string name="tresse_sync_title">Tresse Sync</string>
+    <string name="sync_settings_title">Sync Settings</string>
     <string name="s3_export_secret_warning">The export contains the access key, secret key, and encryption key. Share it only through a trusted channel.</string>
     <string name="s3_save">Save</string>
     <string name="s3_sync">Synchronize</string>
@@ -88,4 +90,6 @@
     <string name="s3_sync_error">Synchronization failed: %1$s</string>
     <string name="s3_import_error">Unable to import the configuration string</string>
     <string name="s3_generate_key">Generate new key</string>
+    <string name="compatibility_text_renderer">Compatibility text renderer</string>
+    <string name="compatibility_text_renderer_description">Enable manually if justified text does not reach the right edge</string>
 </resources>

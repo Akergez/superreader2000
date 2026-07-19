@@ -68,7 +68,7 @@ class FB2TitleText : FB2Element {
     override fun toStyledString(): AnnotatedString = buildAnnotatedString {
         pushStringAnnotation(TITLE_CONTENT_TAG, "title")
         withStyle(ParagraphStyle(textAlign = TextAlign.Center)) {
-            withStyle(SpanStyle(fontSize = 1.4.em, fontWeight = FontWeight.SemiBold)) {
+            withStyle(SpanStyle(fontSize = 1.3.em, fontWeight = FontWeight.SemiBold)) {
                 append(text)
             }
         }
@@ -86,7 +86,7 @@ class FB2SubtitleText : FB2Element {
             withStyle(
                 ParagraphStyle(textAlign = TextAlign.Center)
             ) {
-                withStyle(SpanStyle(fontSize = 1.15.em, fontWeight = FontWeight.Medium)) {
+                withStyle(SpanStyle(fontSize = 1.1.em, fontWeight = FontWeight.Medium)) {
                     append(text)
                 }
             }
@@ -208,7 +208,6 @@ class FB2Image(var imageId: String, var description: String = "") :
 
     override fun toStyledString(): AnnotatedString {
         return buildAnnotatedString {
-            append('\n')
             append('\n')
             appendInlineContent(id = imageId, alternateText = "[image]")
             append('\n')

@@ -8,6 +8,7 @@ import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
 
 class Fb2ViewerProvider(
     private val documentTheme: DocThemeMode,
+    private val compatibilityTextRenderer: Boolean,
 ) : IViewerProvider<Fb2BookContent> {
     override fun getViewer(
         bookContent: Fb2BookContent,
@@ -18,6 +19,7 @@ class Fb2ViewerProvider(
             Fb2Viewer(
                 content = bookContent,
                 documentTheme = documentTheme,
+                compatibilityTextRenderer = compatibilityTextRenderer,
             )
         }
 

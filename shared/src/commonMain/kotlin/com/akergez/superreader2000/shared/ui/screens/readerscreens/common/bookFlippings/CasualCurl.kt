@@ -10,6 +10,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +36,7 @@ fun <TBookContent> CasualCurl(
     totalPages: StateFlow<Int?>,
     onPageChange: (Int) -> Unit,
     applyInversion: Boolean,
+    backgroundColor: Color,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     getPage: (Int) -> StateFlow<TBookContent>,
@@ -46,7 +48,7 @@ fun <TBookContent> CasualCurl(
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
     Scaffold(
-        containerColor = if (applyInversion) Color.Black else Color.White,
+        containerColor = backgroundColor,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { innerPadding ->
         totalPagesState?.takeIf { it > 0 }?.let { totalPagesValue ->
@@ -77,7 +79,11 @@ fun <TBookContent> CasualCurl(
                     val leftPage = spreadIndex * pagesPerSpread
                     val rightPage = if (isLandscape && leftPage + 1 < totalPagesValue) leftPage + 1 else null
 
-                    Card(shape = RoundedCornerShape(0.dp), modifier = Modifier.fillMaxSize()) {
+                    Card(
+                        shape = RoundedCornerShape(0.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
                         if (rightPage != null) {
                             // Two pages side by side on one card — each column gets half width.
                             Row(modifier = Modifier.fillMaxSize()) {
@@ -85,6 +91,7 @@ fun <TBookContent> CasualCurl(
                                 BookPage(
                                     bookContent = leftState,
                                     applyInversion = applyInversion,
+                                    backgroundColor = backgroundColor,
                                     viewerProvider = viewerProvider,
                                     modifier = Modifier.weight(1f).fillMaxHeight()
                                 )
@@ -92,6 +99,7 @@ fun <TBookContent> CasualCurl(
                                 BookPage(
                                     bookContent = rightState,
                                     applyInversion = applyInversion,
+                                    backgroundColor = backgroundColor,
                                     viewerProvider = viewerProvider,
                                     modifier = Modifier.weight(1f).fillMaxHeight()
                                 )
@@ -101,6 +109,7 @@ fun <TBookContent> CasualCurl(
                             BookPage(
                                 bookContent = pageState,
                                 applyInversion = applyInversion,
+                                backgroundColor = backgroundColor,
                                 viewerProvider = viewerProvider,
                                 modifier = Modifier.fillMaxSize()
                             )

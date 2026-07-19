@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,9 +43,16 @@ actual fun <TBookContent : IBookContent> PageCurl(
     val totalPagesState by totalPages.collectAsState()
     val zoomS = rememberZoomState()
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
+    val backgroundColor = when (documentTheme) {
+        DocThemeMode.AsIs -> Color.White
+        DocThemeMode.Invert -> Color.Black
+        DocThemeMode.SoftLight -> Color(0xFFD6D3CC)
+        DocThemeMode.SoftDark -> Color(0xFF242424)
+        DocThemeMode.MaterialYou -> MaterialTheme.colorScheme.surface
+    }
 
     Scaffold(
-        containerColor = if (documentTheme == DocThemeMode.Invert) Color.Black else Color.White,
+        containerColor = backgroundColor,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) {
         totalPagesState?.takeIf { it > 0 }?.let { pageCount ->
@@ -64,7 +73,7 @@ actual fun <TBookContent : IBookContent> PageCurl(
                     count = spreadCount,
                     state = pagerState,
                     config = rememberPageCurlConfig(
-                        backPageContentAlpha = 0.5f, backPageColor = Color.Black
+                        backPageContentAlpha = 0.5f, backPageColor = backgroundColor
                     ),
                     modifier = Modifier
                         .fillMaxSize()
@@ -77,6 +86,7 @@ actual fun <TBookContent : IBookContent> PageCurl(
                             BookPage(
                                 bookContent = leftState,
                                 applyInversion = documentTheme == DocThemeMode.Invert,
+                                backgroundColor = backgroundColor,
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                                 viewerProvider = viewerProvider,
                             )
@@ -87,11 +97,12 @@ actual fun <TBookContent : IBookContent> PageCurl(
                                 BookPage(
                                     bookContent = rightState,
                                     applyInversion = documentTheme == DocThemeMode.Invert,
+                                    backgroundColor = backgroundColor,
                                     modifier = Modifier.weight(1f).fillMaxHeight(),
                                     viewerProvider = viewerProvider,
                                 )
                             } else {
-                                Box(modifier = Modifier.weight(1f).fillMaxHeight())
+                                Box(modifier = Modifier.weight(1f).fillMaxHeight().background(backgroundColor))
                             }
                         }
                     } else {
@@ -99,6 +110,7 @@ actual fun <TBookContent : IBookContent> PageCurl(
                         BookPage(
                             bookContent = pageState,
                             applyInversion = documentTheme == DocThemeMode.Invert,
+                            backgroundColor = backgroundColor,
                             modifier = Modifier.fillMaxSize(),
                             viewerProvider = viewerProvider,
                         )

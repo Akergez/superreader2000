@@ -13,7 +13,9 @@ expect class PdfRendererHelper(pdfFile: suspend () -> FileWrapper): IRenderHelpe
 data class TOCEntry(
     val title: String,
     val pageIndex: Int,
-    val children: List<TOCEntry>
+    val children: List<TOCEntry>,
+    /** Stable navigation target; FB2 uses a word offset while fixed-layout formats use a page. */
+    val navigationIndex: Int = pageIndex,
 )
 
 data class bitmapKey(

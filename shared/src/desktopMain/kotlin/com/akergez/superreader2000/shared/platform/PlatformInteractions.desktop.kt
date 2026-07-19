@@ -1,15 +1,44 @@
 package com.akergez.superreader2000.shared.platform
 
+import java.awt.Color
+import javax.swing.BorderFactory
+import javax.swing.JLabel
+import javax.swing.JWindow
+import javax.swing.SwingUtilities
+import javax.swing.Timer
+
 import java.io.File
 import java.net.URI
 
 actual class MessageHandler {
     actual fun showMessage(message: String) {
-        println("INFO: $message")
+        showToast(message, 2500)
     }
 
     actual fun showLongMessage(message: String) {
-        println("ERROR: $message")
+        showToast(message, 4000)
+    }
+
+    private fun showToast(message: String, durationMs: Int) {
+        SwingUtilities.invokeLater {
+            val label = JLabel(message).apply {
+                isOpaque = true
+                background = Color(45, 45, 45)
+                foreground = Color.WHITE
+                border = BorderFactory.createEmptyBorder(10, 16, 10, 16)
+            }
+            val window = JWindow().apply {
+                contentPane.add(label)
+                isAlwaysOnTop = true
+                pack()
+                setLocationRelativeTo(null)
+                isVisible = true
+            }
+            Timer(durationMs) { window.dispose() }.apply {
+                isRepeats = false
+                start()
+            }
+        }
     }
 }
 
@@ -19,4 +48,3 @@ actual class FileUriHandler {
         return file.name
     }
 }
-

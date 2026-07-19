@@ -62,7 +62,9 @@
     <string name="s3_access_key_id">Access key ID</string>
     <string name="s3_secret_access_key">Secret access key</string>
     <string name="s3_encryption_key">Ключ шифрования (Base64, необязательно)</string>
-    <string name="s3_config_string">Строка экспорта / импорта (superreader1:)</string>
+    <string name="s3_config_string">Строка экспорта / импорта (tresse1:)</string>
+    <string name="tresse_sync_title">Синхронизация Tresse</string>
+    <string name="sync_settings_title">Настройки синхронизации</string>
     <string name="s3_export_secret_warning">Экспорт содержит access key, secret key и ключ шифрования. Передавайте его только доверенным способом.</string>
     <string name="s3_save">Сохранить</string>
     <string name="s3_sync">Синхронизировать</string>
@@ -78,4 +80,6 @@
     <string name="s3_sync_error">Ошибка синхронизации: %1$s</string>
     <string name="s3_import_error">Не удалось импортировать строку конфигурации</string>
     <string name="s3_generate_key">Сгенерировать новый ключ</string>
+    <string name="compatibility_text_renderer">Совместимый рендеринг текста</string>
+    <string name="compatibility_text_renderer_description">Включите вручную, если текст не выравнивается по правому краю</string>
 </resources>

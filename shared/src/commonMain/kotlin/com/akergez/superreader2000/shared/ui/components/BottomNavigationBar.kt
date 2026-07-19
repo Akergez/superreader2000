@@ -32,16 +32,6 @@ fun BottomNavigationBar(
 ) {
     NavigationBar {
         NavigationBarItem(
-            icon = { Icon(Icons.Filled.Sync, contentDescription = null) },
-            label = { Text(stringResource(Res.string.title_sync)) },
-            selected = screen == Screen.SYNC_SCREEN,
-            onClick = {
-                if (navController.currentDestination?.route != Route.SyncSettings) {
-                    navController.navigate(Route.SyncSettings) { launchSingleTop = true }
-                }
-            }
-        )
-        NavigationBarItem(
             icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text(stringResource(Res.string.title_home)) },
             selected = screen == Screen.HOME_SCREEN,
@@ -53,6 +43,16 @@ fun BottomNavigationBar(
                         }
                         launchSingleTop = true
                     }
+                }
+            }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.Sync, contentDescription = null) },
+            label = { Text(stringResource(Res.string.title_sync)) },
+            selected = screen == Screen.SYNC_SCREEN,
+            onClick = {
+                if (navController.currentDestination?.route != Route.SyncSettings) {
+                    navController.navigate(Route.SyncSettings) { launchSingleTop = true }
                 }
             }
         )

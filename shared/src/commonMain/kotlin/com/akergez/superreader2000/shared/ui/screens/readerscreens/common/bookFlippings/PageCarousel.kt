@@ -43,9 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.akergez.superreader2000.shared.ui.IBookContent
 import com.akergez.superreader2000.shared.ui.screens.readerscreens.common.BookPage
@@ -65,6 +69,8 @@ fun <TBookContent> PageCarousel(
     onPageChange: (Int) -> Unit,
     onBack: () -> Unit,
     applyInversion: Boolean,
+    backgroundColor: Color,
+    contentColor: Color,
     modifier: Modifier = Modifier,
     initialPage: Int = 0,
     title: String,
@@ -77,11 +83,16 @@ fun <TBookContent> PageCarousel(
     LaunchedEffect(zoomS.scale) { zoomState(zoomS) }
 
     Scaffold(
+        containerColor = backgroundColor,
+        contentColor = contentColor,
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    containerColor = backgroundColor,
+                    scrolledContainerColor = backgroundColor,
+                    navigationIconContentColor = contentColor,
+                    titleContentColor = contentColor,
+                    actionIconContentColor = contentColor,
                 ),
                 title = {
                     Text(
@@ -113,6 +124,8 @@ fun <TBookContent> PageCarousel(
                     bookContent = bookContent,
                     viewerProvider = viewerProvider,
                     applyInversion = applyInversion,
+                    backgroundColor = backgroundColor,
+                    contentColor = contentColor,
                     zoomS = zoomS,
                     onPageChange = onPageChange,
                     onChaptersClick = onChaptersClick,
@@ -133,6 +146,8 @@ private fun <TBookContent : IBookContent> CarouselContent(
     bookContent: (Int) -> StateFlow<TBookContent>,
     viewerProvider: IViewerProvider<TBookContent>,
     applyInversion: Boolean,
+    backgroundColor: Color,
+    contentColor: Color,
     zoomS: ZoomState,
     onPageChange: (Int) -> Unit,
     onChaptersClick: () -> Unit,
@@ -179,6 +194,7 @@ private fun <TBookContent : IBookContent> CarouselContent(
                         totalPagesNotNull = totalPagesNotNull,
                         bookContent = bookContent,
                         applyInversion = applyInversion,
+                        backgroundColor = backgroundColor,
                         viewerProvider = viewerProvider,
                     )
                 }
@@ -254,7 +270,7 @@ private fun <TBookContent : IBookContent> CarouselContent(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     text = "Page ${sliderValue.floatValue.toInt() + 1} of $totalPagesNotNull",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = contentColor
                 )
             }
             IconButton(onClick = { onSettingsClick() }) {
@@ -273,6 +289,7 @@ private fun <TBookContent : IBookContent> SpreadItem(
     totalPagesNotNull: Int,
     bookContent: (Int) -> StateFlow<TBookContent>,
     applyInversion: Boolean,
+    backgroundColor: Color,
     viewerProvider: IViewerProvider<TBookContent>,
 ) {
     if (isLandscape) {
@@ -306,6 +323,7 @@ private fun <TBookContent : IBookContent> SpreadItem(
                     availH = availH,
                     bookContent = bookContent,
                     applyInversion = applyInversion,
+                    backgroundColor = backgroundColor,
                     viewerProvider = viewerProvider,
                     shape = RoundedCornerShape(0.dp),
                     elevation = 0.dp,
@@ -322,6 +340,7 @@ private fun <TBookContent : IBookContent> SpreadItem(
                         availH = availH,
                         bookContent = bookContent,
                         applyInversion = applyInversion,
+                        backgroundColor = backgroundColor,
                         viewerProvider = viewerProvider,
                         shape = RoundedCornerShape(0.dp),
                         elevation = 0.dp,
@@ -338,6 +357,7 @@ private fun <TBookContent : IBookContent> SpreadItem(
             availH = availH,
             bookContent = bookContent,
             applyInversion = applyInversion,
+            backgroundColor = backgroundColor,
             viewerProvider = viewerProvider,
         )
     }
@@ -354,6 +374,7 @@ private fun <TBookContent : IBookContent> CarouselPageSlot(
     availH: Int,
     bookContent: (Int) -> StateFlow<TBookContent>,
     applyInversion: Boolean,
+    backgroundColor: Color,
     viewerProvider: IViewerProvider<TBookContent>,
     shape: RoundedCornerShape = RoundedCornerShape(8.dp),
     elevation: Dp = 8.dp,
@@ -368,17 +389,37 @@ private fun <TBookContent : IBookContent> CarouselPageSlot(
         val scaledWDp = with(density) { (nativeW * scale).toDp() }
         val scaledHDp = with(density) { (nativeH * scale).toDp() }
 
-        // Fb2Viewer self-scales when canvas < native, so just give it the correct size.
         Box(
             modifier = Modifier
                 .size(scaledWDp, scaledHDp)
                 .shadow(elevation, shape, clip = true)
         ) {
-            BookPage(
-                bookContent = bookContent(page),
-                applyInversion = applyInversion,
-                viewerProvider = viewerProvider,
-            )
+            // Lay the already-paginated page out once at its native pixel size, then
+            // scale the resulting layer as a whole. The overview must never remeasure
+            // or reflow the page for its thumbnail constraints.
+            Layout(
+                content = {
+                BookPage(
+                    bookContent = bookContent(page),
+                    applyInversion = applyInversion,
+                    backgroundColor = backgroundColor,
+                    viewerProvider = viewerProvider,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                },
+                modifier = Modifier.fillMaxSize(),
+            ) { measurables, constraints ->
+                val pagePlaceable = measurables.single().measure(
+                    Constraints.fixed(nativeW, nativeH)
+                )
+                layout(constraints.maxWidth, constraints.maxHeight) {
+                    pagePlaceable.placeWithLayer(0, 0) {
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = TransformOrigin(0f, 0f)
+                    }
+                }
+            }
         }
     } else {
         Box(
@@ -386,7 +427,7 @@ private fun <TBookContent : IBookContent> CarouselPageSlot(
                 .fillMaxSize(0.9f)
                 .shadow(elevation, shape)
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(backgroundColor)
         )
     }
 }

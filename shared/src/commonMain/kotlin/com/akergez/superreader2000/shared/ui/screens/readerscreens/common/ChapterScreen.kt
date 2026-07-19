@@ -52,7 +52,7 @@ fun ChapterScreen(
             items(
                 tableOfContentsValue.flatten(
                     { it.children },
-                    { e, n -> ChapterView(e.title, n, e.pageIndex) })
+                    { e, n -> ChapterView(e.title, n, e.pageIndex, e.navigationIndex) })
             ) { chapter ->
                 ListItem(headlineContent = {
                     Text(
@@ -66,7 +66,7 @@ fun ChapterScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }, modifier = Modifier.pointerInput(Unit) {
-                    detectTapGestures { onChapterClick(chapter.page) }
+                    detectTapGestures { onChapterClick(chapter.navigationIndex) }
                 }.padding(start = chapter.nestingLevel * 60.dp))
             }
         }
@@ -91,5 +91,8 @@ fun <TInitial, TResult> List<TInitial>.flatten(
 }
 
 data class ChapterView(
-    val title: String, val nestingLevel: Int, val page: Int
+    val title: String,
+    val nestingLevel: Int,
+    val page: Int,
+    val navigationIndex: Int,
 )

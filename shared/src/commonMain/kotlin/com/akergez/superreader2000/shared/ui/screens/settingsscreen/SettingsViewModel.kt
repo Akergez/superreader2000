@@ -43,7 +43,8 @@ class SettingsViewModel(
                 appThemeMode = appThemeMode,
                 readerFont = settingsManager.getReaderFont(),
                 readerFontSize = settingsManager.getReaderFontSize(),
-                s3Config = TresseConfig(storageType = "s3", repoId = "superreader")
+                compatibilityTextRenderer = settingsManager.getCompatibilityTextRenderer(),
+                s3Config = TresseConfig(storageType = "s3", repoId = "")
             )
         if (settingsManager.getStoragePath() != null) {
             uiScope.launch {
@@ -79,6 +80,11 @@ class SettingsViewModel(
     fun updateReaderFontSize(size: Float) {
         settingsManager.setReaderFontSize(size)
         _settingsState.value = _settingsState.value.copy(readerFontSize = size)
+    }
+
+    fun updateCompatibilityTextRenderer(enabled: Boolean) {
+        settingsManager.setCompatibilityTextRenderer(enabled)
+        _settingsState.value = _settingsState.value.copy(compatibilityTextRenderer = enabled)
     }
 
     fun updateStorageAddress(storageAddress: String) {
@@ -185,7 +191,11 @@ class SettingsViewModel(
 
     fun importS3Config() {
         runCatching {
-            TresseConfigShare.decode(_settingsState.value.configShareString, json).also { config ->
+            val configString = _settingsState.value.configShareString.trim()
+            require(configString.startsWith(TresseConfigShare.PREFIX)) {
+                "config string must start with ${TresseConfigShare.PREFIX}"
+            }
+            TresseConfigShare.decode(configString, json).also { config ->
                 require(config.storageType == "s3") {
                     "config uses backend '${config.storageType}'; this app only supports s3"
                 }

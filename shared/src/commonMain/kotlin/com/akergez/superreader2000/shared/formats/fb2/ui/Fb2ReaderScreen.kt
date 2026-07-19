@@ -1,8 +1,10 @@
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -80,8 +83,20 @@ fun Fb2ReaderScreen(
     var mode by remember(book) { mutableStateOf(ReaderMode.Reading) }
     var readerFont by remember(book) { mutableStateOf(settingsManager.getReaderFont()) }
     var readerFontSize by remember(book) { mutableStateOf(settingsManager.getReaderFontSize()) }
+    val compatibilityTextRenderer = settingsManager.getCompatibilityTextRenderer()
+    val selectedFontFamily = when (readerFont) {
+        ReaderFont.Literata -> literataFamily
+        ReaderFont.Roboto -> robotoFamily
+    }
     var documentTheme by remember(book) {
         mutableStateOf(settingsManager.getTextDocumentsTheme(DocThemeMode.AsIs))
+    }
+    val readerBackground = when (documentTheme) {
+        DocThemeMode.AsIs -> Color.White
+        DocThemeMode.Invert -> Color.Black
+        DocThemeMode.SoftLight -> Color(0xFFD6D3CC)
+        DocThemeMode.SoftDark -> Color(0xFF242424)
+        DocThemeMode.MaterialYou -> MaterialTheme.colorScheme.surface
     }
 
     var componentWidth by remember { mutableIntStateOf(0) }
@@ -166,11 +181,9 @@ fun Fb2ReaderScreen(
             paddingH     = paddingH,
             paddingV     = paddingV,
             density      = density.density,
+            fontScale    = density.fontScale,
             fontSize     = readerFontSize.sp,
-            fontFamily   = when (readerFont) {
-                ReaderFont.Literata -> literataFamily
-                ReaderFont.Roboto -> robotoFamily
-            },
+            fontFamily   = selectedFontFamily,
         )
 
         val helper = fb2RenderHelper.value
@@ -244,6 +257,13 @@ fun Fb2ReaderScreen(
         }
     }
 
+    LaunchedEffect(mode, fb2RenderHelper.value) {
+        val helper = fb2RenderHelper.value ?: return@LaunchedEffect
+        if (mode == ReaderMode.Chapters) {
+            withContext(Dispatchers.IO) { helper.paginateTableOfContents() }
+        }
+    }
+
     val onPageChange: (Int) -> Unit = onPageChange@ { requestedPage: Int ->
         // Pager может прислать временный номер, когда pagesCount меняется во время reflow.
         // Он не должен затирать устойчивый word-offset пользователя.
@@ -308,6 +328,7 @@ fun Fb2ReaderScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(readerBackground)
             .onGloballyPositioned {
                 val newW = it.size.width
                 val newH = it.size.height
@@ -355,7 +376,7 @@ fun Fb2ReaderScreen(
                 onCarouselBack          = { mode = ReaderMode.Reading },
                 title                   = book.getMetadata().title,
                 tableOfContent          = helper.tableOfContents,
-                viewerProvider          = Fb2ViewerProvider(documentTheme),
+                viewerProvider          = Fb2ViewerProvider(documentTheme, compatibilityTextRenderer),
                 onChapterNavigate       = onChapterNavigate,
             )
         } else {

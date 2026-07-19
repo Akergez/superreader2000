@@ -4,37 +4,31 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Constraints
 import com.akergez.superreader2000.shared.ui.DrawCommand
 import com.akergez.superreader2000.shared.ui.Fb2BookContent
 import com.akergez.superreader2000.shared.backend.settings.DocThemeMode
-import org.jetbrains.compose.resources.stringResource
-import superreader2000.shared.generated.resources.Res
-import superreader2000.shared.generated.resources.loading
 
 @Composable
 fun Fb2Viewer(
     content: Fb2BookContent?,
     modifier: Modifier = Modifier,
     documentTheme: DocThemeMode,
+    compatibilityTextRenderer: Boolean,
 ) {
     val (backgroundColor, textColor) = when (documentTheme) {
         DocThemeMode.AsIs -> Color.White to Color.Black
@@ -49,14 +43,9 @@ fun Fb2Viewer(
         .fillMaxSize()
 
     if (content == null || content.drawCommands.isEmpty()) {
-        Text(
-            text = stringResource(Res.string.loading),
-            color = textColor,
-            modifier = baseModifier
-                .padding(horizontal = 16.dp)
-                .fillMaxWidth(),
-            style = TextStyle(fontSize = 18.sp, textAlign = TextAlign.Justify),
-        )
+        Box(modifier = baseModifier, contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
         return
     }
 
@@ -82,6 +71,10 @@ fun Fb2Viewer(
                 Size(size.width, size.height)
 
             withTransform({ scale(drawScale, drawScale, Offset.Zero) }) {
+                val inlineImages = content.drawCommands.filterIsInstance<DrawCommand.DrawInlineImage>()
+                val textHasPlaceholders = content.drawCommands
+                    .filterIsInstance<DrawCommand.DrawText>()
+                    .any { it.placeholders.isNotEmpty() }
                 content.drawCommands.forEach { cmd ->
                     when (cmd) {
                         is DrawCommand.DrawText -> {
@@ -90,16 +83,54 @@ fun Fb2Viewer(
                             )
                             val width = if (cmd.textAreaWidth > 0f) cmd.textAreaWidth
                                         else layoutSize.width - cmd.x
-                            drawText(
-                                textMeasurer = textMeasurer,
-                                text         = cmd.text,
-                                topLeft      = Offset(cmd.x, cmd.y),
-                                style        = style,
-                                size         = Size(width, layoutSize.height - cmd.y),
-                                placeholders = cmd.placeholders,
-                            )
+                            val height = layoutSize.height - cmd.y
+                            if (cmd.placeholders.isNotEmpty()) {
+                                // Text and images must use one layout. Measuring the text
+                                // again inside drawText while keeping image coordinates from
+                                // pagination lets platform engines place them differently.
+                                val pageLayout = textMeasurer.measure(
+                                    text = cmd.text,
+                                    style = style,
+                                    constraints = Constraints(
+                                        minWidth = width.toInt(),
+                                        maxWidth = width.toInt(),
+                                        minHeight = 0,
+                                        maxHeight = height.toInt().coerceAtLeast(1),
+                                    ),
+                                    softWrap = true,
+                                    placeholders = cmd.placeholders,
+                                )
+                                drawText(pageLayout, topLeft = Offset(cmd.x, cmd.y))
+                                inlineImages.forEachIndexed { index, imageCommand ->
+                                    val rect = pageLayout.placeholderRects.getOrNull(index)
+                                        ?: return@forEachIndexed
+                                    val bitmap = content.imageMap[imageCommand.imageId]
+                                        ?: return@forEachIndexed
+                                    drawImage(
+                                        image = bitmap,
+                                        dstOffset = IntOffset(
+                                            (cmd.x + rect.left).toInt(),
+                                            (cmd.y + rect.top).toInt(),
+                                        ),
+                                        dstSize = IntSize(
+                                            rect.width.toInt().coerceAtLeast(1),
+                                            rect.height.toInt().coerceAtLeast(1),
+                                        ),
+                                    )
+                                }
+                            } else {
+                                drawFb2Text(
+                                    command = cmd,
+                                    textMeasurer = textMeasurer,
+                                    style = style,
+                                    width = width,
+                                    height = height,
+                                    nativeJustificationSupported = !compatibilityTextRenderer,
+                                )
+                            }
                         }
                         is DrawCommand.DrawInlineImage -> {
+                            if (textHasPlaceholders) return@forEach
                             val bitmap = content.imageMap[cmd.imageId] ?: return@forEach
                             drawImage(
                                 image     = bitmap,

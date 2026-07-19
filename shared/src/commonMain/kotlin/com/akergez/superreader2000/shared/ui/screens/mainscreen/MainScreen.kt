@@ -41,6 +41,7 @@ import com.akergez.superreader2000.shared.ui.components.BottomNavigationBar
 import com.akergez.superreader2000.shared.ui.screens.Screen
 import com.akergez.superreader2000.shared.ui.screens.homescreen.HomeScreen
 import com.akergez.superreader2000.shared.formats.abstractions.IReaderScreenProvider
+import com.akergez.superreader2000.shared.formats.abstractions.FormatType
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SettingsScreen
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SyncSettingsScreen
 import com.akergez.superreader2000.shared.ui.theme.AppTheme
@@ -94,7 +95,26 @@ fun MainScreen(
         else -> Screen.HOME_SCREEN
     }
     val currentTheme by settingsManager.appThemeModeFlow.collectAsState()
-    val readerBackground = when (settingsManager.getFixedDocumentsTheme(DocThemeMode.AsIs)) {
+    val activeReaderFormat = if (isReaderScreen) {
+        runCatching {
+            val encodedName = currentBackStackEntry?.toRoute<BookReader>()?.fileName
+                ?: return@runCatching null
+            val fileName = urlDecode(encodedName)
+            bookManager.bookFlow.value
+                .find { it.bundleName == fileName }
+                ?.bookMetaInfo
+                ?.progress
+                ?.formatType
+        }.getOrNull()
+    } else {
+        null
+    }
+    val readerTheme = if (activeReaderFormat == FormatType.FB2) {
+        settingsManager.getTextDocumentsTheme(DocThemeMode.AsIs)
+    } else {
+        settingsManager.getFixedDocumentsTheme(DocThemeMode.AsIs)
+    }
+    val readerBackground = when (readerTheme) {
         DocThemeMode.Invert -> Color.Black
         DocThemeMode.AsIs -> Color.White
         DocThemeMode.SoftLight -> Color(0xFFD8D6D1)

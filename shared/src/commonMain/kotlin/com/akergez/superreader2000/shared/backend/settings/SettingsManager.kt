@@ -50,6 +50,8 @@ interface ISettingsManager {
      fun setReaderFont(font: ReaderFont)
      fun getReaderFontSize(): Float
      fun setReaderFontSize(size: Float)
+     fun getCompatibilityTextRenderer(): Boolean
+     fun setCompatibilityTextRenderer(enabled: Boolean)
      fun getStoragePath(): String?
      fun setStoragePath(path: String)
      fun clearStoragePath()
@@ -143,6 +145,12 @@ class DefaultSettingsManager(
     override fun setReaderFontSize(size: Float) {
         store.putString("reader_font_size", size.coerceIn(MIN_READER_FONT_SIZE, MAX_READER_FONT_SIZE).toString())
     }
+
+    override fun getCompatibilityTextRenderer(): Boolean =
+        store.getString("compatibility_text_renderer", "false").toBooleanStrictOrNull() ?: false
+
+    override fun setCompatibilityTextRenderer(enabled: Boolean) =
+        store.putString("compatibility_text_renderer", enabled.toString())
 
     override  fun getStoragePath(): String? {
         val path = store.getString("storage_path", "")

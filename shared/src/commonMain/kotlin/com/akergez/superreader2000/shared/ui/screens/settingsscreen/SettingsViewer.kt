@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -106,6 +107,10 @@ import superreader2000.shared.generated.resources.reader_font
 import superreader2000.shared.generated.resources.reader_font_sans_serif
 import superreader2000.shared.generated.resources.reader_font_serif
 import superreader2000.shared.generated.resources.reader_font_size
+import superreader2000.shared.generated.resources.compatibility_text_renderer
+import superreader2000.shared.generated.resources.compatibility_text_renderer_description
+import superreader2000.shared.generated.resources.tresse_sync_title
+import superreader2000.shared.generated.resources.sync_settings_title
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -216,6 +221,23 @@ fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Un
                 steps = (MAX_READER_FONT_SIZE - MIN_READER_FONT_SIZE).toInt() - 1,
             )
 
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.compatibility_text_renderer))
+                    Text(
+                        stringResource(Res.string.compatibility_text_renderer_description),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(
+                    checked = settings.compatibilityTextRenderer,
+                    onCheckedChange = settingsViewModel::updateCompatibilityTextRenderer,
+                )
+            }
+
             SettingsOption(stringResource(Res.string.scrolling_mode))
             IconScrollSelector(
                 onSelect = { settingsViewModel.updateFlipMode(it) },
@@ -238,6 +260,7 @@ fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            SettingsGroup(stringResource(Res.string.tresse_sync_title))
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(viewModel::saveS3Config, enabled = !busy) { Text(stringResource(Res.string.s3_save)) }
                 Spacer(Modifier.width(8.dp))
@@ -269,6 +292,7 @@ fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            SettingsOption(stringResource(Res.string.sync_settings_title))
             S3Field(stringResource(Res.string.s3_endpoint), settings.s3Config.s3Endpoint) {
                 viewModel.updateS3Config(settings.s3Config.copy(s3Endpoint = it))
             }

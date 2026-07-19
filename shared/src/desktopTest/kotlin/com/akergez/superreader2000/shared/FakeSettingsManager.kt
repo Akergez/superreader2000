@@ -25,6 +25,7 @@ class FakeSettingsManager(
     private var _storagePath = storagePath
     private var _readerFont = ReaderFont.Literata
     private var _readerFontSize = 18f
+    private var _compatibilityTextRenderer = false
 
     override fun getAppTheme(defaultTheme: AppThemeMode) = _appTheme
     override fun setAppTheme(theme: AppThemeMode) {
@@ -48,6 +49,8 @@ class FakeSettingsManager(
     override fun setReaderFont(font: ReaderFont) { _readerFont = font }
     override fun getReaderFontSize() = _readerFontSize
     override fun setReaderFontSize(size: Float) { _readerFontSize = size }
+    override fun getCompatibilityTextRenderer() = _compatibilityTextRenderer
+    override fun setCompatibilityTextRenderer(enabled: Boolean) { _compatibilityTextRenderer = enabled }
 
     override fun getStoragePath() = _storagePath
     override fun setStoragePath(path: String) { _storagePath = path }

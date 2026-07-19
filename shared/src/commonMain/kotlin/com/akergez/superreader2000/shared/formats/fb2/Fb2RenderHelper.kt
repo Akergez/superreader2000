@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.decodeToImageBitmap
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextMeasurer
@@ -61,6 +62,8 @@ data class RenderConfig(
     val paddingV: Float = 32f,
     /** Плотность экрана (LocalDensity.current.density), используется для перевода px → sp в Placeholder. */
     val density: Float = 1f,
+    /** System font scale, required for an exact px -> sp placeholder conversion. */
+    val fontScale: Float = 1f,
 ) {
     // Конфиг валиден только если оба размера положительные
     val isValid: Boolean get() = pageWidth > 0 && pageHeight > 0
@@ -123,9 +126,6 @@ class Fb2RenderHelper constructor(
                 val result = parseFb2Content(fb2File.file)
                 parseTimings = result.timings
                 imageMap.putAll(result.images)
-                tableOfContents.update { result.toc }
-                // Запоминаем исходные word-offsets для переконвертации после пагинации.
-                tocWordOffsets.addAll(result.toc.map { it.pageIndex })
                 val buildTextMark = TimeSource.Monotonic.markNow()
                 fullText = buildFullText(result.elements)
                 buildTextTime = buildTextMark.elapsedNow()
@@ -134,6 +134,34 @@ class Fb2RenderHelper constructor(
                 wordPrefixAtChar = buildWordPrefix(fullText.text)
                 buildWordIndexTime = wordIndexMark.elapsedNow()
                 totalWords.value = wordPrefixAtChar.last()
+
+                // Parse-time element indexes are not stable after nested FB2 nodes are
+                // flattened. Match TOC entries to title annotations in the final text and
+                // keep navigation offsets separate from displayed page numbers.
+                val titleRanges = fullText.getStringAnnotations(
+                    TITLE_CONTENT_TAG,
+                    0,
+                    fullText.length,
+                )
+                var nextTitleStart = 0
+                val offsets = result.toc.map { entry ->
+                    val range = titleRanges.firstOrNull { candidate ->
+                        candidate.start >= nextTitleStart &&
+                            fullText.text.substring(candidate.start, candidate.end).trim() == entry.title
+                    }
+                    if (range != null) nextTitleStart = range.end
+                    range?.start
+                        ?.let { wordPrefixAtChar[it] }
+                        ?: entry.pageIndex.coerceIn(0, wordPrefixAtChar.last())
+                }
+                tocWordOffsets.clear()
+                tocWordOffsets.addAll(offsets)
+                tableOfContents.value = result.toc.mapIndexed { index, entry ->
+                    entry.copy(
+                        pageIndex = 0,
+                        navigationIndex = offsets.getOrElse(index) { 0 },
+                    )
+                }
             }
             println(
                 ">>> fb2 cold parse: xml=${parseTimings.xml.inWholeMilliseconds}ms " +
@@ -221,6 +249,13 @@ class Fb2RenderHelper constructor(
             val nextTarget = (lastSlicedPageIndex + PAGINATION_BATCH_SIZE).coerceAtLeast(1)
             generatePagesUpTo(nextTarget)
         }
+    }
+
+    /** Completes pagination far enough to resolve every visible TOC page number. */
+    suspend fun paginateTableOfContents() {
+        val lastOffset = tocWordOffsets.maxOrNull() ?: return
+        getPageIndexByWordOffset(lastOffset)
+        updateTocPageIndices()
     }
 
     /** Сбрасывает границы страниц сразу, не дожидаясь debounce RenderConfig. */
@@ -348,12 +383,15 @@ class Fb2RenderHelper constructor(
                 var chunkSize = nextChunkSize
                 var chunkEnd: Int
                 var chunk: AnnotatedString
+                var chunkPlaceholders: List<AnnotatedString.Range<Placeholder>>
                 var layout: androidx.compose.ui.text.TextLayoutResult
                 while (true) {
                     chunkEnd = alignChunkEndToInlineContent(
                         (charOffset + chunkSize).coerceAtMost(fullText.length)
                     )
                     chunk = fullText.subSequence(charOffset, chunkEnd)
+                    chunkPlaceholders = buildChunkPlaceholders(chunk, config)
+                    chunk = reserveInlineImageHeight(chunk, chunkPlaceholders)
                     val measureMark = TimeSource.Monotonic.markNow()
                     layout = textMeasurer.measure(
                         text        = chunk,
@@ -365,7 +403,7 @@ class Fb2RenderHelper constructor(
                             maxHeight = batchLayoutHeight,
                         ),
                         softWrap    = true,
-                        placeholders = buildChunkPlaceholders(chunk, config),
+                        placeholders = chunkPlaceholders,
                     )
                     paginationMeasureTime += measureMark.elapsedNow()
                     paginationMeasureCalls++
@@ -378,7 +416,19 @@ class Fb2RenderHelper constructor(
                 var committedFromChunk = 0
                 while (line < layout.lineCount) {
                     val pageTop = layout.getLineTop(firstLineOnPage)
-                    val lineBottom = layout.getLineBottom(line)
+                    val placeholderBottom = chunkPlaceholders.indices
+                        .asSequence()
+                        .filter { placeholderIndex ->
+                            layout.getLineForOffset(chunkPlaceholders[placeholderIndex].start) == line
+                        }
+                        .mapNotNull { placeholderIndex ->
+                            layout.placeholderRects.getOrNull(placeholderIndex)?.bottom
+                        }
+                        .maxOrNull()
+                    val lineBottom = maxOf(
+                        layout.getLineBottom(line),
+                        placeholderBottom ?: Float.NEGATIVE_INFINITY,
+                    )
                     val overflowsPage = line > firstLineOnPage && lineBottom - pageTop > h
                     if (!overflowsPage) {
                         line++
@@ -551,7 +601,10 @@ class Fb2RenderHelper constructor(
         val pageImages = pageText
             .getStringAnnotations(INLINE_CONTENT_TAG, 0, pageText.length)
             .distinctBy { Triple(it.start, it.end, it.item) }
-        pageImages.forEachIndexed { idx, ann ->
+        placeholders.forEachIndexed { idx, placeholder ->
+            val ann = pageImages.firstOrNull {
+                it.start == placeholder.start && it.end == placeholder.end
+            } ?: return@forEachIndexed
             val rect = layout.placeholderRects.getOrNull(idx) ?: return@forEachIndexed
             if (!imageMap.containsKey(ann.item)) return@forEachIndexed
             commands.add(
@@ -576,13 +629,13 @@ class Fb2RenderHelper constructor(
             .getStringAnnotations(INLINE_CONTENT_TAG, 0, chunk.length)
             .distinctBy { Triple(it.start, it.end, it.item) }
         if (imageAnnotations.isEmpty()) return emptyList()
-        val density = config.density.coerceAtLeast(1f)
+        val spScale = (config.density * config.fontScale).coerceAtLeast(0.01f)
         val maxWidthPx = config.pageWidth.toFloat()
         return imageAnnotations.mapNotNull { ann ->
             val bitmap = imageMap[ann.item] ?: return@mapNotNull null
             val sourceWidth = bitmap.width.coerceAtLeast(1).toFloat()
             val sourceHeight = bitmap.height.coerceAtLeast(1).toFloat()
-            val maxHeightPx = config.pageHeight * 0.85f
+            val maxHeightPx = config.pageHeight * 0.65f
             // Один коэффициент для обеих осей: изображение целиком помещается
             // в страницу и никогда не меняет исходное соотношение сторон.
             val scale = minOf(maxWidthPx / sourceWidth, maxHeightPx / sourceHeight)
@@ -590,13 +643,35 @@ class Fb2RenderHelper constructor(
             val imgHeightPx = sourceHeight * scale
             AnnotatedString.Range(
                 item  = Placeholder(
-                    width                   = (imgWidthPx / density).sp,
-                    height                  = (imgHeightPx / density).sp,
-                    placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter,
+                    width                   = (imgWidthPx / spScale).sp,
+                    height                  = (imgHeightPx / spScale).sp,
+                    placeholderVerticalAlign = PlaceholderVerticalAlign.Top,
                 ),
                 start = ann.start,
                 end   = ann.end,
             )
+        }
+    }
+
+    /**
+     * Android can report a full-height Top-aligned placeholder rect while retaining the
+     * surrounding text line's normal height. Give every image its own paragraph metrics,
+     * so following text is positioned below the image independently of placeholder quirks.
+     */
+    private fun reserveInlineImageHeight(
+        text: AnnotatedString,
+        placeholders: List<AnnotatedString.Range<Placeholder>>,
+    ): AnnotatedString {
+        if (placeholders.isEmpty()) return text
+        return buildAnnotatedString {
+            append(text)
+            placeholders.forEach { range ->
+                addStyle(
+                    style = ParagraphStyle(lineHeight = range.item.height),
+                    start = range.start,
+                    end = range.end,
+                )
+            }
         }
     }
 
@@ -738,7 +813,7 @@ class Fb2RenderHelper constructor(
 
             val config = renderConfig.value
             if (!config.isValid) return
-            val pageText = fullText.subSequence(pageCharOffsets[index], pageEndCharOffsets[index])
+            val rawPageText = fullText.subSequence(pageCharOffsets[index], pageEndCharOffsets[index])
             val style = TextStyle(
                 fontSize = config.fontSize,
                 fontFamily = config.fontFamily,
@@ -747,7 +822,8 @@ class Fb2RenderHelper constructor(
                 lineBreak = LineBreak.Paragraph,
                 hyphens = Hyphens.Auto,
             )
-            val placeholders = buildChunkPlaceholders(pageText, config)
+            val placeholders = buildChunkPlaceholders(rawPageText, config)
+            val pageText = reserveInlineImageHeight(rawPageText, placeholders)
             val materializeMark = TimeSource.Monotonic.markNow()
             val layout = textMeasurer.measure(
                 text = pageText,

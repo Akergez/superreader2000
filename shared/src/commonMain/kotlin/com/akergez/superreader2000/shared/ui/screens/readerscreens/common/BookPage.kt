@@ -15,10 +15,11 @@ fun <TBookContentType>BookPage(
     bookContent: StateFlow<TBookContentType>,
     viewerProvider: IViewerProvider<TBookContentType>,
     applyInversion: Boolean,
+    backgroundColor: Color = if (applyInversion) Color.Black else Color.White,
     modifier: Modifier = Modifier,
 ) where TBookContentType : IBookContent {
     val content by bookContent.collectAsState()
-    Box(modifier.background(color = if (applyInversion) Color.Black else Color.White)) {
+    Box(modifier.background(backgroundColor)) {
         viewerProvider.getViewer(bookContent = content, applyInversion = applyInversion)()
     }
 }
