@@ -1,5 +1,7 @@
 package com.akergez.superreader2000.shared.platform
 
+import com.akergez.superreader2000.shared.formats.abstractions.FileType
+
 import java.awt.Color
 import javax.swing.BorderFactory
 import javax.swing.JLabel
@@ -47,4 +49,12 @@ actual class FileUriHandler {
         val file = if (fileUri.startsWith("file:")) File(URI(fileUri)) else File(fileUri)
         return file.name
     }
+
+    actual suspend fun getFileType(fileUri: String): FileType =
+        when (getFileName(fileUri).substringAfterLast('.', "").lowercase()) {
+            "pdf" -> FileType.pdf
+            "fb2" -> FileType.fb2
+            "djvu", "djv" -> FileType.djvu
+            else -> FileType.unknown
+        }
 }

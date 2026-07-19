@@ -79,21 +79,22 @@ class HoomeScreenViewModel(
             config.s3SecretAccessKey.isNotBlank() &&
             config.encryptionKey.isNotBlank()
 
-    fun addBook(fileUri: String, fileType: FileType) {
+    fun addBook(fileUri: String, fileType: FileType? = null) {
         viewModelScope.launch {
             val fileName = fileUriHandler.getFileName(fileUri)
-            val factory = factories[fileType]
+            val detectedType = fileType ?: fileUriHandler.getFileType(fileUri)
+            if (detectedType == FileType.unknown) {
+                messageHandler.showLongMessage("Unsupported file type")
+                return@launch
+            }
+            val factory = factories[detectedType]
             if (factory == null) {
-                if (fileType != FileType.unknown) {
-                    messageHandler.showLongMessage("Unsupported file type")
-                    return@launch
-                }
-
-                throw NotImplementedError("IBookCreateFactory for $fileType file type is not found. Check your DI configuration")
+                messageHandler.showLongMessage("Unsupported file type")
+                return@launch
             }
 
             bookManager.addNewBook(
-                fileUri, factory.getNameFromFileName(fileName), factory.createProgress(), fileType
+                fileUri, factory.getNameFromFileName(fileName), factory.createProgress(), detectedType
             )
         }
     }

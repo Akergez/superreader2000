@@ -35,9 +35,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
 import com.akergez.superreader2000.shared.backend.storage.BookStorageEntry
-import com.akergez.superreader2000.shared.constants.toFileExtension
-import com.akergez.superreader2000.shared.constants.toMimeType
-import com.akergez.superreader2000.shared.formats.abstractions.FileType
 import com.akergez.superreader2000.shared.platform.MessageHandler
 import com.akergez.superreader2000.shared.ui.components.BookItem
 import com.akergez.superreader2000.shared.ui.components.TopEditBar
@@ -52,7 +49,6 @@ import superreader2000.shared.generated.resources.add_book
 import superreader2000.shared.generated.resources.edit_book
 import superreader2000.shared.generated.resources.error_book_title_empty
 import superreader2000.shared.generated.resources.error_book_with_title_already_exists
-import superreader2000.shared.generated.resources.error_not_supported_format
 import superreader2000.shared.generated.resources.my_books
 import superreader2000.shared.generated.resources.s3_sync
 import kotlin.uuid.ExperimentalUuidApi
@@ -67,7 +63,6 @@ fun HomeScreen(
     hoomeScreenViewModel: HoomeScreenViewModel = koinViewModel(),
     bottomBar: @Composable () -> Unit = {}
 ) {
-    val sErrorNotSupported = stringResource(Res.string.error_not_supported_format)
     val sErrorBookEmpty = stringResource(Res.string.error_book_title_empty)
     val sErrorBookExists = stringResource(Res.string.error_book_with_title_already_exists)
     val sAddBook = stringResource(Res.string.add_book)
@@ -79,30 +74,7 @@ fun HomeScreen(
     val lazyListState = rememberLazyListState()
     val launcher =
         rememberBookPickerLauncher { uri ->
-            val extension = getFileType(uri)
-            val mimeType = "application/$extension"
-            val supportedTypesList = FileType.entries.filter { it != FileType.unknown }
-                .map { it to it.toFileExtension() }
-            val supportedMimeTypesList = FileType.entries.filter { it != FileType.unknown }
-                .map { it to it.toMimeType() }
-            if (supportedTypesList.map { it.second }.contains(extension)) {
-                hoomeScreenViewModel.addBook(
-                    uri,
-                    supportedTypesList.firstOrNull() { it.second == extension }?.first
-                        ?: FileType.unknown
-                )
-            } else if (supportedMimeTypesList.map { it.second }.flatten()
-                    .contains(mimeType)
-            ) {
-                val type = supportedMimeTypesList
-                    .firstOrNull { it.second.contains(mimeType) }?.first
-                    ?: FileType.unknown
-                hoomeScreenViewModel.addBook(uri, type)
-            } else {
-                messageHandler.showLongMessage(sErrorNotSupported)
-            }
-
-
+            hoomeScreenViewModel.addBook(uri)
         }
     val books by hoomeScreenViewModel.books.collectAsState()
     val selectedBooks by hoomeScreenViewModel.selectedBooks.collectAsState()
@@ -221,8 +193,4 @@ fun HomeScreen(
             isVisible = true
         )
     }
-}
-
-private fun getFileType(fileName: String): String {
-    return fileName.substringAfterLast('.', "").lowercase()
 }
