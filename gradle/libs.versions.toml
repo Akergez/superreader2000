@@ -43,7 +43,7 @@ material3 = "1.4.0"
 koin-version = "4.2.0"
 sqldelight-version = "2.3.2"
 kotlinx-serialization = "1.10.0"
-tresse-kmp = "0.1.1"
+tresse-kmp = "0.1.2"
 documentfile = "1.1.0"
 room = "2.8.4"
 sqlite = "2.6.2"
@@ -131,7 +131,6 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 
 [bundles]
-
 
 
 
