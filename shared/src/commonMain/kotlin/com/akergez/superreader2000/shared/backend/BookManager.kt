@@ -15,14 +15,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.akergez.superreader2000.shared.sync.SyncResult
+import com.akergez.superreader2000.shared.sync.wipeChunkStore
+import com.akergez.superreader2000.shared.sync.withoutRepository
 import com.akergez.tresse.kmp.TresseConfig
 import com.akergez.tresse.kmp.TresseSync
+import com.akergez.tresse.kmp.TresseVault
 
 class BookManager(
     private val storageManager: BookStorage,
     private val bookCache: BookRepository,
     private val messageHandler: com.akergez.superreader2000.shared.platform.MessageHandler,
     private val tresseSync: TresseSync,
+    private val tresseVault: TresseVault,
 ) {
     suspend fun generateEncryptionKey(): String = tresseSync.generateEncryptionKey()
     suspend fun loadS3Config(): TresseConfig? = tresseSync.loadConfig()?.takeIf { it.storageType == "s3" }
@@ -45,6 +49,20 @@ class BookManager(
             tresseSync.saveConfig(tresseConfig)
             val report = tresseSync.forcePull(tresseConfig)
             refreshAfterSync(report)
+        }
+    }
+
+    /**
+     * Сбрасывает локальную реплику: удаляет хранилище чанков и очищает repoId с ключом
+     * шифрования в конфиге. Книги и удалённое хранилище не затрагиваются. Возвращает
+     * очищенный конфиг, чтобы UI показал пустые поля.
+     */
+    suspend fun wipeLocalSync(): Result<TresseConfig> = runCatching {
+        metadataMutex.withLock {
+            wipeChunkStore(tresseVault)
+            val cleared = (tresseSync.loadConfig() ?: TresseConfig()).withoutRepository().asS3Config()
+            tresseSync.saveConfig(cleared)
+            cleared
         }
     }
 

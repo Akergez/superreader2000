@@ -80,6 +80,12 @@
     <string name="s3_sync_error">Ошибка синхронизации: %1$s</string>
     <string name="s3_import_error">Не удалось импортировать строку конфигурации</string>
     <string name="s3_generate_key">Сгенерировать новый ключ</string>
+    <string name="s3_wipe_chunks">Очистить локальные чанки</string>
+    <string name="s3_wipe_chunks_hint">Удаляет локальное хранилище чанков Tresse и очищает префикс и ключ шифрования. Книги и удалённое хранилище не затрагиваются.</string>
+    <string name="s3_wipe_chunks_confirm">Все локально сохранённые чанки будут удалены, а префикс и ключ шифрования — очищены. Без копии ключа расшифровать уже отправленные версии не получится.</string>
+    <string name="s3_wipe_chunks_action">Очистить</string>
+    <string name="s3_wiping">Очистка локальных чанков…</string>
+    <string name="s3_wiped">Локальные чанки удалены, префикс и ключ шифрования очищены</string>
     <string name="compatibility_text_renderer">Совместимый рендеринг текста</string>
     <string name="compatibility_text_renderer_description">Включите вручную, если текст не выравнивается по правому краю</string>
 </resources>

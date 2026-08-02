@@ -85,7 +85,7 @@ fun desktopPlatformModule(): Module = module {
     }
 
     single<BookManager> {
-        BookManager(get(), get(), get(), get())
+        BookManager(get(), get(), get(), get(), get())
     }
 }
 

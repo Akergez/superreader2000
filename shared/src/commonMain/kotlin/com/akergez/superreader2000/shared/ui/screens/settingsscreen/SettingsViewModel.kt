@@ -178,6 +178,28 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Удаляет локальные чанки Tresse и очищает repoId с ключом шифрования — и в конфиге
+     * на диске, и в полях экрана. Книги и удалённое хранилище не затрагиваются.
+     */
+    fun wipeLocalChunks() {
+        _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Wiping, syncErrorDetail = "")
+        uiScope.launch {
+            bookManager.wipeLocalSync().fold(
+                onSuccess = { config ->
+                    _settingsState.value = _settingsState.value.copy(
+                        s3Config = config, syncStatus = SyncUiStatus.Wiped, pulled = 0, pushed = 0
+                    )
+                },
+                onFailure = { error ->
+                    _settingsState.value = _settingsState.value.copy(
+                        syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()
+                    )
+                }
+            )
+        }
+    }
+
     fun updateConfigShareString(value: String) {
         _settingsState.value = _settingsState.value.copy(configShareString = value)
     }

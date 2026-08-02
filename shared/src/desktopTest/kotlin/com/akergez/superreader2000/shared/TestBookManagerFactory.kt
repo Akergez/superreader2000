@@ -51,6 +51,7 @@ fun buildTestBookManager(
         emptyMap(),
         FileService()
     )
-    val tresse = TresseSync(StorageLibraryVault(settingsManager, FileService()))
-    return BookManager(bookStorage, BookRepository(db.userDao(), testJson), MessageHandler(), tresse)
+    val vault = StorageLibraryVault(settingsManager, FileService())
+    val tresse = TresseSync(vault)
+    return BookManager(bookStorage, BookRepository(db.userDao(), testJson), MessageHandler(), tresse, vault)
 }

@@ -20,6 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -36,12 +38,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -105,6 +110,13 @@ import superreader2000.shared.generated.resources.s3_sync_success
 import superreader2000.shared.generated.resources.s3_sync_error
 import superreader2000.shared.generated.resources.s3_import_error
 import superreader2000.shared.generated.resources.s3_generate_key
+import superreader2000.shared.generated.resources.s3_wipe_chunks
+import superreader2000.shared.generated.resources.s3_wipe_chunks_hint
+import superreader2000.shared.generated.resources.s3_wipe_chunks_confirm
+import superreader2000.shared.generated.resources.s3_wipe_chunks_action
+import superreader2000.shared.generated.resources.s3_wiping
+import superreader2000.shared.generated.resources.s3_wiped
+import superreader2000.shared.generated.resources.cancel
 import superreader2000.shared.generated.resources.reader_font
 import superreader2000.shared.generated.resources.reader_font_sans_serif
 import superreader2000.shared.generated.resources.reader_font_serif
@@ -253,7 +265,10 @@ fun SettingsScreen(navController: NavController, bottomBar: @Composable () -> Un
 fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
     val viewModel: SettingsViewModel = koinViewModel()
     val settings by viewModel.settingsState.collectAsState()
-    val busy = settings.syncStatus in setOf(SyncUiStatus.Running, SyncUiStatus.ForcePullRunning)
+    val busy = settings.syncStatus in setOf(
+        SyncUiStatus.Running, SyncUiStatus.ForcePullRunning, SyncUiStatus.Wiping
+    )
+    var confirmWipe by remember { mutableStateOf(false) }
 
     Scaffold(bottomBar = bottomBar) { padding ->
         Column(
@@ -285,6 +300,8 @@ fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
                 SyncUiStatus.ValidationError -> stringResource(Res.string.s3_validation_error)
                 SyncUiStatus.ExportWarning -> stringResource(Res.string.s3_export_secret_warning)
                 SyncUiStatus.ImportError -> stringResource(Res.string.s3_import_error)
+                SyncUiStatus.Wiping -> stringResource(Res.string.s3_wiping)
+                SyncUiStatus.Wiped -> stringResource(Res.string.s3_wiped)
             }
             if (message.isNotBlank()) {
                 Text(
@@ -362,6 +379,38 @@ fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
                 OutlinedButton(viewModel::exportS3Config) { Text(stringResource(Res.string.s3_export)) }
                 Spacer(Modifier.width(8.dp))
                 OutlinedButton(viewModel::importS3Config) { Text(stringResource(Res.string.s3_import)) }
+            }
+            Text(
+                stringResource(Res.string.s3_wipe_chunks_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+            OutlinedButton(
+                onClick = { confirmWipe = true },
+                enabled = !busy,
+                modifier = Modifier.padding(top = 6.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+            ) { Text(stringResource(Res.string.s3_wipe_chunks)) }
+            if (confirmWipe) {
+                AlertDialog(
+                    onDismissRequest = { confirmWipe = false },
+                    title = { Text(stringResource(Res.string.s3_wipe_chunks)) },
+                    text = { Text(stringResource(Res.string.s3_wipe_chunks_confirm)) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            confirmWipe = false
+                            viewModel.wipeLocalChunks()
+                        }) { Text(stringResource(Res.string.s3_wipe_chunks_action)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmWipe = false }) {
+                            Text(stringResource(Res.string.cancel))
+                        }
+                    },
+                )
             }
             Spacer(Modifier.height(20.dp))
         }

@@ -90,6 +90,12 @@
     <string name="s3_sync_error">Synchronization failed: %1$s</string>
     <string name="s3_import_error">Unable to import the configuration string</string>
     <string name="s3_generate_key">Generate new key</string>
+    <string name="s3_wipe_chunks">Wipe local chunks</string>
+    <string name="s3_wipe_chunks_hint">Deletes the local Tresse chunk store and clears the prefix and encryption key. Your books and the remote store are left untouched.</string>
+    <string name="s3_wipe_chunks_confirm">Every locally cached chunk will be deleted and the prefix and encryption key cleared. Without a backup of the key, versions already stored remotely cannot be decrypted again.</string>
+    <string name="s3_wipe_chunks_action">Wipe</string>
+    <string name="s3_wiping">Wiping local chunks…</string>
+    <string name="s3_wiped">Local chunks wiped; prefix and encryption key cleared</string>
     <string name="compatibility_text_renderer">Compatibility text renderer</string>
     <string name="compatibility_text_renderer_description">Enable manually if justified text does not reach the right edge</string>
 </resources>
