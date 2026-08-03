@@ -36,7 +36,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -64,7 +63,6 @@ import com.akergez.superreader2000.shared.ui.screens.settingsscreen.components.I
 import com.akergez.superreader2000.shared.ui.screens.mainscreen.rememberStorageDirectoryPicker
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import com.akergez.tresse.kmp.TresseCapabilities
 import superreader2000.shared.generated.resources.Res
 import superreader2000.shared.generated.resources.app_theme
 import superreader2000.shared.generated.resources.app_theme_dark
@@ -335,31 +333,6 @@ fun SyncSettingsScreen(bottomBar: @Composable () -> Unit = {}) {
             }
             OutlinedButton(viewModel::generateEncryptionKey, Modifier.padding(top = 6.dp)) {
                 Text(stringResource(Res.string.s3_generate_key))
-            }
-            TresseCapabilities.supportedLanguages().forEach { language ->
-                Text(
-                    "${language.description} (${language.extensions.joinToString()})",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 10.dp),
-                )
-                Row(Modifier.fillMaxWidth()) {
-                    language.strategies.forEach { strategy ->
-                        FilterChip(
-                            selected = settings.s3Config.languages?.get(language.id) == strategy.id,
-                            onClick = {
-                                val configured = settings.s3Config.languages.orEmpty()
-                                val next = if (configured[language.id] == strategy.id) {
-                                    configured - language.id
-                                } else {
-                                    configured + (language.id to strategy.id)
-                                }
-                                viewModel.updateS3Config(settings.s3Config.copy(languages = next))
-                            },
-                            label = { Text(strategy.id) },
-                            modifier = Modifier.padding(end = 8.dp),
-                        )
-                    }
-                }
             }
             OutlinedTextField(
                 value = settings.configShareString,

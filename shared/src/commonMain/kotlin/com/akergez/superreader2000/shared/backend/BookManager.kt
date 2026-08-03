@@ -18,6 +18,7 @@ import com.akergez.superreader2000.shared.sync.SyncResult
 import com.akergez.superreader2000.shared.sync.wipeChunkStore
 import com.akergez.superreader2000.shared.sync.withoutRepository
 import com.akergez.tresse.kmp.TresseConfig
+import com.akergez.tresse.kmp.TresseConfigFile
 import com.akergez.tresse.kmp.TresseSync
 import com.akergez.tresse.kmp.TresseVault
 
@@ -30,13 +31,13 @@ class BookManager(
 ) {
     suspend fun generateEncryptionKey(): String = tresseSync.generateEncryptionKey()
     suspend fun loadS3Config(): TresseConfig? = tresseSync.loadConfig()?.takeIf { it.storageType == "s3" }
-    suspend fun saveS3Config(config: TresseConfig) = tresseSync.saveConfig(config.asS3Config())
+    suspend fun saveS3Config(config: TresseConfig) = persistSyncConfig(config)
 
     suspend fun synchronize(config: TresseConfig): Result<SyncResult> = runCatching {
         metadataMutex.withLock {
             flushPendingMetadataLocked()
             val tresseConfig = config.asS3Config()
-            tresseSync.saveConfig(tresseConfig)
+            persistSyncConfig(tresseConfig)
             val report = tresseSync.perform(tresseConfig)
             refreshAfterSync(report)
         }
@@ -46,7 +47,7 @@ class BookManager(
         metadataMutex.withLock {
             flushPendingMetadataLocked()
             val tresseConfig = config.asS3Config()
-            tresseSync.saveConfig(tresseConfig)
+            persistSyncConfig(tresseConfig)
             val report = tresseSync.forcePull(tresseConfig)
             refreshAfterSync(report)
         }
@@ -61,7 +62,7 @@ class BookManager(
         metadataMutex.withLock {
             wipeChunkStore(tresseVault)
             val cleared = (tresseSync.loadConfig() ?: TresseConfig()).withoutRepository().asS3Config()
-            tresseSync.saveConfig(cleared)
+            persistSyncConfig(cleared)
             cleared
         }
     }
@@ -71,6 +72,33 @@ class BookManager(
         cacheBooksLinks(books)
         _bookLinks.value = books
         return SyncResult(books, report.pulled, report.pushed)
+    }
+
+    /**
+     * Читалка меняет только свои учётные данные, а политика репозитория — не её.
+     * `TresseSync.saveConfig` пишет оба файла разом, и общий `tresse.toml` при этом
+     * перезаписывается целиком: чужие игнор-паттерны и языки, которые приехали
+     * пулом или которые кто-то вписал руками, молча заменились бы на то, что лежит
+     * в полях экрана. Поэтому кредлы уходят в свой нетрекаемый `remotes.toml`
+     * всегда, а трекаемый `tresse.toml` создаётся ровно один раз — когда его ещё
+     * нет; дальше файл принадлежит репозиторию, и читалка его не трогает.
+     *
+     * Создаваемый конфиг — минимальный: пустые игнор-паттерны и пустая таблица
+     * `[languages]`. Пустая таблица обязательна, движок требует секцию (`missing
+     * field 'languages'` без неё), а язык читалке не нужен — книги в PDF, DjVu и
+     * FB2 движок по синтаксису не разбирает, всё уезжает блобами.
+     */
+    private fun persistSyncConfig(config: TresseConfig) {
+        if (tresseVault.storeRead(TresseConfigFile.PATH) == null) {
+            tresseVault.writeText(
+                TresseConfigFile.PATH,
+                TresseConfigFile.serialize(config.copy(ignorePatterns = emptyList(), languages = null)),
+            )
+        }
+        tresseVault.storeWrite(
+            TresseConfigFile.REMOTES_PATH,
+            TresseConfigFile.serializeRemotes(config).encodeToByteArray(),
+        )
     }
 
     private fun TresseConfig.asS3Config(): TresseConfig = copy(storageType = "s3")
