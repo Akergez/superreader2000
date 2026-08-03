@@ -35,6 +35,9 @@ internal fun DrawScope.drawFb2Text(
         return
     }
 
+    // textAlign здесь обязан совпадать с тем, которым страницу нарезала пагинация
+    // (RenderConfig.textStyle в compat-режиме уже Start): line breaker на Android
+    // учитывает режим выравнивания, и Justify-разметка даёт другие переносы.
     val layout = textMeasurer.measure(
         text = command.text,
         style = style.copy(textAlign = TextAlign.Start),
@@ -43,6 +46,10 @@ internal fun DrawScope.drawFb2Text(
     )
 
     for (line in 0 until layout.lineCount) {
+        // Строка, не влезающая в страницу, рисовалась бы за нижним краем канваса.
+        // Такой текст всё равно не виден, а следующая страница начинается со своей
+        // границы — обрезанные строки просто пропали бы из книги.
+        if (layout.getLineTop(line) >= height) break
         val start = layout.getLineStart(line)
         val end = layout.getLineEnd(line, visibleEnd = true)
         if (end <= start) continue

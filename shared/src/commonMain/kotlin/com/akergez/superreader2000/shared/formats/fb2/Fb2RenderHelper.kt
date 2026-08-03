@@ -64,9 +64,31 @@ data class RenderConfig(
     val density: Float = 1f,
     /** System font scale, required for an exact px -> sp placeholder conversion. */
     val fontScale: Float = 1f,
+    /**
+     * Вьювер выравнивает текст вручную (прошивки, игнорирующие TextAlign.Justify).
+     * Влияет на пагинацию: разметка страниц должна измеряться тем же textAlign,
+     * которым вьювер потом меряет строки, иначе разбивка строк разъезжается.
+     */
+    val compatibilityTextRenderer: Boolean = false,
 ) {
     // Конфиг валиден только если оба размера положительные
     val isValid: Boolean get() = pageWidth > 0 && pageHeight > 0
+
+    /**
+     * Единственный источник стиля разметки. Пагинация, материализация страницы и
+     * вьювер обязаны измерять текст одним и тем же стилем: line breaker на Android
+     * учитывает режим выравнивания, поэтому Justify и Start дают разные переносы,
+     * а значит и разное число строк на странице.
+     */
+    val textStyle: TextStyle
+        get() = TextStyle(
+            fontSize   = fontSize,
+            fontFamily = fontFamily,
+            lineHeight = fontSize * lineHeightMultiplier,
+            textAlign  = if (compatibilityTextRenderer) TextAlign.Start else TextAlign.Justify,
+            lineBreak  = LineBreak.Paragraph,
+            hyphens    = Hyphens.Auto,
+        )
 }
 
 class Fb2RenderHelper constructor(
@@ -351,14 +373,7 @@ class Fb2RenderHelper constructor(
             val config = renderConfig.value
             if (!config.isValid) return
 
-            val style = TextStyle(
-                fontSize   = config.fontSize,
-                fontFamily = config.fontFamily,
-                lineHeight = config.fontSize * config.lineHeightMultiplier,
-                textAlign  = TextAlign.Justify,
-                lineBreak  = LineBreak.Paragraph,
-                hyphens    = Hyphens.Auto,
-            )
+            val style = config.textStyle
             val w = config.pageWidth.coerceAtLeast(1)
             val h = config.pageHeight.coerceAtLeast(1)
 
@@ -583,14 +598,7 @@ class Fb2RenderHelper constructor(
                 text          = pageText,
                 x             = config.paddingH,
                 y             = config.paddingV,
-                style         = TextStyle(
-                    fontSize   = config.fontSize,
-                    fontFamily = config.fontFamily,
-                    lineHeight = config.fontSize * config.lineHeightMultiplier,
-                    textAlign  = TextAlign.Justify,
-                    lineBreak  = LineBreak.Paragraph,
-                    hyphens    = Hyphens.Auto,
-                ),
+                style         = config.textStyle,
                 textAreaWidth = config.pageWidth.toFloat(),
                 placeholders  = placeholders,
             )
@@ -814,14 +822,7 @@ class Fb2RenderHelper constructor(
             val config = renderConfig.value
             if (!config.isValid) return
             val rawPageText = fullText.subSequence(pageCharOffsets[index], pageEndCharOffsets[index])
-            val style = TextStyle(
-                fontSize = config.fontSize,
-                fontFamily = config.fontFamily,
-                lineHeight = config.fontSize * config.lineHeightMultiplier,
-                textAlign = TextAlign.Justify,
-                lineBreak = LineBreak.Paragraph,
-                hyphens = Hyphens.Auto,
-            )
+            val style = config.textStyle
             val placeholders = buildChunkPlaceholders(rawPageText, config)
             val pageText = reserveInlineImageHeight(rawPageText, placeholders)
             val materializeMark = TimeSource.Monotonic.markNow()

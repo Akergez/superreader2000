@@ -160,6 +160,7 @@ fun Fb2ReaderScreen(
         cutoutBottom,
         readerFont,
         readerFontSize,
+        compatibilityTextRenderer,
     ) {
         if (componentWidth <= 0 || componentHeight <= 0) return@LaunchedEffect
 
@@ -184,6 +185,7 @@ fun Fb2ReaderScreen(
             fontScale    = density.fontScale,
             fontSize     = readerFontSize.sp,
             fontFamily   = selectedFontFamily,
+            compatibilityTextRenderer = compatibilityTextRenderer,
         )
 
         val helper = fb2RenderHelper.value
