@@ -206,7 +206,7 @@ class SettingsViewModel(
 
     fun exportS3Config() {
         _settingsState.value = _settingsState.value.copy(
-            configShareString = TresseConfigShare.encode(_settingsState.value.s3Config.copy(storageType = "s3"), json),
+            configShareString = TresseConfigShare.encode(_settingsState.value.s3Config.copy(storageType = "s3")),
             syncStatus = SyncUiStatus.ExportWarning
         )
     }
@@ -214,14 +214,22 @@ class SettingsViewModel(
     fun importS3Config() {
         runCatching {
             val configString = _settingsState.value.configShareString.trim()
-            require(configString.startsWith(TresseConfigShare.PREFIX)) {
-                "config string must start with ${TresseConfigShare.PREFIX}"
-            }
-            TresseConfigShare.decode(configString, json).also { config ->
+            val current = _settingsState.value.s3Config
+            TresseConfigShare.decode(configString).also { config ->
                 require(config.storageType == "s3") {
                     "config uses backend '${config.storageType}'; this app only supports s3"
                 }
-            }
+            }.copy(
+                // A config string carries credentials and nothing else, so everything it
+                // does not mention comes back as a default. Keeping this device's own
+                // policy and schedule is the difference between importing an account and
+                // resetting the app around it.
+                ignorePatterns = current.ignorePatterns,
+                languages = current.languages,
+                autoSyncEnabled = current.autoSyncEnabled,
+                autoSyncIntervalMinutes = current.autoSyncIntervalMinutes,
+                autoSyncDebounceSeconds = current.autoSyncDebounceSeconds,
+            )
         }.fold(
             onSuccess = { config ->
                 uiScope.launch {
