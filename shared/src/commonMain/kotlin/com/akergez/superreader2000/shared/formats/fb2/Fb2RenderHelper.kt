@@ -882,26 +882,12 @@ class Fb2RenderHelper constructor(
 
     /** Собирает всю книгу в одну AnnotatedString (один раз после парсинга). */
     private fun buildFullText(elements: List<FB2Element>): AnnotatedString = buildAnnotatedString {
-        // Знаки, перед которыми не нужен пробел (знаки примыкают к предыдущему слову).
-        val noPrecedingSpace = setOf('.', ',', '!', '?', ':', ';', ')', ']', '}', '»', '…')
-        // Дефис может оказаться отдельным DOM text-node между тегами форматирования.
-        // Внутри слова пробел не нужен ни перед ним, ни после него.
-        val wordJoiners = setOf('-', '‐', '‑', '\u00ad')
+        // Правила пробелов — в needsSpaceBetween(); джойнеры — в WORD_JOINERS: ('-', '‐', '‑', '\u00ad')
         var previousText: String? = null
         elements.forEach { element ->
             val cur = element.toStyledString()
             previousText?.let { prevText ->
-                val curText  = cur.text
-                // Не добавляем пробел: перед знаком препинания, перед/после переноса строки,
-                // или если предыдущий элемент был пустым.
-                val noSpace = curText.isEmpty()
-                    || curText[0] in noPrecedingSpace
-                    || curText[0] in wordJoiners
-                    || prevText.lastOrNull() in wordJoiners
-                    || curText[0] == '\n'
-                    || prevText.lastOrNull() == '\n'
-                    || prevText.isBlank()
-                if (!noSpace) append(' ')
+                if (needsSpaceBetween(prevText, cur.text)) append(' ')
             }
             append(cur)
             previousText = cur.text
@@ -1071,12 +1057,22 @@ class Fb2RenderHelper constructor(
         return elements
     }
 
-    /** Эквивалент split(' ', '\n', '\r') + trim, но без промежуточных списков. */
+    /**
+     * Эквивалент split по пробельным символам + trim, но без промежуточных списков.
+     *
+     * Разделителем обязан быть любой пробельный символ, а не только U+0020. В русских
+     * FB2 между словами массово стоит неразрывный U+00A0 («стр. 101», инициалы, тире),
+     * и, доехав до рендера, он остаётся узким, пока выключка растягивает соседние
+     * обычные пробелы: движки — и Android, и Skia, и наш compat-джастификатор —
+     * тянут только U+0020. Ровно это и даёт разные зазоры в пределах одной строки
+     * независимо от режима. Разрезав текст здесь, мы склеиваем токены обратно
+     * обычным пробелом, и все зазоры становятся растяжимыми.
+     */
     private fun appendTextTokens(text: String, target: MutableList<FB2Element>) {
         var tokenStart = 0
         for (index in 0..text.length) {
             val atEnd = index == text.length
-            val isSeparator = !atEnd && (text[index] == ' ' || text[index] == '\n' || text[index] == '\r')
+            val isSeparator = !atEnd && text[index].isWhitespace()
             if (!atEnd && !isSeparator) continue
 
             if (index > tokenStart) {
@@ -1089,11 +1085,38 @@ class Fb2RenderHelper constructor(
 
     private fun combineAnnotatedStrings(list: List<AnnotatedString>): AnnotatedString =
         buildAnnotatedString {
-            list.filter { it.text.isNotBlank() }.forEachIndexed { index, item ->
-                if (index > 0) append(' ')
+            // Внутри абзаца стыки возникают на каждом теге разметки (emphasis, strong,
+            // ссылка), поэтому пунктуация после них — обычный случай, а не исключение.
+            // Правило склейки обязано быть тем же, что и на уровне книги: иначе
+            // ")" или ":" отделяются пробелом, который выключка растягивает как
+            // полноценный межсловный пробел.
+            var previousText: String? = null
+            list.filter { it.text.isNotBlank() }.forEach { item ->
+                previousText?.let { prevText ->
+                    if (needsSpaceBetween(prevText, item.text)) append(' ')
+                }
                 append(item)
+                previousText = item.text
             }
         }
+
+    /** Нужен ли разделяющий пробел между двумя соседними фрагментами текста. */
+    private fun needsSpaceBetween(prevText: String, curText: String): Boolean {
+        if (curText.isEmpty() || prevText.isBlank()) return false
+        val first = curText[0]
+        val last = prevText.last()
+        // Текстовые узлы FB2 часто сохраняют свой пробел на границе тега. Свой плюс
+        // добавленный дают двойной зазор, который выключка растягивает вдвое сильнее
+        // остальных, — самая заметная причина «рваной» строки.
+        if (first.isWhitespace() || last.isWhitespace()) return false
+        if (first in NO_PRECEDING_SPACE || last in NO_FOLLOWING_SPACE) return false
+        // Дефис разрывает слово, только когда он прижат к нему в исходнике. Фрагмент
+        // из одних дефисов — это отдельное слово, то есть тире между словами
+        // («слово - слово»); склеив его, мы получим «слово-слово».
+        val breaksWord = (last in WORD_JOINERS && !prevText.all { it in WORD_JOINERS }) ||
+            (first in WORD_JOINERS && !curText.all { it in WORD_JOINERS })
+        return !breaksWord
+    }
 
     companion object {
         private const val DEBOUNCE_MS        = 300L
@@ -1107,5 +1130,17 @@ class Fb2RenderHelper constructor(
         private const val LAYOUT_BATCH_PAGES = 1
         private const val CHUNK_SIZE_NUMERATOR = 5
         private const val CHUNK_SIZE_DENOMINATOR = 4
+
+        // Знаки, примыкающие к предыдущему слову: пробел перед ними не ставится.
+        private val NO_PRECEDING_SPACE =
+            setOf('.', ',', '!', '?', ':', ';', ')', ']', '}', '»', '…')
+
+        // Знаки, примыкающие к следующему слову: пробел после них не ставится.
+        private val NO_FOLLOWING_SPACE =
+            setOf('(', '[', '{', '«', '“', '„')
+
+        // Дефис может оказаться отдельным text-node между тегами форматирования.
+        // Внутри слова пробел не нужен ни перед ним, ни после него.
+        private val WORD_JOINERS = setOf('-', '‐', '‑', '­')
     }
 }
