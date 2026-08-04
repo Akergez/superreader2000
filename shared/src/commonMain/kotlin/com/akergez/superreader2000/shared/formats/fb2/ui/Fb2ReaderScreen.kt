@@ -53,6 +53,11 @@ import superreader2000.shared.generated.resources.Res
 import superreader2000.shared.generated.resources.literata_light
 import superreader2000.shared.generated.resources.roboto_variable
 
+// Максимальное расхождение между восстановленным номером страницы и тем, что способна
+// показать листалка. Двухстраничный разворот адресуется левой страницей, поэтому
+// нечётный номер округляется вниз ровно на одну страницу.
+private const val MAX_SPREAD_ALIGNMENT_SHIFT = 1
+
 @Composable
 fun Fb2ReaderScreen(
     book: Fb2BookDomainModel,
@@ -278,8 +283,19 @@ fun Fb2ReaderScreen(
             // Листалки публикуют текущую страницу сразу после создания и во время
             // программного восстановления. Это не действие читателя и не новый progress.
             if (!isPageControlSynchronized) {
-                if (pageIndex == currentPage) {
+                // В двухстраничном режиме листалка адресует развороты и умеет вернуть
+                // только левую страницу, поэтому восстановленный нечётный номер приходит
+                // обратно как pageIndex - 1. Точного равенства требовать нельзя:
+                // синхронизация не наступит никогда, а все дальнейшие перелистывания
+                // и сохранения прогресса будут молча отброшены.
+                val restoredPage = currentPage
+                if (restoredPage != null &&
+                    pageIndex <= restoredPage &&
+                    restoredPage - pageIndex <= MAX_SPREAD_ALIGNMENT_SHIFT
+                ) {
                     isPageControlSynchronized = true
+                    // Дальше сравнивать нужно с тем номером, который реально показан.
+                    currentPage = pageIndex
                 }
                 return@onPageChange
             }
