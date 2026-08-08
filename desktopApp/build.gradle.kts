@@ -6,6 +6,23 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// jpackage accepts only MAJOR[.MINOR[.PATCH]] with MAJOR >= 1, so tags like "v1.10.0" or
+// "1.10.0-rc1" are normalized and anything else (a commit sha, a non-numeric tag) falls back.
+val fallbackPackageVersion = "1.0.0"
+
+fun normalizePackageVersion(raw: String): String? {
+    val parts = raw.trim().removePrefix("v").substringBefore('-').substringBefore('+').split('.')
+    if (parts.isEmpty() || parts.size > 3) return null
+    val numbers = parts.map { it.toIntOrNull() ?: return null }
+    if (numbers.first() < 1 || numbers.any { it < 0 }) return null
+    return numbers.joinToString(".")
+}
+
+val desktopPackageVersion: String = providers.environmentVariable("APP_VERSION")
+    .orElse(providers.environmentVariable("CI_COMMIT_TAG"))
+    .map { normalizePackageVersion(it) ?: fallbackPackageVersion }
+    .getOrElse(fallbackPackageVersion)
+
 kotlin {
     jvm()
     jvmToolchain(21)
@@ -48,7 +65,7 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Rpm)
 
             packageName = "SuperReader2000"
-            packageVersion = "1.0.0"
+            packageVersion = desktopPackageVersion
             description = "Cross-platform PDF, DjVu, and FB2 Reader"
             vendor = "Akergez"
 
