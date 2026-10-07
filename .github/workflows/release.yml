@@ -18,7 +18,7 @@ env:
   # Gradle reads tresse-kmp from GitHub Packages, which needs a token even for public packages.
   GITHUB_TOKEN: ${{ github.token }}
   # Desktop packages bundle this JDK as their runtime, so it stays pinned.
-  DESKTOP_JAVA_VERSION: "21.0.5+11"
+  DESKTOP_JAVA_VERSION: "21.0.5"
   # GitLab pipelines stopped at #98; Android versionCode has to keep growing past that.
   VERSION_CODE_OFFSET: 100
 
