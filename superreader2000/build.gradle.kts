@@ -21,7 +21,8 @@ val applicationVersionName = providers.environmentVariable("APP_VERSION")
     .orElse(providers.environmentVariable("CI_COMMIT_SHORT_SHA"))
     .orElse("1.0")
 
-val applicationVersionCode = providers.environmentVariable("CI_PIPELINE_IID")
+val applicationVersionCode = providers.environmentVariable("APP_VERSION_CODE")
+    .orElse(providers.environmentVariable("CI_PIPELINE_IID"))
     .map { it.toIntOrNull()?.coerceIn(1, 2_100_000_000) ?: 1 }
     .orElse(1)
 

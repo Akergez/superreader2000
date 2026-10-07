@@ -26,7 +26,7 @@ A simple and modern Android application for reading PDF and FB2 files, built wit
 
 ## Dependencies: tresse-kmp & tresse
 
-Progress sync is built on [tresse](https://gitlab.com/ragusseven/tresse) (a Rust CRDT sync engine) via its Kotlin Multiplatform wrapper [tresse-kmp](https://gitlab.com/ragusseven/tresse-kmp). The application consumes the published `com.akergez.tresse:tresse-kmp` Maven package; its Android and desktop native libraries are already bundled in the platform variants.
+Progress sync is built on [tresse](https://gitlab.com/ragusseven/tresse) (a Rust CRDT sync engine) via its Kotlin Multiplatform wrapper [tresse-kmp](https://github.com/Akergez/tresse-kmp). The application consumes the published `com.akergez.tresse:tresse-kmp` Maven package; its Android and desktop native libraries are already bundled in the platform variants.
 
 ### Getting the source
 
@@ -39,7 +39,8 @@ cd app
 
 ### How the wiring works
 
-- `settings.gradle.kts` reads the public Maven package from the tresse-kmp GitLab Package Registry.
+- `settings.gradle.kts` reads the Maven package from the tresse-kmp GitHub Packages registry.
+- GitHub Packages requires a token even for public packages: set `gpr.user` / `gpr.key` (a token with `read:packages`) in `~/.gradle/gradle.properties`, or export `GITHUB_ACTOR` / `GITHUB_TOKEN`.
 - The version is pinned in `gradle/libs.versions.toml`.
 - Android and desktop builds do not require a Rust toolchain or sibling repository checkouts.
 
@@ -52,7 +53,7 @@ No extra dependency setup is needed:
 ./gradlew :desktopApp:packageDmg
 ```
 
-CI (`.gitlab-ci.yml`) resolves the same pinned Maven version and builds Android, Linux, and macOS without cloning or compiling tresse sources.
+CI (`.github/workflows/release.yml`) resolves the same pinned Maven version and builds Android, Linux, and macOS without cloning or compiling tresse sources.
 
 ## Used libs
 - [DjvuLibre bindings](https://gitlab.com/axet/android-djvulibre)

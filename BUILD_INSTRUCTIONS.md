@@ -188,7 +188,6 @@ Output: `desktopApp/build/compose/binaries/main/rpm/superreader2000-1.0.0-1.aarc
 
 For CI/CD pipelines, use separate build agents/runners for each target platform:
 - GitHub Actions: Use `macos-latest` for DMG, `ubuntu-latest` for RPM
-- GitLab CI: Use appropriate runners with `tags: [macos]` or `tags: [linux]`
 
 ---
 
@@ -205,20 +204,22 @@ For CI/CD pipelines, use separate build agents/runners for each target platform:
 
 ---
 
-## GitLab CI/CD Setup
+## GitHub Actions Setup
 
-The project includes a `.gitlab-ci.yml` file that automates building for all platforms, publishing to GitLab Package Registry, and creating releases.
+The project includes `.github/workflows/release.yml`, which builds all platforms on GitHub-hosted runners and publishes GitHub Releases.
 
-### Required CI/CD Variables
+### Required Secrets
 
-Set these variables in **GitLab → Settings → CI/CD → Variables**:
+Set these in **GitHub → Settings → Secrets and variables → Actions**:
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `ANDROID_KEYSTORE_BASE64` | Variable (masked) | Base64-encoded Android keystore file |
-| `KEYSTORE_PASSWORD` | Variable (masked) | Keystore password |
-| `KEY_ALIAS` | Variable (masked) | Key alias in the keystore |
-| `KEY_PASSWORD` | Variable (masked) | Key password |
+| Secret | Description |
+|--------|-------------|
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded Android keystore file |
+| `KEYSTORE_PASSWORD` | Keystore password |
+| `KEY_ALIAS` | Key alias in the keystore |
+| `KEY_PASSWORD` | Key password |
+
+Without them the APK is signed with the debug key.
 
 ### Encoding Your Keystore
 
@@ -229,19 +230,14 @@ base64 -i my-release-key.jks | pbcopy  # macOS (copies to clipboard)
 base64 my-release-key.jks > keystore_base64.txt  # Save to file
 ```
 
-### Required GitLab Runners
+### Runners
 
-The pipeline requires runners with specific tags:
-
-| Platform | Required Tags | Description |
-|----------|---------------|-------------|
-| Android | `docker` | Any Docker-capable runner |
-| Linux x86_64 | `docker`, `linux`, `amd64` | Linux x86_64 runner |
-| Linux arm64 | `docker`, `linux`, `arm64` | Linux ARM64 runner |
-| macOS arm64 | `macos`, `arm64` | Apple Silicon Mac runner |
-| macOS x86_64 | `macos`, `amd64` | Intel Mac runner |
-
-> **Note**: If you don't have all runner types, some builds will be skipped (`allow_failure: true`).
+| Platform | Runner |
+|----------|--------|
+| Android | `ubuntu-latest` |
+| Linux x86_64 | `ubuntu-latest` (`fedora:latest` container) |
+| Linux arm64 | `ubuntu-24.04-arm` (`fedora:latest` container) |
+| macOS arm64 | `macos-latest` |
 
 ### Creating a Release
 
@@ -252,11 +248,11 @@ git push origin v1.0.0
 ```
 
 This will:
-1. Build all artifacts (APK, AAB, RPM, DMG)
-2. Upload to GitLab Package Registry
-3. Create a GitLab Release with download links
+1. Build all artifacts (APK, RPM, DMG)
+2. Create a GitHub Release with the packages attached
+
+Android `versionCode` is the workflow run number plus `VERSION_CODE_OFFSET` (set in the workflow).
 
 ### Manual Workflow
 
-For builds on the default branch (without tags), artifacts are still built and uploaded to the Package Registry, but no formal release is created.
-
+For builds on the default branch (without tags), packages are still built and attached to the workflow run as the `SuperReader2000-<short sha>` artifact, but no release is created.
