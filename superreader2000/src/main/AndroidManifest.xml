@@ -15,11 +15,20 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Возврат со страницы сервера Tresse после входа: страница открывает
+                 superreader2000://tresse-connect?state=…&config=tresse%3A%2F%2F… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="superreader2000" android:host="tresse-connect" />
             </intent-filter>
         </activity>
     </application>

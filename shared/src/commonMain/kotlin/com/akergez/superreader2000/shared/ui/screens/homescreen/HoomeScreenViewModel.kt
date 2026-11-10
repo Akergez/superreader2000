@@ -70,14 +70,7 @@ class HoomeScreenViewModel(
     }
 
     private suspend fun loadConfiguredSync(): TresseConfig? =
-        runCatching { bookManager.loadS3Config() }.getOrNull()?.takeIf(::isValidS3Config)
-
-    private fun isValidS3Config(config: TresseConfig): Boolean =
-        config.s3Endpoint.isNotBlank() &&
-            config.s3Bucket.isNotBlank() &&
-            config.s3AccessKeyId.isNotBlank() &&
-            config.s3SecretAccessKey.isNotBlank() &&
-            config.encryptionKey.isNotBlank()
+        runCatching { bookManager.loadSyncConfig() }.getOrNull()?.takeIf { it.isComplete() }
 
     fun addBook(fileUri: String, fileType: FileType? = null) {
         viewModelScope.launch {

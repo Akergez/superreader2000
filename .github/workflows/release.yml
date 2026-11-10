@@ -17,6 +17,9 @@ env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
   # Gradle reads tresse-kmp from GitHub Packages, which needs a token even for public packages.
   GITHUB_TOKEN: ${{ github.token }}
+  # Baked into the app as the default Tresse sync server (see TRESSE_SERVER_URL
+  # in shared/build.gradle.kts): prefilled on the Sync screen, the user may replace it.
+  TRESSE_SERVER_URL: ${{ vars.TRESSE_SERVER_URL }}
   # Desktop packages bundle this JDK as their runtime, so it stays pinned.
   DESKTOP_JAVA_VERSION: "21.0.5+11"
   # GitLab pipelines stopped at #98; Android versionCode has to keep growing past that.

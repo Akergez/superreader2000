@@ -18,6 +18,7 @@ import com.akergez.superreader2000.shared.formats.abstractions.IReaderScreenProv
 import com.akergez.superreader2000.shared.formats.pdf.ui.PdfReaderScreenProvider
 import com.akergez.superreader2000.shared.formats.pdf.ui.state.PdfScreenViewModel
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SettingsViewModel
+import com.akergez.superreader2000.shared.ui.screens.syncscreen.SyncViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
@@ -69,6 +70,7 @@ private fun desktopAppModule() = module {
     viewModel {
         SettingsViewModel(get(), get(), get())
     }
+    viewModel { SyncViewModel(get(), get(), get()) }
 
     viewModel { p -> EditModalViewModel(p.get()) }
 

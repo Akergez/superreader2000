@@ -10,6 +10,7 @@ import com.akergez.superreader2000.shared.backend.settings.DefaultSettingsManage
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
 import com.akergez.superreader2000.shared.backend.storage.BookRepository
 import com.akergez.superreader2000.shared.backend.storage.PreferencesStore
+import com.akergez.superreader2000.shared.sync.ServerConnectStore
 import com.akergez.superreader2000.shared.formats.abstractions.BookMetaInfo
 import com.akergez.superreader2000.shared.formats.abstractions.FileType
 import com.akergez.superreader2000.shared.formats.abstractions.FormatType
@@ -56,6 +57,7 @@ fun commonModule(): Module = module {
     }
 
     single<Json> { json }
+    single { ServerConnectStore(get(), get()) }
     single {
         BookInfoExtractorFactory(
             mapOf(

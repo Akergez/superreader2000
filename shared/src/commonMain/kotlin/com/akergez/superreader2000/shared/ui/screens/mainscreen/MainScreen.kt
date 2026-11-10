@@ -43,7 +43,8 @@ import com.akergez.superreader2000.shared.ui.screens.homescreen.HomeScreen
 import com.akergez.superreader2000.shared.formats.abstractions.IReaderScreenProvider
 import com.akergez.superreader2000.shared.formats.abstractions.FormatType
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SettingsScreen
-import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SyncSettingsScreen
+import com.akergez.superreader2000.shared.ui.screens.syncscreen.SyncScreen
+import com.akergez.superreader2000.shared.sync.ServerConnectReturns
 import com.akergez.superreader2000.shared.ui.theme.AppTheme
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.stringResource
@@ -88,6 +89,14 @@ fun MainScreen(
         currentRoute != Route.Settings &&
         currentRoute != Route.SyncSettings
     ReaderImmersiveMode(isReaderScreen)
+    // Возврат со страницы сервера Tresse ведёт на экран синхронизации: там его
+    // проверят и спросят подтверждение, с какого бы экрана ни ушли в браузер.
+    val serverConnectReturn by ServerConnectReturns.pending.collectAsState()
+    LaunchedEffect(serverConnectReturn) {
+        if (serverConnectReturn != null && navController.currentDestination?.route != Route.SyncSettings) {
+            navController.navigate(Route.SyncSettings) { launchSingleTop = true }
+        }
+    }
     val currentScreen = when (currentRoute) {
         Route.Main -> Screen.HOME_SCREEN
         Route.Settings -> Screen.SETTINGS_SCREEN
@@ -182,7 +191,7 @@ fun MainScreen(
                             )
                         }
                         composable(Route.SyncSettings) {
-                            SyncSettingsScreen(
+                            SyncScreen(
                                 bottomBar = {
                                     if (!useRail) BottomNavigationBar(navController, Screen.SYNC_SCREEN)
                                 }

@@ -24,6 +24,8 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
 import com.akergez.superreader2000.shared.backend.settings.ISettingsManager
+import com.akergez.superreader2000.shared.sync.DesktopServerConnectHost
+import com.akergez.superreader2000.shared.sync.ServerConnectHost
 import com.akergez.tresse.kmp.TresseFile
 import com.akergez.tresse.kmp.TresseVault
 import com.akergez.tresse.kmp.fileTresseVault
@@ -45,6 +47,7 @@ fun desktopPlatformModule(): Module = module {
         SettingsBackedFileTresseVault(get())
     }
     single { TresseSync(get<TresseVault>()) }
+    single<ServerConnectHost> { DesktopServerConnectHost() }
 
     single {
         val dbFile = File(System.getProperty("user.home"), ".local/.superreader2000/cache.db")
@@ -89,7 +92,7 @@ fun desktopPlatformModule(): Module = module {
     }
 }
 
-private class SettingsBackedFileTresseVault(
+internal class SettingsBackedFileTresseVault(
     private val settings: ISettingsManager,
 ) : TresseVault {
     @Volatile private var cachedPath: String? = null

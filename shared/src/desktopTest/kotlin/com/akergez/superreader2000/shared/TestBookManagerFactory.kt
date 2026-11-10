@@ -15,7 +15,7 @@ import com.akergez.superreader2000.shared.formats.fb2.Fb2Progress
 import com.akergez.superreader2000.shared.formats.pdf.PdfProgress
 import com.akergez.superreader2000.shared.platform.MessageHandler
 import kotlinx.serialization.json.Json
-import com.akergez.superreader2000.shared.sync.StorageLibraryVault
+import com.akergez.superreader2000.shared.di.SettingsBackedFileTresseVault
 import com.akergez.tresse.kmp.TresseSync
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -51,7 +51,7 @@ fun buildTestBookManager(
         emptyMap(),
         FileService()
     )
-    val vault = StorageLibraryVault(settingsManager, FileService())
+    val vault = SettingsBackedFileTresseVault(settingsManager)
     val tresse = TresseSync(vault)
     return BookManager(bookStorage, BookRepository(db.userDao(), testJson), MessageHandler(), tresse, vault)
 }

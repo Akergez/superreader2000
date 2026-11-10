@@ -9,6 +9,8 @@ import com.akergez.superreader2000.shared.backend.storage.BookRepository
 import com.akergez.superreader2000.shared.platform.FileUriHandler
 import com.akergez.superreader2000.shared.platform.MessageHandler
 import com.akergez.superreader2000.shared.backend.storage.FileService
+import com.akergez.superreader2000.shared.sync.AndroidServerConnectHost
+import com.akergez.superreader2000.shared.sync.ServerConnectHost
 import com.akergez.tresse.kmp.TresseFile
 import com.akergez.tresse.kmp.TresseVault
 import com.akergez.tresse.kmp.safTresseVault
@@ -23,6 +25,7 @@ fun androidPlatformModule(context: Context): Module = module {
         SettingsBackedAndroidTresseVault(get(), get())
     }
     single { TresseSync(get<TresseVault>()) }
+    single<ServerConnectHost> { AndroidServerConnectHost(get()) }
     single<MessageHandler> {
         MessageHandler(get<Context>())
     }

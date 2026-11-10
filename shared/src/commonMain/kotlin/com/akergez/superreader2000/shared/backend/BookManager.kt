@@ -30,15 +30,15 @@ class BookManager(
     private val tresseVault: TresseVault,
 ) {
     suspend fun generateEncryptionKey(): String = tresseSync.generateEncryptionKey()
-    suspend fun loadS3Config(): TresseConfig? = tresseSync.loadConfig()?.takeIf { it.storageType == "s3" }
-    suspend fun saveS3Config(config: TresseConfig) = persistSyncConfig(config)
+    /** Конфиг синхронизации этой реплики — сервер Tresse или свой S3; null, пока его нет. */
+    suspend fun loadSyncConfig(): TresseConfig? = tresseSync.loadConfig()
+    suspend fun saveSyncConfig(config: TresseConfig) = persistSyncConfig(config)
 
     suspend fun synchronize(config: TresseConfig): Result<SyncResult> = runCatching {
         metadataMutex.withLock {
             flushPendingMetadataLocked()
-            val tresseConfig = config.asS3Config()
-            persistSyncConfig(tresseConfig)
-            val report = tresseSync.perform(tresseConfig)
+            persistSyncConfig(config)
+            val report = tresseSync.perform(config)
             refreshAfterSync(report)
         }
     }
@@ -46,9 +46,8 @@ class BookManager(
     suspend fun forcePull(config: TresseConfig): Result<SyncResult> = runCatching {
         metadataMutex.withLock {
             flushPendingMetadataLocked()
-            val tresseConfig = config.asS3Config()
-            persistSyncConfig(tresseConfig)
-            val report = tresseSync.forcePull(tresseConfig)
+            persistSyncConfig(config)
+            val report = tresseSync.forcePull(config)
             refreshAfterSync(report)
         }
     }
@@ -61,7 +60,7 @@ class BookManager(
     suspend fun wipeLocalSync(): Result<TresseConfig> = runCatching {
         metadataMutex.withLock {
             wipeChunkStore(tresseVault)
-            val cleared = (tresseSync.loadConfig() ?: TresseConfig()).withoutRepository().asS3Config()
+            val cleared = (tresseSync.loadConfig() ?: TresseConfig()).withoutRepository()
             persistSyncConfig(cleared)
             cleared
         }
@@ -100,8 +99,6 @@ class BookManager(
             TresseConfigFile.serializeRemotes(config).encodeToByteArray(),
         )
     }
-
-    private fun TresseConfig.asS3Config(): TresseConfig = copy(storageType = "s3")
 
     private val _bookLinks = MutableStateFlow<List<BookStorageEntry>>(emptyList())
     val bookFlow = _bookLinks.asStateFlow()

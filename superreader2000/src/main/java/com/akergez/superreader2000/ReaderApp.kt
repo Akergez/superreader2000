@@ -24,6 +24,7 @@ import com.akergez.superreader2000.shared.formats.pdf.ui.state.PdfScreenViewMode
 import com.akergez.superreader2000.shared.ui.components.EditModalViewModel
 import com.akergez.superreader2000.shared.ui.screens.homescreen.HoomeScreenViewModel
 import com.akergez.superreader2000.shared.ui.screens.settingsscreen.SettingsViewModel
+import com.akergez.superreader2000.shared.ui.screens.syncscreen.SyncViewModel
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -79,6 +80,7 @@ class ReaderApp : Application() {
             viewModel {
                 SettingsViewModel(get(), get(), get())
             }
+            viewModel { SyncViewModel(get(), get(), get()) }
             viewModel {
                 HoomeScreenViewModel(
                     get(),

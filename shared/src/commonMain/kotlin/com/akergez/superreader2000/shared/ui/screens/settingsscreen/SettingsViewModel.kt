@@ -14,8 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.akergez.tresse.kmp.TresseConfig
-import com.akergez.tresse.kmp.TresseConfigShare
 import kotlinx.serialization.json.Json
 
 class SettingsViewModel(
@@ -43,16 +41,8 @@ class SettingsViewModel(
                 appThemeMode = appThemeMode,
                 readerFont = settingsManager.getReaderFont(),
                 readerFontSize = settingsManager.getReaderFontSize(),
-                compatibilityTextRenderer = settingsManager.getCompatibilityTextRenderer(),
-                s3Config = TresseConfig(storageType = "s3", repoId = "")
+                compatibilityTextRenderer = settingsManager.getCompatibilityTextRenderer()
             )
-        if (settingsManager.getStoragePath() != null) {
-            uiScope.launch {
-                runCatching { bookManager.loadS3Config() }.getOrNull()?.let { config ->
-                    _settingsState.value = _settingsState.value.copy(s3Config = config)
-                }
-            }
-        }
     }
 
     fun updateTextDocThemeMode(docThemeMode: DocThemeMode) {
@@ -100,161 +90,7 @@ class SettingsViewModel(
         _settingsState.value = _settingsState.value.copy(appThemeMode = appThemeMode)
     }
 
-    fun updateS3Config(config: TresseConfig) {
-        _settingsState.value = _settingsState.value.copy(
-            s3Config = config.copy(storageType = "s3"),
-            syncStatus = SyncUiStatus.Idle,
-            syncErrorDetail = "",
-        )
-    }
-
-    fun saveS3Config() {
-        uiScope.launch {
-            runCatching { bookManager.saveS3Config(_settingsState.value.s3Config) }.fold(
-                onSuccess = { _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Saved) },
-                onFailure = { error -> _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()) },
-            )
-        }
-    }
-
-    fun generateEncryptionKey() {
-        uiScope.launch {
-            runCatching { bookManager.generateEncryptionKey() }.fold(
-                onSuccess = { key ->
-                    val config = _settingsState.value.s3Config.copy(encryptionKey = key)
-                    bookManager.saveS3Config(config)
-                    _settingsState.value = _settingsState.value.copy(s3Config = config, syncStatus = SyncUiStatus.Saved)
-                },
-                onFailure = { error ->
-                    _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty())
-                }
-            )
-        }
-    }
-
-    fun synchronize() {
-        val config = _settingsState.value.s3Config
-        if (!isValidS3Config(config)) {
-            _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ValidationError)
-            return
-        }
-        _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Running, syncErrorDetail = "")
-        uiScope.launch {
-            bookManager.synchronize(config).fold(
-                onSuccess = { result ->
-                    _settingsState.value = _settingsState.value.copy(
-                        syncStatus = SyncUiStatus.Success, pulled = result.pulled, pushed = result.pushed
-                    )
-                },
-                onFailure = { error ->
-                    _settingsState.value = _settingsState.value.copy(
-                        syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()
-                    )
-                }
-            )
-        }
-    }
-
-    fun forcePull() {
-        val config = _settingsState.value.s3Config
-        if (!isValidS3Config(config)) {
-            _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ValidationError)
-            return
-        }
-        _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ForcePullRunning, syncErrorDetail = "")
-        uiScope.launch {
-            bookManager.forcePull(config).fold(
-                onSuccess = { result ->
-                    _settingsState.value = _settingsState.value.copy(
-                        syncStatus = SyncUiStatus.Success, pulled = result.pulled, pushed = result.pushed
-                    )
-                },
-                onFailure = { error ->
-                    _settingsState.value = _settingsState.value.copy(
-                        syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()
-                    )
-                }
-            )
-        }
-    }
-
-    /**
-     * Удаляет локальные чанки Tresse и очищает repoId с ключом шифрования — и в конфиге
-     * на диске, и в полях экрана. Книги и удалённое хранилище не затрагиваются.
-     */
-    fun wipeLocalChunks() {
-        _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.Wiping, syncErrorDetail = "")
-        uiScope.launch {
-            bookManager.wipeLocalSync().fold(
-                onSuccess = { config ->
-                    _settingsState.value = _settingsState.value.copy(
-                        s3Config = config, syncStatus = SyncUiStatus.Wiped, pulled = 0, pushed = 0
-                    )
-                },
-                onFailure = { error ->
-                    _settingsState.value = _settingsState.value.copy(
-                        syncStatus = SyncUiStatus.Error, syncErrorDetail = error.message.orEmpty()
-                    )
-                }
-            )
-        }
-    }
-
-    fun updateConfigShareString(value: String) {
-        _settingsState.value = _settingsState.value.copy(configShareString = value)
-    }
-
-    fun exportS3Config() {
-        _settingsState.value = _settingsState.value.copy(
-            configShareString = TresseConfigShare.encode(_settingsState.value.s3Config.copy(storageType = "s3")),
-            syncStatus = SyncUiStatus.ExportWarning
-        )
-    }
-
-    fun importS3Config() {
-        runCatching {
-            val configString = _settingsState.value.configShareString.trim()
-            val current = _settingsState.value.s3Config
-            TresseConfigShare.decode(configString).also { config ->
-                require(config.storageType == "s3") {
-                    "config uses backend '${config.storageType}'; this app only supports s3"
-                }
-            }.copy(
-                // A config string carries credentials and nothing else, so everything it
-                // does not mention comes back as a default. Keeping this device's own
-                // policy and schedule is the difference between importing an account and
-                // resetting the app around it.
-                ignorePatterns = current.ignorePatterns,
-                languages = current.languages,
-                autoSyncEnabled = current.autoSyncEnabled,
-                autoSyncIntervalMinutes = current.autoSyncIntervalMinutes,
-                autoSyncDebounceSeconds = current.autoSyncDebounceSeconds,
-            )
-        }.fold(
-            onSuccess = { config ->
-                uiScope.launch {
-                    runCatching { bookManager.saveS3Config(config) }.fold(
-                        onSuccess = { _settingsState.value = _settingsState.value.copy(s3Config = config, syncStatus = SyncUiStatus.Imported) },
-                        onFailure = { error -> _settingsState.value = _settingsState.value.copy(syncStatus = SyncUiStatus.ImportError, syncErrorDetail = error.message.orEmpty()) },
-                    )
-                }
-            },
-            onFailure = { error ->
-                _settingsState.value = _settingsState.value.copy(
-                    syncStatus = SyncUiStatus.ImportError, syncErrorDetail = error.message.orEmpty()
-                )
-            }
-        )
-    }
-
     private fun extractBeautifulStoragePath(path: String?) : String {
         return path ?: ""
     }
-
-    private fun isValidS3Config(config: TresseConfig): Boolean =
-        config.s3Endpoint.isNotBlank() &&
-            config.s3Bucket.isNotBlank() &&
-            config.s3AccessKeyId.isNotBlank() &&
-            config.s3SecretAccessKey.isNotBlank() &&
-            config.encryptionKey.isNotBlank()
 }
