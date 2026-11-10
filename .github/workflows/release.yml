@@ -21,7 +21,7 @@ env:
   # in shared/build.gradle.kts): prefilled on the Sync screen, the user may replace it.
   TRESSE_SERVER_URL: ${{ vars.TRESSE_SERVER_URL }}
   # Desktop packages bundle this JDK as their runtime, so it stays pinned.
-  DESKTOP_JAVA_VERSION: "21.0.5+11"
+  DESKTOP_JAVA_VERSION: "21.0.5"
   # GitLab pipelines stopped at #98; Android versionCode has to keep growing past that.
   VERSION_CODE_OFFSET: 100
 
